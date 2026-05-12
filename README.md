@@ -11,6 +11,17 @@ Auth endpoints are available under `/api/v1/auth`:
 
 Protected endpoints require `Authorization: Bearer <accessToken>`.
 
+## Account status
+Account endpoints are available under `/api/v1/accounts`:
+
+- `POST /api/v1/accounts`
+- `GET /api/v1/accounts`
+- `GET /api/v1/accounts/{accountId}`
+- `PUT /api/v1/accounts/{accountId}`
+- `DELETE /api/v1/accounts/{accountId}`
+
+Account data is ownership-scoped to the authenticated user and uses soft delete (`active=false`).
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -22,3 +33,4 @@ Set the following environment variables before running the app:
 
 - Run full test suite: `mvn test`
 - Run auth integration flow only: `mvn -Dtest=AuthFlowIntegrationTest test`
+- Run account integration flow only: `mvn -Dtest=AccountFlowIntegrationTest test`

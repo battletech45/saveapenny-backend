@@ -371,15 +371,15 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 
 ## 9. MVP Acceptance Criteria
 
-- [ ]  All auth endpoints work with JWT enforcement
-- [ ]  Private routes return 401 when unauthenticated
-- [ ]  Account data is correctly scoped to the authenticated user
+- [x]  All auth endpoints work with JWT enforcement
+- [x]  Private routes return 401 when unauthenticated
+- [x]  Account data is correctly scoped to the authenticated user
 - [ ]  Transaction creation updates account balance atomically
 - [ ]  Transfer correctly debits and credits in a single transaction boundary
 - [ ]  Budget status reflects spending percentage accurately
 - [ ]  Monthly summary report returns correct aggregates
 - [ ]  Flyway migrations run cleanly on a fresh database
-- [ ]  Core business logic covered by unit tests
+- [x]  Core business logic covered by unit tests
 - [ ]  App boots with `docker compose up`
 
 ---

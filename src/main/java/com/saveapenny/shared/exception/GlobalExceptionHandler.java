@@ -1,5 +1,8 @@
 package com.saveapenny.shared.exception;
 
+import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
+import com.saveapenny.account.exception.AccountNotFoundException;
+import com.saveapenny.account.exception.AccountInactiveException;
 import com.saveapenny.auth.exception.EmailAlreadyExistsException;
 import com.saveapenny.auth.exception.InvalidCredentialsException;
 import com.saveapenny.auth.exception.InvalidRefreshTokenException;
@@ -21,6 +24,36 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountNotFound(AccountNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("ACCOUNT_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AccountNameAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountNameAlreadyExists(AccountNameAlreadyExistsException ex) {
+        ApiError error = ApiError.builder()
+                .code("ACCOUNT_NAME_ALREADY_EXISTS")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AccountInactiveException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountInactive(AccountInactiveException ex) {
+        ApiError error = ApiError.builder()
+                .code("ACCOUNT_INACTIVE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ApiResponse<Void>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
