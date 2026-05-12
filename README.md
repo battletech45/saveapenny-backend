@@ -33,6 +33,18 @@ Category endpoints are available under `/api/v1/categories`:
 
 Category visibility includes system categories (`userId=null`) and user-owned categories. System categories cannot be modified or deleted.
 
+## Transaction status
+Transaction endpoints are available under `/api/v1/transactions`:
+
+- `POST /api/v1/transactions`
+- `POST /api/v1/transactions/transfer`
+- `GET /api/v1/transactions`
+- `GET /api/v1/transactions/{transactionId}`
+- `PUT /api/v1/transactions/{transactionId}`
+- `DELETE /api/v1/transactions/{transactionId}`
+
+Transaction module supports income/expense entries, transfer flow, ownership checks, and account balance impact rules.
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -46,3 +58,4 @@ Set the following environment variables before running the app:
 - Run auth integration flow only: `mvn -Dtest=AuthFlowIntegrationTest test`
 - Run account integration flow only: `mvn -Dtest=AccountFlowIntegrationTest test`
 - Run category integration flow only: `mvn -Dtest=CategoryFlowIntegrationTest test`
+- Run transaction integration flow only: `mvn -Dtest=TransactionFlowIntegrationTest test`

@@ -476,6 +476,122 @@ Common errors:
 - `404` `CATEGORY_NOT_FOUND`
 - `400` `SYSTEM_CATEGORY_MODIFICATION_NOT_ALLOWED`
 
+## Transaction Endpoints
+
+All transaction endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### POST `/transactions`
+
+Request:
+
+```json
+{
+  "accountId": "1e45d9a5-7a63-4c33-b4b9-6db7e12f45ab",
+  "categoryId": "2e7f71b7-e5e7-4f11-8db0-0cb17f2dbd7d",
+  "type": "EXPENSE",
+  "amount": 120.0000,
+  "currency": "USD",
+  "description": "Groceries",
+  "transactionDate": "2026-05-12"
+}
+```
+
+Response `201`: `TransactionResponse` envelope.
+
+Common errors:
+
+- `401` `ACCESS_DENIED`
+- `400` `INSUFFICIENT_BALANCE`
+- `400` `INVALID_TRANSFER`
+- `400` `VALIDATION_FAILED`
+
+### POST `/transactions/transfer`
+
+Request:
+
+```json
+{
+  "fromAccountId": "1e45d9a5-7a63-4c33-b4b9-6db7e12f45ab",
+  "toAccountId": "4e5e3fc6-35d4-4139-b705-efb285cc3f1f",
+  "categoryId": "2e7f71b7-e5e7-4f11-8db0-0cb17f2dbd7d",
+  "amount": 50.0000,
+  "currency": "USD",
+  "description": "Move funds",
+  "transactionDate": "2026-05-12"
+}
+```
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "transactionId": "b8da0e18-c8be-4f37-aea8-c18318f0f4d2",
+    "fromAccountId": "1e45d9a5-7a63-4c33-b4b9-6db7e12f45ab",
+    "toAccountId": "4e5e3fc6-35d4-4139-b705-efb285cc3f1f",
+    "categoryId": "2e7f71b7-e5e7-4f11-8db0-0cb17f2dbd7d",
+    "amount": 50.0000,
+    "currency": "USD",
+    "description": "Move funds",
+    "transactionDate": "2026-05-12",
+    "createdAt": "2026-05-12T18:10:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-05-12T18:10:00Z"
+}
+```
+
+Common errors:
+
+- `400` `INVALID_TRANSFER`
+- `400` `INSUFFICIENT_BALANCE`
+
+### GET `/transactions`
+
+Supports filters: `from`, `to`, `type`, `accountId`, `categoryId`, `page`, `size`, `sort`.
+
+Response `200`: paged `TransactionResponse` envelope.
+
+### GET `/transactions/{transactionId}`
+
+Response `200`: `TransactionResponse` envelope.
+
+Common errors:
+
+- `404` `TRANSACTION_NOT_FOUND`
+
+### PUT `/transactions/{transactionId}`
+
+Request format same as create transaction.
+
+Response `200`: updated `TransactionResponse` envelope.
+
+Common errors:
+
+- `404` `TRANSACTION_NOT_FOUND`
+- `400` `INVALID_TRANSFER`
+- `400` `INSUFFICIENT_BALANCE`
+
+### DELETE `/transactions/{transactionId}`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": null,
+  "error": null,
+  "timestamp": "2026-05-12T18:10:00Z"
+}
+```
+
+Common errors:
+
+- `404` `TRANSACTION_NOT_FOUND`
+
 ### PUT `/accounts/{accountId}`
 
 Request:
@@ -540,4 +656,11 @@ curl -X POST http://localhost:8080/api/v1/accounts \
 ```bash
 curl -X GET "http://localhost:8080/api/v1/categories?type=EXPENSE" \
   -H "Authorization: Bearer <access-token>"
+```
+
+```bash
+curl -X POST http://localhost:8080/api/v1/transactions \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"accountId":"<account-id>","categoryId":"<category-id>","type":"EXPENSE","amount":120.0000,"currency":"USD","description":"Groceries","transactionDate":"2026-05-12"}'
 ```

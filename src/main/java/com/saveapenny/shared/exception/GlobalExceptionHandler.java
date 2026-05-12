@@ -6,6 +6,9 @@ import com.saveapenny.account.exception.AccountInactiveException;
 import com.saveapenny.category.exception.CategoryNameAlreadyExistsException;
 import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedException;
+import com.saveapenny.transaction.exception.InsufficientBalanceException;
+import com.saveapenny.transaction.exception.InvalidTransferException;
+import com.saveapenny.transaction.exception.TransactionNotFoundException;
 import com.saveapenny.auth.exception.EmailAlreadyExistsException;
 import com.saveapenny.auth.exception.InvalidCredentialsException;
 import com.saveapenny.auth.exception.InvalidRefreshTokenException;
@@ -27,6 +30,36 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTransactionNotFound(TransactionNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("TRANSACTION_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidTransferException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidTransfer(InvalidTransferException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_TRANSFER")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInsufficientBalance(InsufficientBalanceException ex) {
+        ApiError error = ApiError.builder()
+                .code("INSUFFICIENT_BALANCE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
 
     @ExceptionHandler(CategoryNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleCategoryNotFound(CategoryNotFoundException ex) {
