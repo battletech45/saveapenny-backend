@@ -22,6 +22,17 @@ Account endpoints are available under `/api/v1/accounts`:
 
 Account data is ownership-scoped to the authenticated user and uses soft delete (`active=false`).
 
+## Category status
+Category endpoints are available under `/api/v1/categories`:
+
+- `POST /api/v1/categories`
+- `GET /api/v1/categories?type=INCOME|EXPENSE`
+- `GET /api/v1/categories/{categoryId}`
+- `PUT /api/v1/categories/{categoryId}`
+- `DELETE /api/v1/categories/{categoryId}`
+
+Category visibility includes system categories (`userId=null`) and user-owned categories. System categories cannot be modified or deleted.
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -34,3 +45,4 @@ Set the following environment variables before running the app:
 - Run full test suite: `mvn test`
 - Run auth integration flow only: `mvn -Dtest=AuthFlowIntegrationTest test`
 - Run account integration flow only: `mvn -Dtest=AccountFlowIntegrationTest test`
+- Run category integration flow only: `mvn -Dtest=CategoryFlowIntegrationTest test`

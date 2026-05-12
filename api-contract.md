@@ -344,6 +344,138 @@ Common errors:
 - `401` `ACCESS_DENIED`
 - `404` `ACCOUNT_NOT_FOUND`
 
+## Category Endpoints
+
+All category endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### POST `/categories`
+
+Request:
+
+```json
+{
+  "name": "Food",
+  "type": "EXPENSE",
+  "color": "#ff0000",
+  "icon": "utensils"
+}
+```
+
+Response `201`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "2e7f71b7-e5e7-4f11-8db0-0cb17f2dbd7d",
+    "userId": "7f7bcf67-27aa-46eb-a5f6-3bc52d278e39",
+    "name": "Food",
+    "type": "EXPENSE",
+    "color": "#ff0000",
+    "icon": "utensils",
+    "createdAt": "2026-05-12T14:45:00Z",
+    "updatedAt": "2026-05-12T14:45:00Z"
+  },
+  "error": null,
+  "timestamp": "2026-05-12T14:45:00Z"
+}
+```
+
+Common errors:
+
+- `401` `ACCESS_DENIED`
+- `409` `CATEGORY_NAME_ALREADY_EXISTS`
+- `400` `VALIDATION_FAILED`
+
+### GET `/categories?type=INCOME|EXPENSE`
+
+Returns system categories (`userId=null`) plus categories owned by the current user.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "f3672791-2ca5-4b5f-aaf4-46de79f4b324",
+      "userId": null,
+      "name": "Salary",
+      "type": "INCOME",
+      "color": "#00aa00",
+      "icon": "briefcase",
+      "createdAt": "2026-05-01T10:00:00Z",
+      "updatedAt": "2026-05-01T10:00:00Z"
+    },
+    {
+      "id": "2e7f71b7-e5e7-4f11-8db0-0cb17f2dbd7d",
+      "userId": "7f7bcf67-27aa-46eb-a5f6-3bc52d278e39",
+      "name": "Food",
+      "type": "EXPENSE",
+      "color": "#ff0000",
+      "icon": "utensils",
+      "createdAt": "2026-05-12T14:45:00Z",
+      "updatedAt": "2026-05-12T14:45:00Z"
+    }
+  ],
+  "error": null,
+  "timestamp": "2026-05-12T14:45:00Z"
+}
+```
+
+### GET `/categories/{categoryId}`
+
+Response `200`: same `CategoryResponse` payload as create.
+
+Common errors:
+
+- `401` `ACCESS_DENIED`
+- `404` `CATEGORY_NOT_FOUND`
+
+### PUT `/categories/{categoryId}`
+
+Request:
+
+```json
+{
+  "name": "Groceries",
+  "type": "EXPENSE",
+  "color": "#00ff00",
+  "icon": "basket"
+}
+```
+
+Response `200`: same `CategoryResponse` payload as create.
+
+Common errors:
+
+- `401` `ACCESS_DENIED`
+- `404` `CATEGORY_NOT_FOUND`
+- `409` `CATEGORY_NAME_ALREADY_EXISTS`
+- `400` `SYSTEM_CATEGORY_MODIFICATION_NOT_ALLOWED`
+- `400` `VALIDATION_FAILED`
+
+### DELETE `/categories/{categoryId}`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": null,
+  "error": null,
+  "timestamp": "2026-05-12T14:45:00Z"
+}
+```
+
+Common errors:
+
+- `401` `ACCESS_DENIED`
+- `404` `CATEGORY_NOT_FOUND`
+- `400` `SYSTEM_CATEGORY_MODIFICATION_NOT_ALLOWED`
+
 ### PUT `/accounts/{accountId}`
 
 Request:
@@ -403,4 +535,9 @@ curl -X POST http://localhost:8080/api/v1/accounts \
   -H "Authorization: Bearer <access-token>" \
   -H "Content-Type: application/json" \
   -d '{"name":"Wallet","type":"CASH","currency":"USD","initialBalance":250.0000}'
+```
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/categories?type=EXPENSE" \
+  -H "Authorization: Bearer <access-token>"
 ```

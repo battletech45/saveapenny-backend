@@ -352,7 +352,7 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | 0 | Spring Boot scaffold, PostgreSQL, Docker Compose, Flyway, error handler, Swagger |
 | 1 | Auth: register, login, JWT, refresh tokens, roles, profile |
 | 2 | Accounts: CRUD, ownership, balance tracking, pagination |
-| 3 | Categories: seed data, custom categories, delete guard |
+| 3 | Categories: seed data, custom categories, delete guard (implemented) |
 | **4** | **Transactions: income/expense/transfer, balance updates, audit log — MVP complete** |
 | 5 | Budgets: monthly budgets, spending aggregation, threshold alerts |
 | 6 | Reports: monthly summary, category spending, cash flow, net worth, CSV export |
