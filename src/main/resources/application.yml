@@ -26,3 +26,7 @@ logging:
   level:
     org.springframework: info
     org.hibernate.SQL: info
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}

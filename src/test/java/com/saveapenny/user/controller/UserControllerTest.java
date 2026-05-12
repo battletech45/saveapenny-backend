@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.user.dto.ChangePasswordRequest;
@@ -38,6 +39,9 @@ class UserControllerTest {
     @MockitoBean
     private UserService userService;
 
+    @MockitoBean
+    private JwtService jwtService;
+
     @Test
     void getCurrentUser_returnsEnvelope() throws Exception {
         UUID userId = UUID.randomUUID();
@@ -51,9 +55,11 @@ class UserControllerTest {
                 .build();
 
         when(userService.getCurrentUser(userId)).thenReturn(response);
+        when(jwtService.isAccessTokenValid("token-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-1")).thenReturn(userId);
 
         mockMvc.perform(get("/api/v1/users/me")
-                        .header("X-USER-ID", userId.toString()))
+                        .header("Authorization", "Bearer token-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(userId.toString()))
@@ -75,9 +81,11 @@ class UserControllerTest {
                 .build();
 
         when(userService.updateCurrentUserProfile(eq(userId), any(UpdateUserProfileRequest.class))).thenReturn(response);
+        when(jwtService.isAccessTokenValid("token-2")).thenReturn(true);
+        when(jwtService.extractUserId("token-2")).thenReturn(userId);
 
         mockMvc.perform(put("/api/v1/users/me")
-                        .header("X-USER-ID", userId.toString())
+                        .header("Authorization", "Bearer token-2")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -94,9 +102,11 @@ class UserControllerTest {
                 .build();
 
         doNothing().when(userService).changeCurrentUserPassword(eq(userId), any(ChangePasswordRequest.class));
+        when(jwtService.isAccessTokenValid("token-3")).thenReturn(true);
+        when(jwtService.extractUserId("token-3")).thenReturn(userId);
 
         mockMvc.perform(put("/api/v1/users/me/password")
-                        .header("X-USER-ID", userId.toString())
+                        .header("Authorization", "Bearer token-3")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

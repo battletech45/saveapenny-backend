@@ -1,5 +1,9 @@
 package com.saveapenny.shared.exception;
 
+import com.saveapenny.auth.exception.EmailAlreadyExistsException;
+import com.saveapenny.auth.exception.InvalidCredentialsException;
+import com.saveapenny.auth.exception.InvalidRefreshTokenException;
+import com.saveapenny.auth.exception.RefreshTokenExpiredException;
 import com.saveapenny.shared.api.ApiError;
 import com.saveapenny.shared.api.ApiResponse;
 import com.saveapenny.user.exception.InvalidPasswordException;
@@ -17,6 +21,46 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        ApiError error = ApiError.builder()
+                .code("EMAIL_ALREADY_EXISTS")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_CREDENTIALS")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_REFRESH_TOKEN")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRefreshTokenExpired(RefreshTokenExpiredException ex) {
+        ApiError error = ApiError.builder()
+                .code("REFRESH_TOKEN_EXPIRED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+    }
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleUserNotFound(UserNotFoundException ex) {

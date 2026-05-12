@@ -31,3 +31,6 @@ target/
 
 # macOS
 .DS_Store
+
+# Local environment secrets
+.env

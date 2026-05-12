@@ -77,6 +77,52 @@ Each module's internal structure:
 | Documentation | Springdoc OpenAPI (Swagger UI) |
 | Logging | SLF4J + structured JSON output |
 
+### 2.4 Module Implementation Sequence
+
+Use this sequence to implement each module consistently from start to finish:
+
+1. **entity/**
+    - Define JPA models first (table mapping, relations, constraints).
+2. **repository/**
+    - Create `JpaRepository` interfaces to access entities.
+3. **dto/**
+    - Create request/response contracts + validation annotations.
+4. **exception/**
+    - Define module-specific business exceptions early.
+5. **mapper/**
+    - Add MapStruct/manual mappers between entity and DTO.
+6. **service/** (interface)
+    - Define use-case contracts (clean signatures).
+7. **service/impl/**
+    - Implement business logic, transactions, ownership checks, and exception throwing.
+8. **controller/**
+    - Expose endpoints, add `@Valid`, map to service methods, and return standard envelope.
+9. **shared/config integration**
+    - Wire needed cross-cutting pieces (security, global handler mappings, bean config).
+10. **test/**
+    - Unit tests for service logic first.
+    - Controller/web tests next.
+    - Integration tests last for core flows.
+11. **cleanup & docs**
+    - Remove stale `.gitkeep` files.
+    - Add temporary notes (if any).
+    - Run compile/tests before commit.
+
+### 2.5 Spring Boot Config and Secret Management
+
+Configuration and secret handling follows these rules:
+
+- `application.yml` references `${ENV_VAR}` only for sensitive values.
+- No fallback secret values are allowed in code or config (for example: no default DB password in `application.yml`).
+- Profile-based non-secret configuration is kept in `application-*.yml` files (for example `application-dev.yml`, `application-prod.yml`).
+- Secret values are provided externally by environment variables and/or a secret manager.
+
+Planned future implementation:
+
+- Local development: untracked `.env` with a tracked `.env.example` template.
+- CI/CD: pipeline secret store injects runtime environment variables.
+- Production: managed secret service (for example Vault / cloud secret manager) with rotation policy.
+
 ---
 
 ## 3. Tech Stack
