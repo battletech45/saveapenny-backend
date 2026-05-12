@@ -3,6 +3,9 @@ package com.saveapenny.shared.exception;
 import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.exception.AccountInactiveException;
+import com.saveapenny.category.exception.CategoryNameAlreadyExistsException;
+import com.saveapenny.category.exception.CategoryNotFoundException;
+import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedException;
 import com.saveapenny.auth.exception.EmailAlreadyExistsException;
 import com.saveapenny.auth.exception.InvalidCredentialsException;
 import com.saveapenny.auth.exception.InvalidRefreshTokenException;
@@ -24,6 +27,37 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCategoryNotFound(CategoryNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("CATEGORY_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(CategoryNameAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCategoryNameAlreadyExists(CategoryNameAlreadyExistsException ex) {
+        ApiError error = ApiError.builder()
+                .code("CATEGORY_NAME_ALREADY_EXISTS")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(SystemCategoryModificationNotAllowedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleSystemCategoryModificationNotAllowed(
+            SystemCategoryModificationNotAllowedException ex) {
+        ApiError error = ApiError.builder()
+                .code("SYSTEM_CATEGORY_MODIFICATION_NOT_ALLOWED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
 
     @ExceptionHandler(AccountNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccountNotFound(AccountNotFoundException ex) {
