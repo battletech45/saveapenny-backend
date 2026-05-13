@@ -943,6 +943,106 @@ Common errors:
 
 - `404` `RECURRING_TRANSACTION_NOT_FOUND`
 
+## Notification Endpoints
+
+All notification endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### POST `/notifications`
+
+Request:
+
+```json
+{
+  "type": "SYSTEM",
+  "title": "Welcome",
+  "message": "Your account has been created."
+}
+```
+
+Response `201`: `NotificationResponse` envelope.
+
+Common errors:
+
+- `400` `VALIDATION_FAILED`
+
+### GET `/notifications?read=true|false`
+
+Supports `read` filter and `page`, `size`, `sort` query params.
+
+Response `200`: paged `NotificationResponse` envelope.
+
+### GET `/notifications/{notificationId}`
+
+Response `200`: `NotificationResponse` envelope.
+
+Common errors:
+
+- `404` `NOTIFICATION_NOT_FOUND`
+
+### PUT `/notifications/{notificationId}`
+
+Request:
+
+```json
+{
+  "read": true
+}
+```
+
+Response `200`: updated `NotificationResponse` envelope.
+
+Common errors:
+
+- `404` `NOTIFICATION_NOT_FOUND`
+- `400` `VALIDATION_FAILED`
+
+### DELETE `/notifications/{notificationId}`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": null,
+  "error": null,
+  "timestamp": "2026-05-13T12:30:00Z"
+}
+```
+
+Common errors:
+
+- `404` `NOTIFICATION_NOT_FOUND`
+
+### GET `/notifications/unread-count`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "unreadCount": 3
+  },
+  "error": null,
+  "timestamp": "2026-05-13T12:30:00Z"
+}
+```
+
+### PATCH `/notifications/mark-all-read`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": null,
+  "error": null,
+  "timestamp": "2026-05-13T12:30:00Z"
+}
+```
+
 ## Quick cURL
 
 ```bash

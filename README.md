@@ -84,6 +84,21 @@ Automation module manages recurring income/expense definitions, due-run querying
 
 Automation module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared tests/docs).
 
+## Notification status
+Notification endpoints are available under `/api/v1/notifications`:
+
+- `POST /api/v1/notifications`
+- `GET /api/v1/notifications?read=true|false`
+- `GET /api/v1/notifications/{notificationId}`
+- `PUT /api/v1/notifications/{notificationId}`
+- `DELETE /api/v1/notifications/{notificationId}`
+- `GET /api/v1/notifications/unread-count`
+- `PATCH /api/v1/notifications/mark-all-read`
+
+Notification module supports in-app notifications with read/unread filtering, unread count, and mark-all-read flow.
+
+Notification module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -103,3 +118,5 @@ Set the following environment variables before running the app:
 - Run report integration flow only: `mvn -Dtest=ReportFlowIntegrationTest test`
 - Run report controller/service tests only: `mvn -Dtest=ReportControllerTest,ReportServiceImplTest test`
 - Run automation controller/service tests only: `mvn -Dtest=RecurringTransactionControllerTest,RecurringTransactionServiceImplTest test`
+- Run notification integration flow only: `mvn -Dtest=NotificationFlowIntegrationTest test`
+- Run notification controller/service tests only: `mvn -Dtest=NotificationControllerTest,NotificationServiceImplTest test`
