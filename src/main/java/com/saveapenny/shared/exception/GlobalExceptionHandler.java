@@ -7,6 +7,7 @@ import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDat
 import com.saveapenny.automation.exception.InvalidRecurringTransactionTypeException;
 import com.saveapenny.automation.exception.RecurringTransactionDependencyNotFoundException;
 import com.saveapenny.automation.exception.RecurringTransactionNotFoundException;
+import com.saveapenny.notification.exception.NotificationNotFoundException;
 import com.saveapenny.category.exception.CategoryNameAlreadyExistsException;
 import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedException;
@@ -192,6 +193,16 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotificationNotFound(NotificationNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("NOTIFICATION_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(AccountNotFoundException.class)
