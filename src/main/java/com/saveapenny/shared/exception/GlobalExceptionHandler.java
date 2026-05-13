@@ -9,6 +9,8 @@ import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedExc
 import com.saveapenny.budget.exception.BudgetAlreadyExistsException;
 import com.saveapenny.budget.exception.BudgetNotFoundException;
 import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
+import com.saveapenny.report.exception.InvalidNetWorthSnapshotDateException;
+import com.saveapenny.report.exception.InvalidReportDateRangeException;
 import com.saveapenny.transaction.exception.InsufficientBalanceException;
 import com.saveapenny.transaction.exception.InvalidTransferException;
 import com.saveapenny.transaction.exception.TransactionNotFoundException;
@@ -119,6 +121,26 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleInvalidBudgetDateRange(InvalidBudgetDateRangeException ex) {
         ApiError error = ApiError.builder()
                 .code("INVALID_BUDGET_DATE_RANGE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidReportDateRangeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidReportDateRange(InvalidReportDateRangeException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_REPORT_DATE_RANGE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidNetWorthSnapshotDateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidNetWorthSnapshotDate(InvalidNetWorthSnapshotDateException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_NET_WORTH_SNAPSHOT_DATE")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();

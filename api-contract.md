@@ -738,6 +738,124 @@ Common errors:
 
 - `404` `BUDGET_NOT_FOUND`
 
+## Report Endpoints
+
+All report endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### GET `/reports/monthly-summary`
+
+Query params:
+
+- `from` (required, `yyyy-MM-dd`)
+- `to` (required, `yyyy-MM-dd`)
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "startDate": "2026-05-01",
+    "endDate": "2026-05-31",
+    "totalIncome": 1500.0000,
+    "totalExpense": 620.0000,
+    "netSavings": 880.0000
+  },
+  "error": null,
+  "timestamp": "2026-05-12T20:00:00Z"
+}
+```
+
+Common errors:
+
+- `400` `INVALID_REPORT_DATE_RANGE`
+
+### GET `/reports/category-spending`
+
+Query params:
+
+- `from` (required, `yyyy-MM-dd`)
+- `to` (required, `yyyy-MM-dd`)
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "categoryId": "2e7f71b7-e5e7-4f11-8db0-0cb17f2dbd7d",
+      "categoryName": "Food",
+      "totalAmount": 300.0000,
+      "usagePercentage": 48.39
+    }
+  ],
+  "error": null,
+  "timestamp": "2026-05-12T20:00:00Z"
+}
+```
+
+Common errors:
+
+- `400` `INVALID_REPORT_DATE_RANGE`
+
+### GET `/reports/cash-flow`
+
+Query params:
+
+- `from` (required, `yyyy-MM-dd`)
+- `to` (required, `yyyy-MM-dd`)
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "date": "2026-05-10",
+      "incomeAmount": 500.0000,
+      "expenseAmount": 120.0000,
+      "netAmount": 380.0000
+    }
+  ],
+  "error": null,
+  "timestamp": "2026-05-12T20:00:00Z"
+}
+```
+
+Common errors:
+
+- `400` `INVALID_REPORT_DATE_RANGE`
+
+### GET `/reports/net-worth`
+
+Query params:
+
+- `snapshotDate` (required, `yyyy-MM-dd`, cannot be future date)
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "snapshotDate": "2026-05-12",
+    "totalAssets": 5200.0000,
+    "totalLiabilities": 1100.0000,
+    "netWorth": 4100.0000
+  },
+  "error": null,
+  "timestamp": "2026-05-12T20:00:00Z"
+}
+```
+
+Common errors:
+
+- `400` `INVALID_NET_WORTH_SNAPSHOT_DATE`
+
 ## Quick cURL
 
 ```bash

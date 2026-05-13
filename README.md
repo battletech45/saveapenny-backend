@@ -59,6 +59,18 @@ Budget status returns `budgetAmount`, `spentAmount`, `remainingAmount`, `usagePe
 
 Budget module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
 
+## Report status
+Report endpoints are available under `/api/v1/reports`:
+
+- `GET /api/v1/reports/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/category-spending?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/cash-flow?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/net-worth?snapshotDate=YYYY-MM-DD`
+
+Report module uses query-based aggregation from existing account/transaction/category data and returns the standard API envelope.
+
+Report module flag: `COMPLETE` (repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -75,3 +87,5 @@ Set the following environment variables before running the app:
 - Run transaction integration flow only: `mvn -Dtest=TransactionFlowIntegrationTest test`
 - Run budget integration flow only: `mvn -Dtest=BudgetFlowIntegrationTest test`
 - Run budget controller/service tests only: `mvn -Dtest=BudgetControllerTest,BudgetServiceImplTest test`
+- Run report integration flow only: `mvn -Dtest=ReportFlowIntegrationTest test`
+- Run report controller/service tests only: `mvn -Dtest=ReportControllerTest,ReportServiceImplTest test`
