@@ -633,6 +633,111 @@ Common errors:
 - `401` `ACCESS_DENIED`
 - `404` `ACCOUNT_NOT_FOUND`
 
+## Budget Endpoints
+
+All budget endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### POST `/budgets`
+
+Request:
+
+```json
+{
+  "categoryId": "2dc59e57-bf15-4c21-9dd0-2e14ca3ecf85",
+  "amount": 400.0000,
+  "period": "MONTHLY",
+  "startDate": "2026-05-01",
+  "endDate": "2026-05-31"
+}
+```
+
+Response `201`: `BudgetResponse` envelope.
+
+Common errors:
+
+- `401` `ACCESS_DENIED`
+- `404` `CATEGORY_NOT_FOUND`
+- `409` `BUDGET_ALREADY_EXISTS`
+- `400` `INVALID_BUDGET_DATE_RANGE`
+- `400` `VALIDATION_FAILED`
+
+### GET `/budgets`
+
+Supports `period=MONTHLY|YEARLY` and `page`, `size`, `sort` query params.
+
+Response `200`: paged `BudgetResponse` envelope.
+
+### GET `/budgets/{budgetId}`
+
+Response `200`: `BudgetResponse` envelope.
+
+Common errors:
+
+- `404` `BUDGET_NOT_FOUND`
+
+### GET `/budgets/{budgetId}/status`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "category": "Food",
+    "budgetAmount": 400.0000,
+    "spentAmount": 275.0000,
+    "remainingAmount": 125.0000,
+    "usagePercentage": 68.75,
+    "status": "ON_TRACK"
+  },
+  "error": null,
+  "timestamp": "2026-05-12T18:30:00Z"
+}
+```
+
+Status values:
+
+- `ON_TRACK` (`< 80%`)
+- `WARNING` (`>= 80%` and `<= 100%`)
+- `EXCEEDED` (`> 100%`)
+
+Common errors:
+
+- `404` `BUDGET_NOT_FOUND`
+
+### PUT `/budgets/{budgetId}`
+
+Request format same as create budget.
+
+Response `200`: updated `BudgetResponse` envelope.
+
+Common errors:
+
+- `404` `BUDGET_NOT_FOUND`
+- `404` `CATEGORY_NOT_FOUND`
+- `409` `BUDGET_ALREADY_EXISTS`
+- `400` `INVALID_BUDGET_DATE_RANGE`
+- `400` `VALIDATION_FAILED`
+
+### DELETE `/budgets/{budgetId}`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": null,
+  "error": null,
+  "timestamp": "2026-05-12T18:30:00Z"
+}
+```
+
+Common errors:
+
+- `404` `BUDGET_NOT_FOUND`
+
 ## Quick cURL
 
 ```bash
@@ -663,4 +768,16 @@ curl -X POST http://localhost:8080/api/v1/transactions \
   -H "Authorization: Bearer <access-token>" \
   -H "Content-Type: application/json" \
   -d '{"accountId":"<account-id>","categoryId":"<category-id>","type":"EXPENSE","amount":120.0000,"currency":"USD","description":"Groceries","transactionDate":"2026-05-12"}'
+```
+
+```bash
+curl -X POST http://localhost:8080/api/v1/budgets \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":"<category-id>","amount":400.0000,"period":"MONTHLY","startDate":"2026-05-01","endDate":"2026-05-31"}'
+```
+
+```bash
+curl "http://localhost:8080/api/v1/budgets/<budget-id>/status" \
+  -H "Authorization: Bearer <access-token>"
 ```

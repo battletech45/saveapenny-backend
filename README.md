@@ -45,6 +45,20 @@ Transaction endpoints are available under `/api/v1/transactions`:
 
 Transaction module supports income/expense entries, transfer flow, ownership checks, and account balance impact rules.
 
+## Budget status
+Budget endpoints are available under `/api/v1/budgets`:
+
+- `POST /api/v1/budgets`
+- `GET /api/v1/budgets?period=MONTHLY|YEARLY`
+- `GET /api/v1/budgets/{budgetId}`
+- `GET /api/v1/budgets/{budgetId}/status`
+- `PUT /api/v1/budgets/{budgetId}`
+- `DELETE /api/v1/budgets/{budgetId}`
+
+Budget status returns `budgetAmount`, `spentAmount`, `remainingAmount`, `usagePercentage`, and `status` (`ON_TRACK`, `WARNING`, `EXCEEDED`).
+
+Budget module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -59,3 +73,5 @@ Set the following environment variables before running the app:
 - Run account integration flow only: `mvn -Dtest=AccountFlowIntegrationTest test`
 - Run category integration flow only: `mvn -Dtest=CategoryFlowIntegrationTest test`
 - Run transaction integration flow only: `mvn -Dtest=TransactionFlowIntegrationTest test`
+- Run budget integration flow only: `mvn -Dtest=BudgetFlowIntegrationTest test`
+- Run budget controller/service tests only: `mvn -Dtest=BudgetControllerTest,BudgetServiceImplTest test`

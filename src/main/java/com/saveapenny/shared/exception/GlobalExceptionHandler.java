@@ -6,6 +6,9 @@ import com.saveapenny.account.exception.AccountInactiveException;
 import com.saveapenny.category.exception.CategoryNameAlreadyExistsException;
 import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedException;
+import com.saveapenny.budget.exception.BudgetAlreadyExistsException;
+import com.saveapenny.budget.exception.BudgetNotFoundException;
+import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
 import com.saveapenny.transaction.exception.InsufficientBalanceException;
 import com.saveapenny.transaction.exception.InvalidTransferException;
 import com.saveapenny.transaction.exception.TransactionNotFoundException;
@@ -86,6 +89,36 @@ public class GlobalExceptionHandler {
             SystemCategoryModificationNotAllowedException ex) {
         ApiError error = ApiError.builder()
                 .code("SYSTEM_CATEGORY_MODIFICATION_NOT_ALLOWED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(BudgetNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBudgetNotFound(BudgetNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("BUDGET_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(BudgetAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBudgetAlreadyExists(BudgetAlreadyExistsException ex) {
+        ApiError error = ApiError.builder()
+                .code("BUDGET_ALREADY_EXISTS")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidBudgetDateRangeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidBudgetDateRange(InvalidBudgetDateRangeException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_BUDGET_DATE_RANGE")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();

@@ -353,8 +353,8 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | 1 | Auth: register, login, JWT, refresh tokens, roles, profile (completed) |
 | 2 | Accounts: CRUD, ownership, balance tracking, pagination (completed) |
 | 3 | Categories: seed data, custom categories, delete guard (completed) |
-| 4 | Transactions: income/expense/transfer, balance updates, audit log (in progress) |
-| 5 | Budgets: monthly budgets, spending aggregation, threshold alerts |
+| 4 | Transactions: income/expense/transfer, balance updates, audit log (completed) |
+| 5 | Budgets: monthly budgets, spending aggregation, threshold alerts (completed) |
 | 6 | Reports: monthly summary, category spending, cash flow, net worth, CSV export |
 | 7 | Recurring transactions: rules, Spring Scheduler, idempotency |
 | 8 | Notifications: in-app, event-triggered, email, preferences |
@@ -374,9 +374,9 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 - [x]  All auth endpoints work with JWT enforcement
 - [x]  Private routes return 401 when unauthenticated
 - [x]  Account data is correctly scoped to the authenticated user
-- [ ]  Transaction creation updates account balance atomically
-- [ ]  Transfer correctly debits and credits in a single transaction boundary
-- [ ]  Budget status reflects spending percentage accurately
+- [x]  Transaction creation updates account balance atomically
+- [x]  Transfer correctly debits and credits in a single transaction boundary
+- [x]  Budget status reflects spending percentage accurately
 - [ ]  Monthly summary report returns correct aggregates
 - [ ]  Flyway migrations run cleanly on a fresh database
 - [x]  Core business logic covered by unit tests
@@ -396,7 +396,3 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 ---
 
 *SaveAPenny Technical Proposal — v1.0*
-
----
-
-You can save this as `saveapenny-technical-proposal.md`. The file tools seem to be temporarily unavailable so I couldn't produce a download link — if you refresh and paste this content back I can try again, or you can copy it directly.
