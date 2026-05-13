@@ -392,6 +392,11 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | 002 | PostgreSQL | ACID required for financial data; strong JSON support for audit logs |
 | 003 | JWT with refresh token rotation | Stateless auth scales well; rotation limits token reuse attacks |
 | 004 | Spring Application Events → Kafka | Decoupled from day one; swap transport without touching business logic |
+| 005 | Report module as query aggregation layer (no persisted report tables) | Avoids duplicated financial data and sync drift; computes reports from source-of-truth tables with projections/DTOs |
+| 006 | Recurring transactions in dedicated automation module with soft delete | Isolates automation concerns, enforces ownership/visibility checks, and preserves historical auditability by deactivating rules instead of hard delete |
+| 007 | In-app notifications first, event/email channels incrementally | Delivers immediate user value with lower complexity, while keeping extension path for event-driven and email delivery |
+| 008 | Flyway-first schema governance for persistent entities | Prevents entity/table drift and startup failures; every new table must be introduced through versioned migrations |
+| 009 | Global exception mapping with stable API error codes | Ensures predictable client integration and consistent error envelopes across modules |
 
 ---
 
