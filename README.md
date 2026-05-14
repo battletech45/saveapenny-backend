@@ -115,6 +115,17 @@ Import module statuses:
 
 Import module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
 
+## Audit status
+Audit endpoints are available under `/api/v1/audits`:
+
+- `POST /api/v1/audits`
+- `GET /api/v1/audits?entityType=&entityId=&from=&to=`
+- `GET /api/v1/audits/{auditLogId}`
+
+Audit module supports ownership-scoped audit entry creation and retrieval with optional entity/date filtering.
+
+Audit module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
+
 ## Configuration
 Set the following environment variables before running the app:
 
@@ -138,3 +149,5 @@ Set the following environment variables before running the app:
 - Run notification controller/service tests only: `mvn -Dtest=NotificationControllerTest,NotificationServiceImplTest test`
 - Run import integration flow only: `mvn -Dtest=ImportFlowIntegrationTest test`
 - Run import controller/service tests only: `mvn -Dtest=ImportControllerTest,ImportServiceImplTest test`
+- Run audit integration flow only: `mvn -Dtest=AuditFlowIntegrationTest test`
+- Run audit controller/service tests only: `mvn -Dtest=AuditLogControllerTest,AuditLogServiceImplTest test`
