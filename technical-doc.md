@@ -31,6 +31,7 @@ com.saveapenny
  ├── automation
  ├── notification
  ├── imports
+ ├── audit
  ├── shared
  └── config
 ```
@@ -299,6 +300,8 @@ Import status values: `PENDING | RUNNING | COMPLETED | FAILED`
 
 Import row status values: `VALID | IMPORTED | FAILED | SKIPPED`
 
+**Audit Logs:** `POST /audits` → `GET /audits` → `GET /audits/{id}`
+
 ---
 
 ## 6. Security Design
@@ -385,6 +388,7 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 - [x]  Transfer correctly debits and credits in a single transaction boundary
 - [x]  Budget status reflects spending percentage accurately
 - [x]  CSV import preview/confirm/status flow works for authenticated users
+- [x]  Audit log create/list/detail endpoints enforce user ownership
 - [ ]  Monthly summary report returns correct aggregates
 - [ ]  Flyway migrations run cleanly on a fresh database
 - [x]  Core business logic covered by unit tests

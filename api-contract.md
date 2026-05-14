@@ -1129,6 +1129,58 @@ Common errors:
 
 - `404` `IMPORT_NOT_FOUND`
 
+## Audit Endpoints
+
+All audit endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### POST `/audits`
+
+Request:
+
+```json
+{
+  "action": "UPDATE",
+  "entityType": "ACCOUNT",
+  "entityId": "11111111-1111-1111-1111-111111111111",
+  "oldValue": "Wallet",
+  "newValue": "Wallet Main"
+}
+```
+
+Response `201`: `AuditLogResponse` envelope.
+
+Common errors:
+
+- `400` `VALIDATION_FAILED`
+
+### GET `/audits`
+
+Supports optional filters:
+
+- `entityType`
+- `entityId`
+- `from` (ISO datetime)
+- `to` (ISO datetime)
+
+Also supports `page`, `size`, `sort` via `Pageable`.
+
+Response `200`: paged `AuditLogResponse` envelope.
+
+Common errors:
+
+- `400` `INVALID_AUDIT_DATE_RANGE`
+
+### GET `/audits/{auditLogId}`
+
+Response `200`: `AuditLogResponse` envelope.
+
+Common errors:
+
+- `404` `AUDIT_LOG_NOT_FOUND`
+- `403` `AUDIT_LOG_ACCESS_DENIED`
+
 ## Quick cURL
 
 ```bash
@@ -1188,5 +1240,17 @@ curl -X POST http://localhost:8080/api/v1/imports/transactions/confirm \
 
 ```bash
 curl "http://localhost:8080/api/v1/imports/transactions/<import-id>/status" \
+  -H "Authorization: Bearer <access-token>"
+```
+
+```bash
+curl -X POST http://localhost:8080/api/v1/audits \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"UPDATE","entityType":"ACCOUNT","entityId":"11111111-1111-1111-1111-111111111111","oldValue":"Wallet","newValue":"Wallet Main"}'
+```
+
+```bash
+curl "http://localhost:8080/api/v1/audits?entityType=ACCOUNT" \
   -H "Authorization: Bearer <access-token>"
 ```
