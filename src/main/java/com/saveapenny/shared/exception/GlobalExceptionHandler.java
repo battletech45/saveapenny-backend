@@ -3,6 +3,9 @@ package com.saveapenny.shared.exception;
 import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.exception.AccountInactiveException;
+import com.saveapenny.audit.exception.AuditLogAccessDeniedException;
+import com.saveapenny.audit.exception.AuditLogNotFoundException;
+import com.saveapenny.audit.exception.InvalidAuditDateRangeException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDateException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionTypeException;
 import com.saveapenny.automation.exception.RecurringTransactionDependencyNotFoundException;
@@ -236,6 +239,36 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AuditLogNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuditLogNotFound(AuditLogNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("AUDIT_LOG_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidAuditDateRangeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidAuditDateRange(InvalidAuditDateRangeException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_AUDIT_DATE_RANGE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AuditLogAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuditLogAccessDenied(AuditLogAccessDeniedException ex) {
+        ApiError error = ApiError.builder()
+                .code("AUDIT_LOG_ACCESS_DENIED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
