@@ -551,7 +551,7 @@ Common errors:
 
 ### GET `/transactions`
 
-Supports filters: `from`, `to`, `type`, `accountId`, `categoryId`, `page`, `size`, `sort`.
+Supports filters: `from`, `to`, `type`, `accountId`, `categoryId`, `minAmount`, `maxAmount`, `keyword`, `page`, `size`, `sort`.
 
 Response `200`: paged `TransactionResponse` envelope.
 
@@ -766,6 +766,29 @@ Response `200`:
   "error": null,
   "timestamp": "2026-05-12T20:00:00Z"
 }
+```
+
+Common errors:
+
+- `400` `INVALID_REPORT_DATE_RANGE`
+
+### GET `/reports/monthly-summary/export`
+
+Query params:
+
+- `from` (required, `yyyy-MM-dd`)
+- `to` (required, `yyyy-MM-dd`)
+
+Response `200`:
+
+- Content-Type: `text/csv`
+- Content-Disposition: `attachment; filename="monthly-summary-<from>-to-<to>.csv"`
+
+CSV body:
+
+```csv
+startDate,endDate,totalIncome,totalExpense,netSavings
+2026-05-01,2026-05-31,1500.0000,620.0000,880.0000
 ```
 
 Common errors:
