@@ -350,7 +350,7 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | Deleting a category used by transactions is blocked | Pre-delete check in `CategoryService` |
 | Budget WARNING fires at ≥80% | `BudgetService.calculateStatus()` |
 | CSV duplicate transactions are skipped | Hash of `(account_id, amount, date, description)` |
-| Recurring transactions are idempotent | `next_run_date` checked before generation; distributed lock on scheduler |
+| Recurring transactions are idempotent | `RecurringTransactionScheduler` processes due rules (`next_run_date <= today`) and `AutomationDistributedLockService` ensures single-run execution across nodes |
 | CSV import confirm is asynchronous | `ImportService.confirm()` sets `RUNNING`; `ImportAsyncJobService` processes in background |
 
 ---

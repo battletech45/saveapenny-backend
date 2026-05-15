@@ -15,15 +15,12 @@ Reference baseline: `technical-doc.md` sections 5, 7, 8, and 9.
 
 | Rule | Status | Evidence |
 | --- | --- | --- |
-| Recurring transactions idempotency with `next_run_date` and distributed lock | Partial | Recurring CRUD and due-selection exist (`src/main/java/com/saveapenny/automation/service/impl/RecurringTransactionServiceImpl.java`), but no scheduler/distributed lock execution path found |
 
 ## 3) Phased Delivery (Section 8)
 
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
-| 0 | Scaffold, PostgreSQL, Flyway, global errors, Swagger | Partial | Scaffold/Flyway/error handling present; Swagger integration not verified in code scan |
 | 6 | Reports + CSV export | Partial | Monthly summary CSV export implemented in `src/main/java/com/saveapenny/report/controller/ReportController.java`; remaining report CSV exports not found |
-| 7 | Recurring transactions + scheduler + idempotency | Partial | Recurring rule management implemented; scheduler/lock-based generation not found |
 | 8 | Notifications (in-app + event + email + preferences) | Partial | In-app notification API present in `src/main/java/com/saveapenny/notification/`; event/email/preferences not found |
 | 10 | Unit + integration + Testcontainers + 70%+ coverage | Partial | Unit/integration tests strong; Testcontainers usage not found in test classes |
 | 11 | Redis (cache/token blacklist/rate limiting) | Missing | No Redis config/module found in main code |

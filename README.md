@@ -82,7 +82,7 @@ Recurring transaction endpoints are available under `/api/v1/automations/recurri
 - `PUT /api/v1/automations/recurring-transactions/{recurringTransactionId}`
 - `DELETE /api/v1/automations/recurring-transactions/{recurringTransactionId}`
 
-Automation module manages recurring income/expense definitions, due-run querying, and ownership-scoped soft delete.
+Automation module manages recurring income/expense definitions, scheduled due-run execution, distributed lock based idempotency, and ownership-scoped soft delete.
 
 Automation module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared tests/docs).
 
@@ -146,7 +146,7 @@ Set the following environment variables before running the app:
 - Run budget controller/service tests only: `mvn -Dtest=BudgetControllerTest,BudgetServiceImplTest test`
 - Run report integration flow only: `mvn -Dtest=ReportFlowIntegrationTest test`
 - Run report controller/service tests only: `mvn -Dtest=ReportControllerTest,ReportServiceImplTest test`
-- Run automation controller/service tests only: `mvn -Dtest=RecurringTransactionControllerTest,RecurringTransactionServiceImplTest test`
+- Run automation controller/service tests only: `mvn -Dtest=RecurringTransactionControllerTest,RecurringTransactionServiceImplTest,RecurringTransactionExecutionServiceImplTest test`
 - Run notification integration flow only: `mvn -Dtest=NotificationFlowIntegrationTest test`
 - Run notification controller/service tests only: `mvn -Dtest=NotificationControllerTest,NotificationServiceImplTest test`
 - Run import integration flow only: `mvn -Dtest=ImportFlowIntegrationTest test`

@@ -966,6 +966,12 @@ Common errors:
 
 - `404` `RECURRING_TRANSACTION_NOT_FOUND`
 
+Automation execution behavior:
+
+- A background scheduler periodically processes active recurring transactions with `nextRunDate <= today`.
+- Execution is lock-protected (distributed advisory lock) to avoid duplicate generation across concurrent nodes.
+- On successful generation, `nextRunDate` is advanced by frequency (`DAILY`, `WEEKLY`, `MONTHLY`, `YEARLY`).
+
 ## Notification Endpoints
 
 All notification endpoints require:
