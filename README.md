@@ -44,6 +44,7 @@ Transaction endpoints are available under `/api/v1/transactions`:
 - `DELETE /api/v1/transactions/{transactionId}`
 
 Transaction module supports income/expense entries, transfer flow, ownership checks, and account balance impact rules.
+Transaction list endpoint supports combined filters: `from`, `to`, `type`, `accountId`, `categoryId`, `minAmount`, `maxAmount`, `keyword`, plus pageable params.
 
 ## Budget status
 Budget endpoints are available under `/api/v1/budgets`:
@@ -63,6 +64,7 @@ Budget module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/c
 Report endpoints are available under `/api/v1/reports`:
 
 - `GET /api/v1/reports/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/monthly-summary/export?from=YYYY-MM-DD&to=YYYY-MM-DD` (CSV download)
 - `GET /api/v1/reports/category-spending?from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `GET /api/v1/reports/cash-flow?from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `GET /api/v1/reports/net-worth?snapshotDate=YYYY-MM-DD`
