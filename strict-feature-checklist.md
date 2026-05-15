@@ -15,7 +15,6 @@ Reference baseline: `technical-doc.md` sections 5, 7, 8, and 9.
 
 | Rule | Status | Evidence |
 | --- | --- | --- |
-| CSV duplicate detection via hash (`account_id, amount, date, description`) | Missing | Not found in import processing (`src/main/java/com/saveapenny/imports/service/impl/ImportServiceImpl.java`, `src/main/java/com/saveapenny/imports/service/impl/ImportAsyncJobService.java`) |
 | Recurring transactions idempotency with `next_run_date` and distributed lock | Partial | Recurring CRUD and due-selection exist (`src/main/java/com/saveapenny/automation/service/impl/RecurringTransactionServiceImpl.java`), but no scheduler/distributed lock execution path found |
 
 ## 3) Phased Delivery (Section 8)

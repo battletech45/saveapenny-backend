@@ -294,7 +294,7 @@ Error shape:
 
 **Reports:** `GET /reports/monthly-summary`, `GET /reports/monthly-summary/export` (CSV), `/category-spending`, `/cash-flow`, `/net-worth`
 
-**CSV Import:** `POST /imports/transactions/preview` → `POST /imports/transactions/confirm` → `GET /imports/transactions/{id}/status`
+**CSV Import:** `POST /imports/transactions/preview` → `POST /imports/transactions/confirm` → `GET /imports/transactions/{id}/status` (duplicate rows are marked `SKIPPED`)
 
 Import status values: `PENDING | RUNNING | COMPLETED | FAILED`
 

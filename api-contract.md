@@ -1143,6 +1143,11 @@ Common errors:
 
 Response `200`: same payload shape as confirm response.
 
+Behavior notes:
+
+- Duplicate rows are marked as `SKIPPED` during async confirm processing.
+- Duplicate detection key: hash of `(account_id, amount, date, description)`.
+
 Status values:
 
 - Import: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`

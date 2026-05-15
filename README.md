@@ -108,7 +108,7 @@ CSV import endpoints are available under `/api/v1/imports/transactions`:
 - `POST /api/v1/imports/transactions/confirm`
 - `GET /api/v1/imports/transactions/{importId}/status`
 
-Import module supports preview validation, persisted import/import_rows tracking, and async confirm processing.
+Import module supports preview validation, persisted import/import_rows tracking, async confirm processing, and duplicate row skipping by hash of `account_id + amount + date + description`.
 
 Import module statuses:
 
