@@ -1163,6 +1163,75 @@ Common errors:
 
 - `404` `IMPORT_NOT_FOUND`
 
+## OCR Import Endpoints
+
+All OCR import endpoints require:
+
+`Authorization: Bearer <accessToken>`
+
+### POST `/imports/ocr`
+
+Consumes `multipart/form-data` with `file`.
+
+Allowed content types:
+
+- `image/png`
+- `image/jpeg`
+- `application/pdf`
+
+Response `202`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "2c31230f-5f77-49d2-b113-7abf8eb20b49",
+    "status": "PENDING"
+  },
+  "error": null,
+  "timestamp": "2026-05-21T10:30:00Z"
+}
+```
+
+Common errors:
+
+- `400` `INVALID_OCR_FILE`
+
+### GET `/imports/ocr/{jobId}`
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "jobId": "2c31230f-5f77-49d2-b113-7abf8eb20b49",
+    "status": "COMPLETED",
+    "originalFileName": "receipt.png",
+    "errorMessage": null,
+    "resultSnippet": "SAVEAPENNY RECEIPT TOTAL 19.99",
+    "rawText": "SAVEAPENNY RECEIPT\nTOTAL 19.99",
+    "transactionCandidates": [
+      {
+        "date": "2026-05-20",
+        "amount": 19.99,
+        "description": "2026-05-20 market 19.99",
+        "categoryHint": "FOOD"
+      }
+    ],
+    "createdAt": "2026-05-21T10:29:58Z",
+    "updatedAt": "2026-05-21T10:30:01Z"
+  },
+  "error": null,
+  "timestamp": "2026-05-21T10:30:01Z"
+}
+```
+
+Common errors:
+
+- `404` `OCR_JOB_NOT_FOUND`
+- `400` `OCR_PROCESSING_FAILED`
+
 ## Audit Endpoints
 
 All audit endpoints require:
@@ -1274,6 +1343,17 @@ curl -X POST http://localhost:8080/api/v1/imports/transactions/confirm \
 
 ```bash
 curl "http://localhost:8080/api/v1/imports/transactions/<import-id>/status" \
+  -H "Authorization: Bearer <access-token>"
+```
+
+```bash
+curl -X POST http://localhost:8080/api/imports/ocr \
+  -H "Authorization: Bearer <access-token>" \
+  -F "file=@receipt.png"
+```
+
+```bash
+curl "http://localhost:8080/api/imports/ocr/<job-id>" \
   -H "Authorization: Bearer <access-token>"
 ```
 

@@ -118,6 +118,20 @@ Import module statuses:
 
 Import module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
 
+## OCR import status
+OCR import endpoints are available under `/api/imports/ocr`:
+
+- `POST /api/imports/ocr` (multipart form-data with `file`, returns async job id)
+- `GET /api/imports/ocr/{jobId}`
+
+OCR import supports `image/png`, `image/jpeg`, and `application/pdf`, persists raw OCR output in `ocr_jobs`, and returns parsed transaction candidates from extracted text.
+
+OCR job statuses:
+
+- `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
+
+OCR module flag: `COMPLETE` (async processing, timeout/retry guardrails, validation, health indicator, unit/integration tests, golden regression test).
+
 ## Audit status
 Audit endpoints are available under `/api/v1/audits`:
 
@@ -136,6 +150,48 @@ Set the following environment variables before running the app:
 - `DB_PASSWORD`
 - `JWT_SECRET` (a strong secret key, at least 64 characters for HS512)
 
+## OCR setup (Tess4J + Tesseract)
+
+The project uses `tess4j`, which requires native Tesseract binaries and language data files at runtime.
+
+- Default OCR config is in `src/main/resources/application.yml` under `ocr.*`.
+- Important keys:
+  - `ocr.enabled`
+  - `ocr.tessdata-path`
+  - `ocr.language`
+  - `ocr.psm`
+  - `ocr.max-file-size-bytes`
+  - `ocr.job-timeout-millis`
+  - `ocr.max-retries`
+  - `ocr.debug-logging`
+
+### Local (macOS)
+
+- Install Tesseract: `brew install tesseract`
+- Verify install: `tesseract --version`
+- Verify tessdata path exists: `ls /opt/homebrew/share/tessdata`
+- Ensure `ocr.tessdata-path` matches your machine path.
+
+### CI environment
+
+- Install Tesseract in the CI job before tests/build (example: apt/brew package install step).
+- Ensure requested language files exist in tessdata (for default: `eng.traineddata`).
+- Set/override `ocr.tessdata-path` for the CI runner filesystem.
+
+### Docker/production
+
+- Install native Tesseract package in the application image.
+- Copy or install required `.traineddata` language files.
+- Set `ocr.tessdata-path` to the path inside the container (common Linux path: `/usr/share/tesseract-ocr/4.00/tessdata` or distro equivalent).
+
+If Tesseract binary or tessdata files are missing, OCR requests will fail at runtime.
+
+## Health and observability
+
+- Actuator health endpoint: `GET /actuator/health`
+- OCR health contributes status details when OCR is enabled.
+- OCR processing logs duration and success/failure events; raw extracted text is masked unless `ocr.debug-logging=true`.
+
 ## Test commands
 
 - Run full test suite: `mvn test`
@@ -152,5 +208,8 @@ Set the following environment variables before running the app:
 - Run notification controller/service tests only: `mvn -Dtest=NotificationControllerTest,NotificationServiceImplTest test`
 - Run import integration flow only: `mvn -Dtest=ImportFlowIntegrationTest test`
 - Run import controller/service tests only: `mvn -Dtest=ImportControllerTest,ImportServiceImplTest test`
+- Run OCR import integration flow only: `mvn -Dtest=OcrImportFlowIntegrationTest,OcrImportDisabledIntegrationTest test`
+- Run OCR service unit tests only: `mvn -Dtest=TesseractOcrServiceTest test`
+- Run OCR golden regression test only: `mvn -Dtest=OcrGoldenImageRegressionTest test`
 - Run audit integration flow only: `mvn -Dtest=AuditFlowIntegrationTest test`
 - Run audit controller/service tests only: `mvn -Dtest=AuditLogControllerTest,AuditLogServiceImplTest test`

@@ -12,6 +12,7 @@ Reference baseline: `technical-doc.md` sections 5, 7, 8, and 9.
 | --- | --- | --- |
 | Reports CSV export coverage | Partial | Monthly summary CSV export exists in `src/main/java/com/saveapenny/report/controller/ReportController.java`; category-spending/cash-flow/net-worth CSV exports are not implemented |
 | Notification channel coverage | Partial | In-app notification endpoints are implemented in `src/main/java/com/saveapenny/notification/controller/NotificationController.java`; event-triggered/email/preferences flows are not implemented |
+| OCR import API coverage | Complete | OCR submit/status endpoints implemented in `src/main/java/com/saveapenny/imports/controller/OcrImportController.java` with validation and async job tracking |
 
 ## 2) Key Business Rules (Section 7)
 
@@ -26,8 +27,8 @@ Reference baseline: `technical-doc.md` sections 5, 7, 8, and 9.
 | 11 | Redis (cache/token blacklist/rate limiting) | Missing | No Redis config/module found in main code |
 | 12 | Event-driven (Kafka/RabbitMQ + retry + DLQ) | Missing | No event bus producer/consumer messaging modules found |
 | 13 | Security hardening (lockout, headers, CORS hardening) | Partial | Baseline Spring Security present; lockout and hardening set not fully found |
-| 14 | Deployment (Docker image, CI/CD, cloud, HTTPS) | Partial | `docker-compose.yml` exists for Postgres only; app container/pipeline/cloud/HTTPS not found |
-| 15 | Observability (Actuator, Prometheus, Grafana, OTel) | Missing | No observability stack integration found |
+| 14 | Deployment (Docker image, CI/CD, cloud, HTTPS) | Partial | `Dockerfile` added and `docker-compose.yml` includes app + Postgres + healthcheck; CI/CD/cloud/HTTPS are still pending |
+| 15 | Observability (Actuator, Prometheus, Grafana, OTel) | Partial | Actuator health endpoint and OCR health indicator/counters/logging added; Prometheus/Grafana/OTel are pending |
 | 16 | Microservice extraction + API gateway | Missing | Current architecture remains modular monolith |
 
 ## 4) MVP Acceptance Criteria (Section 9)
@@ -35,7 +36,7 @@ Reference baseline: `technical-doc.md` sections 5, 7, 8, and 9.
 | Criterion | Status | Evidence |
 | --- | --- | --- |
 | Flyway migrations run cleanly on fresh database | Partial | Migrations exist in `src/main/resources/db/migration/`, but integration tests disable Flyway |
-| App boots with `docker compose up` | Missing | `docker-compose.yml` starts PostgreSQL only; app service is not defined |
+| App boots with `docker compose up` | Partial | App service and container healthcheck are defined; environment/runtime verification still pending |
 
 ## 5) Current Quality Gate Snapshot
 

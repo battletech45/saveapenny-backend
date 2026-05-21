@@ -1,6 +1,6 @@
 ---
 
-> **Version:** 1.0 · **Audience:** Backend Engineers · **Stack:** Java 24 · Spring Boot · PostgreSQL · Modular Monolith
+> **Version:** 1.1 · **Audience:** Backend Engineers · **Stack:** Java 24 · Spring Boot · PostgreSQL · Modular Monolith
 > 
 
 ---
@@ -31,6 +31,7 @@ com.saveapenny
  ├── automation
  ├── notification
  ├── imports
+ ├── service        # shared domain/application services (for example OCR)
  ├── audit
  ├── shared
  └── config
@@ -78,7 +79,8 @@ Each module's internal structure:
 | DB migrations | Flyway |
 | Object mapping | MapStruct |
 | Documentation | Springdoc OpenAPI (Swagger UI) |
-| Logging | SLF4J + structured JSON output |
+| Logging | SLF4J |
+| Health | Spring Boot Actuator health endpoint |
 
 ### 2.4 Module Implementation Sequence
 
@@ -134,13 +136,14 @@ Planned future implementation:
 
 | Layer | Technology |
 | --- | --- |
-| Language | Java 21 |
+| Language | Java 24 |
 | Framework | Spring Boot 3.x |
 | Security | Spring Security 6 |
 | Persistence | Spring Data JPA + Hibernate |
 | Database | PostgreSQL 16 |
 | Migrations | Flyway |
 | Build | Maven or Gradle |
+| Build | Maven |
 | Boilerplate | Lombok |
 | Mapping | MapStruct |
 
@@ -209,6 +212,10 @@ audit_logs
 imports / import_rows
   id, user_id, file_name, status, total_rows, imported_rows, failed_rows, created_at
   id, import_id, row_number, raw_data, status, error_message
+
+ocr_jobs
+  id, user_id, original_file_name, content_type, status,
+  error_message, result_snippet, raw_text, created_at, updated_at
 ```
 
 ### Key Constraints
@@ -296,6 +303,8 @@ Error shape:
 
 **CSV Import:** `POST /imports/transactions/preview` → `POST /imports/transactions/confirm` → `GET /imports/transactions/{id}/status` (duplicate rows are marked `SKIPPED`)
 
+**OCR Import:** `POST /imports/ocr` (multipart image/pdf, async job submit) → `GET /imports/ocr/{jobId}` (status + snippet + rawText + parsed candidates)
+
 Import status values: `PENDING | RUNNING | COMPLETED | FAILED`
 
 Import row status values: `VALID | IMPORTED | FAILED | SKIPPED`
@@ -352,6 +361,8 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | CSV duplicate transactions are skipped | Hash of `(account_id, amount, date, description)` |
 | Recurring transactions are idempotent | `RecurringTransactionScheduler` processes due rules (`next_run_date <= today`) and `AutomationDistributedLockService` ensures single-run execution across nodes |
 | CSV import confirm is asynchronous | `ImportService.confirm()` sets `RUNNING`; `ImportAsyncJobService` processes in background |
+| OCR import is asynchronous with timeout/retry guardrails | `OcrJobServiceImpl` + `OcrJobAsyncProcessor` |
+| OCR raw extracted text is persisted for audit/debug | `ocr_jobs.raw_text` |
 
 ---
 
@@ -369,12 +380,13 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | 7 | Recurring transactions: rules, Spring Scheduler, idempotency (completed) |
 | 8 | Notifications: in-app, event-triggered, email, preferences (partially completed: in-app done; event/email/preferences pending) |
 | 9 | CSV import: upload, preview, validation, async job (completed) |
-| 10 | Testing: unit + integration, Testcontainers, 70%+ coverage |
+| 10 | Testing: unit + integration, Testcontainers, 70%+ coverage (in progress; OCR unit/integration/golden tests added) |
+| 10.1 | OCR import: image/pdf upload, async status tracking, preprocessing, parsing candidates, validation/guardrails (completed) |
 | 11 | Redis: caching, token blacklist, rate limiting |
 | 12 | Event-driven: App Events → Kafka/RabbitMQ, retry, DLQ |
 | 13 | Security hardening: lockout, token rotation, headers, CORS |
-| 14 | Deployment: Docker, GitHub Actions, cloud, HTTPS |
-| 15 | Observability: Actuator, Prometheus, Grafana, OpenTelemetry |
+| 14 | Deployment: Docker, GitHub Actions, cloud, HTTPS (partially completed: Dockerfile + compose app service + healthcheck added) |
+| 15 | Observability: Actuator, Prometheus, Grafana, OpenTelemetry (partially completed: Actuator health + OCR counters/timing logs added; Prometheus/Grafana/OTel pending) |
 | 16 | Microservice extraction: auth, notification, report services + API Gateway |
 
 ---
@@ -392,7 +404,7 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 - [x]  Monthly summary report returns correct aggregates
 - [ ]  Flyway migrations run cleanly on a fresh database
 - [x]  Core business logic covered by unit tests
-- [ ]  App boots with `docker compose up`
+- [ ]  App boots with `docker compose up` (configured, needs environment-specific runtime verification)
 
 ---
 
@@ -409,7 +421,8 @@ Enforced at the **service layer** — not just the controller. A shared `Reso
 | 007 | In-app notifications first, event/email channels incrementally | Delivers immediate user value with lower complexity, while keeping extension path for event-driven and email delivery |
 | 008 | Flyway-first schema governance for persistent entities | Prevents entity/table drift and startup failures; every new table must be introduced through versioned migrations |
 | 009 | Global exception mapping with stable API error codes | Ensures predictable client integration and consistent error envelopes across modules |
+| 010 | OCR as async job with persisted raw output and guarded execution | OCR can be slow/error-prone; async jobs with timeout/retry, file validation, and persisted raw text improve resilience and traceability |
 
 ---
 
-*SaveAPenny Technical Proposal — v1.0*
+*SaveAPenny Technical Proposal — v1.1*
