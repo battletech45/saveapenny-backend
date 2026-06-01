@@ -7,6 +7,7 @@ import com.saveapenny.report.dto.MonthlySummaryResponse;
 import com.saveapenny.report.dto.NetWorthSnapshotResponse;
 import com.saveapenny.report.service.ReportService;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/reports")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Reports", description = "Financial reporting and CSV export endpoints.")
 public class ReportController {
 
     private final ReportService reportService;

@@ -2,6 +2,9 @@ package com.saveapenny.transaction.controller;
 
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.saveapenny.transaction.dto.CreateTransactionRequest;
 import com.saveapenny.transaction.dto.CreateTransferRequest;
 import com.saveapenny.transaction.dto.TransactionResponse;
@@ -21,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/transactions")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Transactions", description = "Transaction CRUD, filtering, and transfer endpoints.")
 public class TransactionController {
 
     private final TransactionService transactionService;
@@ -59,16 +64,28 @@ public class TransactionController {
     }
 
     @GetMapping
+    @Operation(
+            summary = "Search transactions",
+            description = "Returns paginated transactions with optional filters by date range, type, account, category, amount range, and keyword. Pagination query params: page, size, sort.")
     public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @Parameter(description = "Optional start date (ISO-8601).", example = "2026-06-01")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @Parameter(description = "Optional end date (ISO-8601).", example = "2026-06-30")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @Parameter(description = "Optional transaction type.", example = "EXPENSE")
             @RequestParam(required = false) TransactionType type,
+            @Parameter(description = "Optional account UUID.", example = "7fc9eaf7-2f95-4fd7-b632-56f0ce7a2c9f")
             @RequestParam(required = false) UUID accountId,
+            @Parameter(description = "Optional category UUID.", example = "68f89bdf-c23f-4124-a332-967ffd344a06")
             @RequestParam(required = false) UUID categoryId,
+            @Parameter(description = "Optional minimum amount.", example = "10.00")
             @RequestParam(required = false) BigDecimal minAmount,
+            @Parameter(description = "Optional maximum amount.", example = "500.00")
             @RequestParam(required = false) BigDecimal maxAmount,
+            @Parameter(description = "Optional free-text keyword.", example = "market")
             @RequestParam(required = false) String keyword,
+            @ParameterObject
             Pageable pageable) {
         Page<TransactionResponse> response = transactionService.getAll(
                 getCurrentUserId(principal),

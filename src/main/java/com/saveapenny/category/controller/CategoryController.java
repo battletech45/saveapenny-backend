@@ -7,6 +7,7 @@ import com.saveapenny.category.entity.CategoryType;
 import com.saveapenny.category.service.CategoryService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/categories")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Categories", description = "Category CRUD and filtering endpoints.")
 public class CategoryController {
 
     private final CategoryService categoryService;

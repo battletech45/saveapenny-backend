@@ -5,6 +5,8 @@ import com.saveapenny.ocr.interfaces.http.dto.OcrJobStatusResponse;
 import com.saveapenny.ocr.interfaces.http.dto.OcrSubmitResponse;
 import com.saveapenny.ocr.application.port.in.OcrJobService;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/imports/ocr")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "OCR Imports", description = "Receipt OCR upload and async job status endpoints.")
 public class OcrImportController {
 
     private final OcrJobService ocrJobService;
@@ -32,6 +35,9 @@ public class OcrImportController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Submit OCR job",
+            description = "Uploads a PNG/JPEG/PDF receipt and starts asynchronous OCR processing. Use returned jobId to poll status.")
     public ResponseEntity<ApiResponse<OcrSubmitResponse>> upload(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @RequestPart("file") MultipartFile file) {
@@ -40,6 +46,9 @@ public class OcrImportController {
     }
 
     @GetMapping("/{jobId}")
+    @Operation(
+            summary = "Get OCR job status",
+            description = "Returns OCR lifecycle status, raw text, snippet, and parsed transaction candidates when available.")
     public ResponseEntity<ApiResponse<OcrJobStatusResponse>> getStatus(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID jobId) {

@@ -6,6 +6,8 @@ import com.saveapenny.imports.dto.ImportPreviewResponse;
 import com.saveapenny.imports.dto.ImportStatusResponse;
 import com.saveapenny.imports.service.ImportService;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/imports/transactions")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Imports", description = "Transaction file import preview, confirm, and status endpoints.")
 public class ImportController {
 
     private final ImportService importService;
@@ -35,6 +38,7 @@ public class ImportController {
     }
 
     @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Preview import", description = "Parses uploaded file and returns candidate rows before persistence.")
     public ResponseEntity<ApiResponse<ImportPreviewResponse>> preview(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @RequestPart("file") MultipartFile file) {
@@ -43,6 +47,7 @@ public class ImportController {
     }
 
     @PostMapping("/confirm")
+    @Operation(summary = "Confirm import", description = "Confirms previewed import and persists validated transactions.")
     public ResponseEntity<ApiResponse<ImportStatusResponse>> confirm(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Valid @RequestBody ConfirmImportRequest request) {
@@ -51,6 +56,7 @@ public class ImportController {
     }
 
     @GetMapping("/{importId}/status")
+    @Operation(summary = "Get import status", description = "Returns current status and progress details for a submitted import.")
     public ResponseEntity<ApiResponse<ImportStatusResponse>> getStatus(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID importId) {

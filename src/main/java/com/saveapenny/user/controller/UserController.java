@@ -6,6 +6,7 @@ import com.saveapenny.user.dto.UserProfileResponse;
 import com.saveapenny.user.service.UserService;
 import com.saveapenny.shared.api.ApiResponse;
 import com.saveapenny.config.security.CurrentUserPrincipal;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@Tag(name = "Users", description = "Current user profile and password management endpoints.")
 public class UserController {
 
     private final UserService userService;

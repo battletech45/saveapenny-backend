@@ -6,6 +6,9 @@ import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.service.RecurringTransactionService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/automations/recurring-transactions")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Automation", description = "Recurring transaction setup and lifecycle endpoints.")
 public class RecurringTransactionController {
 
     private final RecurringTransactionService recurringTransactionService;
@@ -44,8 +48,12 @@ public class RecurringTransactionController {
     }
 
     @GetMapping
+    @Operation(
+            summary = "List recurring transactions",
+            description = "Returns paginated recurring transaction schedules. Pagination query params: page, size, sort.")
     public ResponseEntity<ApiResponse<Page<RecurringTransactionResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @ParameterObject
             Pageable pageable) {
         Page<RecurringTransactionResponse> response = recurringTransactionService.getAll(getCurrentUserId(principal), pageable);
         return ResponseEntity.ok(ApiResponse.success(response));

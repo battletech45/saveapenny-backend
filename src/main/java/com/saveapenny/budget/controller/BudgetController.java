@@ -8,6 +8,10 @@ import com.saveapenny.budget.entity.BudgetPeriod;
 import com.saveapenny.budget.service.BudgetService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/budgets")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Budgets", description = "Budget planning, status tracking, and CRUD endpoints.")
 public class BudgetController {
 
     private final BudgetService budgetService;
@@ -47,9 +52,14 @@ public class BudgetController {
     }
 
     @GetMapping
+    @Operation(
+            summary = "List budgets",
+            description = "Returns paginated budgets. Optionally filter by period. Pagination query params: page, size, sort.")
     public ResponseEntity<ApiResponse<Page<BudgetResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @Parameter(description = "Optional budget period filter.", example = "MONTHLY")
             @RequestParam(required = false) BudgetPeriod period,
+            @ParameterObject
             Pageable pageable) {
         Page<BudgetResponse> response = budgetService.getAll(getCurrentUserId(principal), period, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));

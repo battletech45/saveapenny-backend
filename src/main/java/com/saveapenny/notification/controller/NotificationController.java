@@ -7,6 +7,10 @@ import com.saveapenny.notification.dto.UnreadNotificationCountResponse;
 import com.saveapenny.notification.dto.UpdateNotificationRequest;
 import com.saveapenny.notification.service.NotificationService;
 import com.saveapenny.shared.api.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/notifications")
 @PreAuthorize("isAuthenticated()")
+@Tag(name = "Notifications", description = "Notification read/write and unread count endpoints.")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -47,9 +52,14 @@ public class NotificationController {
     }
 
     @GetMapping
+    @Operation(
+            summary = "List notifications",
+            description = "Returns paginated notifications. Optionally filter by read/unread state. Pagination query params: page, size, sort.")
     public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @Parameter(description = "Optional read-state filter.", example = "false")
             @RequestParam(required = false) Boolean read,
+            @ParameterObject
             Pageable pageable) {
         Page<NotificationResponse> response = notificationService.getAll(getCurrentUserId(principal), read, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
