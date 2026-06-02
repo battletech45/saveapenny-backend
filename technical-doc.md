@@ -11,6 +11,8 @@ SaveAPenny is a personal finance platform for tracking accounts, transactions, b
 
 This document covers architecture decisions, module boundaries, data model, API contracts, and phased delivery milestones.
 
+Assistant-specific technical details are documented separately in `assistant-technical-doc.md`.
+
 ---
 
 ## 2. Architecture

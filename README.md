@@ -1,6 +1,10 @@
 # SaveAPenny
 Users can track accounts, transactions, budgets, spending patterns, recurring payments, alerts, and eventually investment/analytics features.
 
+User-facing documentation:
+
+- `USER-GUIDE.md`
+
 ## Auth status
 Auth endpoints are available under `/api/v1/auth`:
 
@@ -154,6 +158,11 @@ Assistant module supports:
 - finance and savings system prompting
 - Spring AI tool-calling over reports, budgets, and recent transactions
 - persisted chat sessions and messages through optional `sessionId`
+
+Related technical docs:
+
+- `assistant-technical-doc.md`
+- `assistant-implementation-plan.md`
 
 Request notes:
 
