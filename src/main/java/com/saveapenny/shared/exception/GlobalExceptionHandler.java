@@ -6,6 +6,9 @@ import com.saveapenny.account.exception.AccountInactiveException;
 import com.saveapenny.audit.exception.AuditLogAccessDeniedException;
 import com.saveapenny.audit.exception.AuditLogNotFoundException;
 import com.saveapenny.audit.exception.InvalidAuditDateRangeException;
+import com.saveapenny.assistant.exception.AssistantChatSessionNotFoundException;
+import com.saveapenny.assistant.exception.AssistantDisabledException;
+import com.saveapenny.assistant.exception.AssistantProcessingException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDateException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionTypeException;
 import com.saveapenny.automation.exception.RecurringTransactionDependencyNotFoundException;
@@ -372,6 +375,36 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AssistantDisabledException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAssistantDisabled(AssistantDisabledException ex) {
+        ApiError error = ApiError.builder()
+                .code("ASSISTANT_DISABLED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AssistantProcessingException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAssistantProcessing(AssistantProcessingException ex) {
+        ApiError error = ApiError.builder()
+                .code("ASSISTANT_PROCESSING_FAILED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AssistantChatSessionNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAssistantChatSessionNotFound(AssistantChatSessionNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("ASSISTANT_CHAT_SESSION_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(UserNotFoundException.class)

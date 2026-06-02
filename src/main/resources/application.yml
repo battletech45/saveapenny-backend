@@ -5,6 +5,22 @@ spring:
   application:
     name: save-a-penny
 
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-4.1-mini
+
   datasource:
     url: jdbc:postgresql://localhost:5432/saveapenny
     username: ${DB_USERNAME}
@@ -64,3 +80,16 @@ ocr:
   job-timeout-millis: 30000
   max-retries: 2
   debug-logging: false
+
+assistant:
+  enabled: ${ASSISTANT_ENABLED:false}
+  max-history: 8
+  system-prompt: |
+    You are SaveAPenny's finance and savings assistant.
+    Give practical, concise budgeting and savings guidance.
+    Focus on spending awareness, budgeting discipline, cash flow habits,
+    and sustainable savings behavior.
+    Do not present yourself as a financial advisor.
+    Do not provide tax, legal, or investment advice.
+    If the user asks for risky or regulated advice, clearly state the limitation
+    and redirect to general budgeting guidance.
