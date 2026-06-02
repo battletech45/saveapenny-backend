@@ -143,12 +143,34 @@ Audit module supports ownership-scoped audit entry creation and retrieval with o
 
 Audit module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
 
+## Assistant status
+Assistant endpoint is available under `/api/v1/assistant`:
+
+- `POST /api/v1/assistant/chat`
+
+Assistant module supports:
+
+- synchronous authenticated chat
+- finance and savings system prompting
+- Spring AI tool-calling over reports, budgets, and recent transactions
+- persisted chat sessions and messages through optional `sessionId`
+
+Request notes:
+
+- `message` is required
+- `sessionId` is optional
+- `history` is optional; persisted session history is used when `sessionId` is provided without request history
+
+Assistant module flag: `COMPLETE` for backend MVP + session persistence + tool-calling.
+
 ## Configuration
 Set the following environment variables before running the app:
 
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `JWT_SECRET` (a strong secret key, at least 64 characters for HS512)
+- `OPENAI_API_KEY` (required when `ASSISTANT_ENABLED=true`)
+- `ASSISTANT_ENABLED` (`true` to enable assistant endpoint, defaults to `false`)
 
 ## OCR setup (Tess4J + Tesseract)
 

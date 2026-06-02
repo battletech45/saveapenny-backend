@@ -1284,6 +1284,62 @@ Common errors:
 - `404` `AUDIT_LOG_NOT_FOUND`
 - `403` `AUDIT_LOG_ACCESS_DENIED`
 
+## Assistant Endpoints
+
+### POST `/assistant/chat`
+
+Headers:
+
+`Authorization: Bearer <accessToken>`
+
+Request:
+
+```json
+{
+  "sessionId": "11111111-1111-1111-1111-111111111111",
+  "message": "How can I save more this month?",
+  "history": [
+    {
+      "role": "user",
+      "content": "I overspent on food."
+    },
+    {
+      "role": "assistant",
+      "content": "Let's review your spending habits."
+    }
+  ]
+}
+```
+
+Request notes:
+
+- `sessionId` is optional; omit it to start a new persisted session.
+- `history` is optional; when omitted for an existing `sessionId`, persisted session history is used.
+- unsupported history roles are ignored.
+
+Response `200`:
+
+```json
+{
+  "success": true,
+  "data": {
+    "sessionId": "11111111-1111-1111-1111-111111111111",
+    "reply": "You can start by reducing variable food expenses and setting a weekly cap.",
+    "disclaimer": "This assistant provides general budgeting guidance, not financial, tax, or legal advice."
+  },
+  "error": null,
+  "timestamp": "2026-06-02T10:30:00Z"
+}
+```
+
+Common errors:
+
+- `400` `VALIDATION_FAILED`
+- `401` `ACCESS_DENIED`
+- `404` `ASSISTANT_CHAT_SESSION_NOT_FOUND`
+- `503` `ASSISTANT_DISABLED`
+- `502` `ASSISTANT_PROCESSING_FAILED`
+
 ## Quick cURL
 
 ```bash
@@ -1367,4 +1423,11 @@ curl -X POST http://localhost:8080/api/v1/audits \
 ```bash
 curl "http://localhost:8080/api/v1/audits?entityType=ACCOUNT" \
   -H "Authorization: Bearer <access-token>"
+```
+
+```bash
+curl -X POST http://localhost:8080/api/v1/assistant/chat \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"How can I save more this month?"}'
 ```
