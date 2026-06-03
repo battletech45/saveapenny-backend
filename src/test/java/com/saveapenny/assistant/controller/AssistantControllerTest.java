@@ -87,6 +87,29 @@ class AssistantControllerTest {
     }
 
     @Test
+    void chat_returnsBadRequest_whenHistoryContentIsBlank() throws Exception {
+        AssistantChatRequest request = AssistantChatRequest.builder()
+                .message("How can I save more?")
+                .history(java.util.List.of(com.saveapenny.assistant.dto.AssistantMessageDto.builder()
+                        .role("user")
+                        .content(" ")
+                        .build()))
+                .build();
+
+        when(jwtService.isAccessTokenValid("token-a4")).thenReturn(true);
+        when(jwtService.extractUserId("token-a4")).thenReturn(UUID.randomUUID());
+
+        mockMvc.perform(post("/api/v1/assistant/chat")
+                        .header("Authorization", "Bearer token-a4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.error.details[0]").value("history[0].content: must not be blank"));
+    }
+
+    @Test
     void chat_returnsUnauthorized_whenAuthContextMissing() throws Exception {
         AssistantChatRequest request = AssistantChatRequest.builder()
                 .message("How can I save more?")

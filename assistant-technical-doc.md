@@ -26,13 +26,14 @@ Request fields:
 
 - `sessionId` optional
 - `message` required
-- `history` optional
+- `history` optional but ignored by the backend
 
 Session behavior:
 
 - omit `sessionId` to create a new persisted session
 - provide `sessionId` to continue an existing owned session
-- if `history` is omitted, persisted session history is loaded automatically
+- persisted session history is always loaded automatically for existing sessions
+- client-supplied `history` is ignored to prevent prompt tampering
 
 ## Module Layout
 
@@ -67,7 +68,7 @@ Key classes:
 2. authenticated user id is resolved from `CurrentUserPrincipal`
 3. `AssistantServiceImpl` checks feature availability
 4. session is created or loaded
-5. request history or persisted session history is prepared
+5. persisted session history is prepared when continuing an existing session
 6. system prompt is built
 7. Spring AI `ChatClient` executes the request with registered tools
 8. assistant reply is returned and both user/assistant messages are persisted
@@ -156,8 +157,8 @@ Shared errors still apply:
 
 - `message` must be non-blank
 - message length is capped
-- unsupported history roles are ignored
-- persisted/request history is trimmed using `assistant.max-history`
+- client-supplied `history` is ignored
+- persisted session history is trimmed using `assistant.max-history`
 
 ## Testing
 

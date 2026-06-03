@@ -1314,8 +1314,8 @@ Request:
 Request notes:
 
 - `sessionId` is optional; omit it to start a new persisted session.
-- `history` is optional; when omitted for an existing `sessionId`, persisted session history is used.
-- unsupported history roles are ignored.
+- `history` is accepted for backward compatibility but ignored by the backend.
+- prompt history always comes from server-owned persisted session messages.
 
 Response `200`:
 

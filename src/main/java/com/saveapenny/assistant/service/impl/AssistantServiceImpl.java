@@ -79,7 +79,8 @@ public class AssistantServiceImpl implements AssistantService {
 
         try {
             AssistantChatSession session = resolveSession(userId, request);
-            List<AssistantMessageDto> history = resolveHistory(session.getId(), request.getHistory());
+            ChatClient chatClient = resolveChatClient();
+            List<AssistantMessageDto> history = resolveHistory(session.getId());
             List<AssistantMessageDto> trimmedHistory = trimHistory(history);
             String systemPrompt = assistantProperties.systemPrompt()
                     + "\nUse available tools for user-specific financial facts such as summaries, budget status, category spending, and recent transactions."
@@ -89,21 +90,20 @@ public class AssistantServiceImpl implements AssistantService {
                     trimmedHistory,
                     request.getMessage());
 
-            ChatClient chatClient = resolveChatClient();
             assistantToolContextHolder.setCurrentUserId(userId);
             String reply = chatClient.prompt(toPrompt(payload))
                     .tools(assistantReportTool, assistantBudgetTool, assistantTransactionTool)
                     .call()
                     .content();
 
-            persistMessages(session, request.getMessage(), reply);
+            session = persistReply(session, request.getMessage(), reply, userId);
 
             return AssistantChatResponse.builder()
                     .sessionId(session.getId())
                     .reply(reply)
                     .disclaimer(DISCLAIMER)
                     .build();
-        } catch (AssistantDisabledException | AssistantChatSessionNotFoundException ex) {
+        } catch (AssistantDisabledException | AssistantChatSessionNotFoundException | AssistantProcessingException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new AssistantProcessingException(
@@ -116,10 +116,10 @@ public class AssistantServiceImpl implements AssistantService {
 
     private AssistantChatSession resolveSession(UUID userId, AssistantChatRequest request) {
         if (request.getSessionId() == null) {
-            return assistantChatSessionRepository.save(AssistantChatSession.builder()
+            return AssistantChatSession.builder()
                     .userId(userId)
                     .title(buildSessionTitle(request.getMessage()))
-                    .build());
+                    .build();
         }
 
         return assistantChatSessionRepository.findByIdAndUserId(request.getSessionId(), userId)
@@ -137,11 +137,16 @@ public class AssistantServiceImpl implements AssistantService {
         return normalized.length() <= 80 ? normalized : normalized.substring(0, 80);
     }
 
-    private List<AssistantMessageDto> resolveHistory(UUID sessionId, List<AssistantMessageDto> requestHistory) {
-        if (requestHistory != null && !requestHistory.isEmpty()) {
-            return requestHistory;
+    private List<AssistantMessageDto> resolveHistory(UUID sessionId) {
+        if (sessionId != null) {
+            return resolvePersistedHistory(sessionId);
         }
 
+        return List.of();
+    }
+
+    private List<AssistantMessageDto> resolvePersistedHistory(UUID sessionId) {
+        
         int maxHistory = Math.max(0, assistantProperties.maxHistory());
         if (maxHistory == 0) {
             return List.of();
@@ -159,7 +164,10 @@ public class AssistantServiceImpl implements AssistantService {
                 .toList();
     }
 
-    private void persistMessages(AssistantChatSession session, String userMessage, String assistantReply) {
+    private AssistantChatSession persistMessages(AssistantChatSession session, String userMessage, String assistantReply) {
+        if (session.getId() == null) {
+            session = assistantChatSessionRepository.save(session);
+        }
         assistantChatMessageRepository.save(AssistantChatMessage.builder()
                 .sessionId(session.getId())
                 .role("user")
@@ -171,6 +179,21 @@ public class AssistantServiceImpl implements AssistantService {
                 .content(assistantReply)
                 .build());
         assistantChatSessionRepository.save(session);
+        return session;
+    }
+
+    private AssistantChatSession persistReply(
+            AssistantChatSession session,
+            String userMessage,
+            String assistantReply,
+            UUID userId) {
+        try {
+            return persistMessages(session, userMessage, assistantReply);
+        } catch (RuntimeException ex) {
+            throw new AssistantProcessingException(
+                    "Assistant reply persistence failed for userId=" + userId,
+                    ex);
+        }
     }
 
     private ChatClient resolveChatClient() {
