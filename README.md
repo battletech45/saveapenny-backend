@@ -178,7 +178,9 @@ Set the following environment variables before running the app:
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `JWT_SECRET` (a strong secret key, at least 64 characters for HS512)
-- `OPENAI_API_KEY` (required when `ASSISTANT_ENABLED=true`)
+- `ASSISTANT_AI_PROVIDER` (`openai` by default, set `openrouter` to use OpenRouter)
+- `OPENAI_API_KEY` (required when `ASSISTANT_ENABLED=true` and provider is `openai`)
+- `OPENROUTER_API_KEY` (required when `ASSISTANT_ENABLED=true` and provider is `openrouter`)
 - `ASSISTANT_ENABLED` (`true` to enable assistant endpoint, defaults to `false`)
 
 ## OCR setup (Tess4J + Tesseract)

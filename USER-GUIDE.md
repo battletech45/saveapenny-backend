@@ -61,7 +61,9 @@ Recommended database values for local Docker/Postgres:
 Assistant-related values:
 
 - `ASSISTANT_ENABLED=true` to enable the AI assistant
-- `OPENAI_API_KEY=<your-key>` when assistant is enabled
+- `ASSISTANT_AI_PROVIDER=openai` or `ASSISTANT_AI_PROVIDER=openrouter`
+- `OPENAI_API_KEY=<your-key>` when provider is `openai`
+- `OPENROUTER_API_KEY=<your-key>` when provider is `openrouter`
 
 Example:
 
@@ -73,7 +75,19 @@ DB_USERNAME=saveapenny_app
 DB_PASSWORD=change_me_local_only
 JWT_SECRET=change_me_to_a_64_plus_char_secret_for_hs512_signing_key
 ASSISTANT_ENABLED=true
+ASSISTANT_AI_PROVIDER=openai
 OPENAI_API_KEY=your_openai_api_key
+```
+
+OpenRouter example:
+
+```env
+ASSISTANT_ENABLED=true
+ASSISTANT_AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_BASE_URL=https://openrouter.ai/api
+OPENROUTER_SITE_URL=https://your-app.example
+OPENROUTER_APP_NAME=SaveAPenny
 ```
 
 ## Running the Project
@@ -347,7 +361,9 @@ Cause:
 Cause examples:
 
 - missing `OPENAI_API_KEY`
+- missing `OPENROUTER_API_KEY` when using OpenRouter
 - invalid OpenAI key
+- invalid OpenRouter key
 - upstream provider issue
 
 ### App cannot connect to database

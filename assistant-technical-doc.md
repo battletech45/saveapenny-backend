@@ -126,6 +126,10 @@ Main keys:
 
 - `assistant.enabled`
 - `assistant.max-history`
+- `assistant.provider`
+- `assistant.openrouter-base-url`
+- `assistant.openrouter-site-url`
+- `assistant.openrouter-app-name`
 - `assistant.system-prompt`
 - `spring.ai.openai.api-key`
 - `spring.ai.openai.chat.options.model`
@@ -133,12 +137,19 @@ Main keys:
 Environment variables:
 
 - `ASSISTANT_ENABLED`
+- `ASSISTANT_AI_PROVIDER`
 - `OPENAI_API_KEY`
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_BASE_URL`
+- `OPENROUTER_SITE_URL`
+- `OPENROUTER_APP_NAME`
 
 Important behavior:
 
 - when `ASSISTANT_ENABLED=false`, the endpoint still exists and returns `503 ASSISTANT_DISABLED`
-- when `ASSISTANT_ENABLED=true`, `OPENAI_API_KEY` must be configured
+- when `ASSISTANT_ENABLED=true` and `ASSISTANT_AI_PROVIDER=openai`, `OPENAI_API_KEY` must be configured
+- when `ASSISTANT_ENABLED=true` and `ASSISTANT_AI_PROVIDER=openrouter`, `OPENROUTER_API_KEY` must be configured
+- OpenRouter is configured through the same Spring AI OpenAI-compatible client with an alternate base URL
 
 ## Error Model
 
