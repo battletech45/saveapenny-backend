@@ -3,6 +3,7 @@ package com.saveapenny.ocr.infrastructure.engine.tesseract;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.saveapenny.config.OcrProperties;
+import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
 import com.saveapenny.ocr.infrastructure.engine.tesseract.TesseractOcrService;
 import java.awt.Color;
 import java.awt.Font;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -66,7 +66,7 @@ class OcrGoldenImageRegressionTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, "png", baos);
-        MockMultipartFile file = new MockMultipartFile("file", "golden.png", "image/png", baos.toByteArray());
+        OcrUploadPayload file = new OcrUploadPayload("golden.png", "image/png", baos.toByteArray());
 
         String text = tesseractOcrService.extractText(file).toUpperCase();
         assertTrue(text.contains("SAVEAPENNY") || text.contains("RECEIPT"));
