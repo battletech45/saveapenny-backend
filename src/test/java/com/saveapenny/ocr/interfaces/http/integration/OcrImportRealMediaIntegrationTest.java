@@ -1,6 +1,8 @@
 package com.saveapenny.ocr.interfaces.http.integration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.ocr.support.runtime.OcrRuntimeChecker;
+import com.saveapenny.ocr.support.runtime.OcrRuntimeStatus;
 import com.saveapenny.user.entity.Role;
 import com.saveapenny.user.repository.RoleRepository;
 import java.awt.Color;
@@ -32,6 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -85,6 +92,18 @@ class OcrImportRealMediaIntegrationTest {
     void setUpRole() {
         roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
+    }
+
+    @TestConfiguration
+    static class RuntimeCheckerConfig {
+
+        @Bean
+        @Primary
+        OcrRuntimeChecker ocrRuntimeChecker() {
+            OcrRuntimeChecker checker = mock(OcrRuntimeChecker.class);
+            when(checker.check()).thenReturn(new OcrRuntimeStatus(true, true, true, "eng", TESSDATA_PATH == null ? "/tmp" : TESSDATA_PATH.toString(), null));
+            return checker;
+        }
     }
 
     @Test
