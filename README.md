@@ -1,295 +1,242 @@
 # SaveAPenny
-Users can track accounts, transactions, budgets, spending patterns, recurring payments, alerts, and eventually investment/analytics features.
 
-User-facing documentation:
+![Java 24](https://img.shields.io/badge/Java-24-orange)
+![Spring Boot 3.5](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
+![Spring AI](https://img.shields.io/badge/Spring%20AI-Integrated-7E57C2)
 
-- `USER-GUIDE.md`
+SaveAPenny is a personal finance backend built with Spring Boot.
 
-## Auth status
-Auth endpoints are available under `/api/v1/auth`:
+It helps users track money, manage budgets, import financial data, and chat with an AI assistant that can use real account data instead of only prompt text.
 
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/refresh`
-- `POST /api/v1/auth/logout`
+## Why It Is Interesting
 
-Protected endpoints require `Authorization: Bearer <accessToken>`.
+- more than a CRUD demo: includes reporting, automation, OCR, audit logging, and AI integration
+- modular backend design with clear domain boundaries
+- secure JWT-based API with user-scoped access rules
+- assistant features backed by internal MCP-style tool handlers
+- practical engineering concerns included: async jobs, validation, error handling, tests, and migrations
 
-## Account status
-Account endpoints are available under `/api/v1/accounts`:
+## What Users Can Do
 
-- `POST /api/v1/accounts`
-- `GET /api/v1/accounts`
-- `GET /api/v1/accounts/{accountId}`
-- `PUT /api/v1/accounts/{accountId}`
-- `DELETE /api/v1/accounts/{accountId}`
+- create and manage accounts
+- organize income and expenses with categories
+- record transactions and transfers
+- set monthly and yearly budgets
+- review summaries, category spending, cash flow, and net worth
+- automate recurring transactions
+- import transactions from CSV files
+- extract transaction candidates from receipts or PDFs with OCR
+- read notifications and audit history
+- ask an AI assistant budgeting questions
 
-Account data is ownership-scoped to the authenticated user and uses soft delete (`active=false`).
+## Feature Overview
 
-## Category status
-Category endpoints are available under `/api/v1/categories`:
+| Feature | What it covers |
+| --- | --- |
+| Auth | Register, login, refresh, logout |
+| Accounts | Ownership-scoped financial accounts |
+| Categories | System and user-defined categories |
+| Transactions | Income, expense, transfer, filtering |
+| Budgets | Monthly and yearly budget tracking |
+| Reports | Summary, spending, cash flow, net worth |
+| Automation | Recurring transaction scheduling |
+| Notifications | In-app notifications and unread count |
+| Imports | CSV preview, async confirm, duplicate detection |
+| OCR | Receipt/document parsing with Tesseract |
+| Audit | Ownership-scoped audit logs |
+| Assistant | Spring AI chat with internal tool-calling |
 
-- `POST /api/v1/categories`
-- `GET /api/v1/categories?type=INCOME|EXPENSE`
-- `GET /api/v1/categories/{categoryId}`
-- `PUT /api/v1/categories/{categoryId}`
-- `DELETE /api/v1/categories/{categoryId}`
+## Architecture Snapshot
 
-Category visibility includes system categories (`userId=null`) and user-owned categories. System categories cannot be modified or deleted.
+```mermaid
+flowchart TD
+    A[Client] --> B[REST API]
+    B --> C[Security + JWT]
+    B --> D[Domain Services]
+    D --> E[(PostgreSQL)]
+    D --> F[Reports / Budgets / Transactions]
+    D --> G[Imports / OCR / Automation]
+    D --> H[Notifications / Audit]
+    B --> I[Assistant]
+    I --> J[Spring AI]
+    J --> K[Internal MCP Tool Adapter]
+    K --> F
+```
 
-## Transaction status
-Transaction endpoints are available under `/api/v1/transactions`:
+## Quick Product Examples
 
-- `POST /api/v1/transactions`
-- `POST /api/v1/transactions/transfer`
-- `GET /api/v1/transactions`
-- `GET /api/v1/transactions/{transactionId}`
-- `PUT /api/v1/transactions/{transactionId}`
-- `DELETE /api/v1/transactions/{transactionId}`
+### Create A Transaction
 
-Transaction module supports income/expense entries, transfer flow, ownership checks, and account balance impact rules.
-Transaction list endpoint supports combined filters: `from`, `to`, `type`, `accountId`, `categoryId`, `minAmount`, `maxAmount`, `keyword`, plus pageable params.
+```http
+POST /api/v1/transactions
+Authorization: Bearer <accessToken>
+Content-Type: application/json
 
-## Budget status
-Budget endpoints are available under `/api/v1/budgets`:
+{
+  "accountId": "11111111-1111-1111-1111-111111111111",
+  "categoryId": "22222222-2222-2222-2222-222222222222",
+  "type": "EXPENSE",
+  "amount": 145.75,
+  "currency": "TRY",
+  "description": "Groceries",
+  "transactionDate": "2026-06-05"
+}
+```
 
-- `POST /api/v1/budgets`
-- `GET /api/v1/budgets?period=MONTHLY|YEARLY`
-- `GET /api/v1/budgets/{budgetId}`
-- `GET /api/v1/budgets/{budgetId}/status`
-- `PUT /api/v1/budgets/{budgetId}`
-- `DELETE /api/v1/budgets/{budgetId}`
+### Ask The Assistant
 
-Budget status returns `budgetAmount`, `spentAmount`, `remainingAmount`, `usagePercentage`, and `status` (`ON_TRACK`, `WARNING`, `EXCEEDED`).
+```http
+POST /api/v1/assistant/chat
+Authorization: Bearer <accessToken>
+Content-Type: application/json
 
-Budget module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
+{
+  "message": "Where am I spending the most this month?"
+}
+```
 
-## Report status
-Report endpoints are available under `/api/v1/reports`:
+Example response shape:
 
-- `GET /api/v1/reports/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/monthly-summary/export?from=YYYY-MM-DD&to=YYYY-MM-DD` (CSV download)
-- `GET /api/v1/reports/category-spending?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/cash-flow?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/net-worth?snapshotDate=YYYY-MM-DD`
+```json
+{
+  "success": true,
+  "data": {
+    "sessionId": "44444444-4444-4444-4444-444444444444",
+    "reply": "Your highest spending this month is in Food, followed by Transport.",
+    "disclaimer": "This assistant provides general budgeting guidance, not financial, tax, or legal advice."
+  },
+  "error": null,
+  "timestamp": "2026-06-05T12:00:00Z"
+}
+```
 
-Report module uses query-based aggregation from existing account/transaction/category data and returns the standard API envelope.
+## Main API Areas
 
-Report module flag: `PARTIAL` (report JSON endpoints and monthly-summary CSV export are complete; CSV export for category-spending/cash-flow/net-worth is pending).
+| Area | Endpoints |
+| --- | --- |
+| Auth | `/api/v1/auth/*` |
+| Accounts | `/api/v1/accounts` |
+| Categories | `/api/v1/categories` |
+| Transactions | `/api/v1/transactions` |
+| Budgets | `/api/v1/budgets` |
+| Reports | `/api/v1/reports` |
+| Automation | `/api/v1/automations/recurring-transactions` |
+| Notifications | `/api/v1/notifications` |
+| Imports | `/api/v1/imports/transactions` |
+| OCR | `/api/imports/ocr` |
+| Audit | `/api/v1/audits` |
+| Assistant | `/api/v1/assistant/chat` |
 
-## Automation status
-Recurring transaction endpoints are available under `/api/v1/automations/recurring-transactions`:
+Protected endpoints require:
 
-- `POST /api/v1/automations/recurring-transactions`
-- `GET /api/v1/automations/recurring-transactions`
-- `GET /api/v1/automations/recurring-transactions/{recurringTransactionId}`
-- `PUT /api/v1/automations/recurring-transactions/{recurringTransactionId}`
-- `DELETE /api/v1/automations/recurring-transactions/{recurringTransactionId}`
+```text
+Authorization: Bearer <accessToken>
+```
 
-Automation module manages recurring income/expense definitions, scheduled due-run execution, distributed lock based idempotency, and ownership-scoped soft delete.
+## Current Status
 
-Automation module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared tests/docs).
+- Auth: complete
+- Accounts: complete
+- Categories: complete
+- Transactions: complete
+- Budgets: complete
+- Reports: partial CSV export coverage
+- Automation: complete
+- Notifications: partial event/email/preferences support pending
+- Imports: complete
+- OCR: complete
+- Audit: complete
+- Assistant: complete for backend MVP and tool-calling
 
-## Notification status
-Notification endpoints are available under `/api/v1/notifications`:
+## Tech Stack
 
-- `POST /api/v1/notifications`
-- `GET /api/v1/notifications?read=true|false`
-- `GET /api/v1/notifications/{notificationId}`
-- `PUT /api/v1/notifications/{notificationId}`
-- `DELETE /api/v1/notifications/{notificationId}`
-- `GET /api/v1/notifications/unread-count`
-- `PATCH /api/v1/notifications/mark-all-read`
+- Java 24
+- Spring Boot 3.5
+- Spring Security
+- Spring Data JPA
+- PostgreSQL
+- Flyway
+- Spring AI
+- Tess4J / Tesseract OCR
+- JUnit 5, Mockito, Testcontainers, Rest Assured
 
-Notification module supports in-app notifications with read/unread filtering, unread count, and mark-all-read flow.
-Event-triggered notifications, email delivery, and user preference management are still pending.
+## Run Locally
 
-Notification module flag: `PARTIAL` (in-app notification flows complete; event/email/preferences pending).
+### Prerequisites
 
-## Import status
-CSV import endpoints are available under `/api/v1/imports/transactions`:
+- Java 24
+- PostgreSQL
+- Maven
+- Tesseract if OCR is enabled
 
-- `POST /api/v1/imports/transactions/preview` (multipart form-data with `file`)
-- `POST /api/v1/imports/transactions/confirm`
-- `GET /api/v1/imports/transactions/{importId}/status`
-
-Import module supports preview validation, persisted import/import_rows tracking, async confirm processing, and duplicate row skipping by hash of `account_id + amount + date + description`.
-
-Import module statuses:
-
-- Import: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
-- Import row: `VALID`, `IMPORTED`, `FAILED`, `SKIPPED`
-
-Import module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
-
-## OCR import status
-OCR import endpoints are available under `/api/imports/ocr`:
-
-- `POST /api/imports/ocr` (multipart form-data with `file`, returns async job id)
-- `GET /api/imports/ocr/{jobId}`
-
-OCR import supports `image/png`, `image/jpeg`, and `application/pdf`, persists raw OCR output in `ocr_jobs`, and returns parsed transaction candidates from extracted text.
-
-OCR job statuses:
-
-- `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
-
-OCR module flag: `COMPLETE` (async processing, timeout/retry guardrails, validation, health indicator, unit/integration tests, golden regression test).
-
-## Audit status
-Audit endpoints are available under `/api/v1/audits`:
-
-- `POST /api/v1/audits`
-- `GET /api/v1/audits?entityType=&entityId=&from=&to=`
-- `GET /api/v1/audits/{auditLogId}`
-
-Audit module supports ownership-scoped audit entry creation and retrieval with optional entity/date filtering.
-
-Audit module flag: `COMPLETE` (entity/repository/dto/exception/mapper/service/controller/shared integration/tests/docs).
-
-## Assistant status
-Assistant endpoint is available under `/api/v1/assistant`:
-
-- `POST /api/v1/assistant/chat`
-
-Assistant module supports:
-
-- synchronous authenticated chat
-- finance and savings system prompting
-- Spring AI tool-calling over reports, budgets, and recent transactions
-- persisted chat sessions and messages through optional `sessionId`
-
-Related technical docs:
-
-- `assistant-technical-doc.md`
-- `assistant-implementation-plan.md`
-
-Request notes:
-
-- `message` is required
-- `sessionId` is optional
-- `history` is optional; persisted session history is used when `sessionId` is provided without request history
-
-Assistant module flag: `COMPLETE` for backend MVP + session persistence + tool-calling.
-
-## Configuration
-Set the following environment variables before running the app:
+### Required Environment Variables
 
 - `DB_USERNAME`
 - `DB_PASSWORD`
-- `JWT_SECRET` (a strong secret key, at least 64 characters for HS512)
-- `ASSISTANT_AI_PROVIDER` (`openai` by default, set `openrouter` to use OpenRouter)
-- `OPENAI_API_KEY` (required when `ASSISTANT_ENABLED=true` and provider is `openai`)
-- `OPENROUTER_API_KEY` (required when `ASSISTANT_ENABLED=true` and provider is `openrouter`)
-- `ASSISTANT_ENABLED` (`true` to enable assistant endpoint, defaults to `false`)
+- `JWT_SECRET`
+- `ASSISTANT_ENABLED`
+- `ASSISTANT_AI_PROVIDER`
+- `OPENAI_API_KEY` when using OpenAI
+- `OPENROUTER_API_KEY` when using OpenRouter
 
-## OCR setup (Tess4J + Tesseract)
+### Start The App
 
-The project uses `tess4j`, which requires native Tesseract binaries and language data files at runtime.
-
-- Default OCR config is in `src/main/resources/application.yml` under `ocr.*`.
-- Important keys:
-  - `ocr.enabled`
-  - `ocr.tessdata-path`
-  - `ocr.language`
-  - `ocr.psm`
-  - `ocr.max-file-size-bytes`
-  - `ocr.job-timeout-millis`
-  - `ocr.max-retries`
-  - `ocr.debug-logging`
-
-### Local (macOS)
-
-- Install Tesseract: `brew install tesseract`
-- Verify install: `tesseract --version`
-- Verify native library exists: `ls "$(brew --prefix tesseract)/lib/libtesseract.dylib"`
-- Verify tessdata path exists: `ls /opt/homebrew/share/tessdata`
-- Ensure `ocr.tessdata-path` matches your machine path.
-
-#### `pom.xml` JNA path is hardcoded to the contributor's machine
-
-`pom.xml` configures `jna.library.path` (and `java.library.path` for tests) plus
-`--enable-native-access=ALL-UNNAMED` for both the `spring-boot-maven-plugin` and
-the `maven-surefire-plugin`. The current default is the Apple Silicon Homebrew
-path, so on most local setups you can run `mvn spring-boot:run` and `mvn test`
-without passing any extra JNA flags.
-
-Default values in `pom.xml`:
-
-```xml
-<systemPropertyVariables>
-    <jna.library.path>/opt/homebrew/lib</jna.library.path>
-    <java.library.path>/opt/homebrew/lib</java.library.path>
-</systemPropertyVariables>
-<argLine>--enable-native-access=ALL-UNNAMED</argLine>
+```bash
+mvn spring-boot:run
 ```
 
-> **If your Tesseract native library lives elsewhere, update these paths in
-> `pom.xml` to match your machine.** The hardcoded value assumes
-> `/opt/homebrew/lib` (Apple Silicon Homebrew). Common alternatives:
->
-> - Intel Homebrew: `/usr/local/lib`
-> - Linux package manager: `/usr/lib` (or `/usr/lib/x86_64-linux-gnu`)
-> - Custom build: directory containing `libtesseract.dylib` / `libtesseract.so`
->
-> Alternatively, override at runtime without editing `pom.xml`:
->
-> ```bash
-> mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Djna.library.path=$(brew --prefix tesseract)/lib --enable-native-access=ALL-UNNAMED"
-> ```
+Useful URLs after startup:
 
-- Required application property (update if your tessdata path differs):
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI docs: `http://localhost:8080/v3/api-docs`
+- Health: `http://localhost:8080/actuator/health`
+
+## OCR Setup
+
+The OCR pipeline uses `tess4j`, so native Tesseract binaries and tessdata files must exist on the machine.
+
+macOS setup:
+
+```bash
+brew install tesseract
+tesseract --version
+ls "$(brew --prefix tesseract)/lib/libtesseract.dylib"
+ls /opt/homebrew/share/tessdata
+```
+
+Example property:
 
 ```properties
 ocr.tessdata-path=/opt/homebrew/share/tessdata
 ```
 
-### CI environment
+If OCR is enabled and Tesseract is missing, startup validation fails.
 
-- Install Tesseract in the CI job before tests/build (example: apt/brew package install step).
-- Ensure requested language files exist in tessdata (for default: `eng.traineddata`).
-- Set/override `ocr.tessdata-path` for the CI runner filesystem.
+## Testing
 
-### Docker/production
+Run everything:
 
-- Install native Tesseract package in the application image.
-- Copy or install required `.traineddata` language files.
-- Set `ocr.tessdata-path` to the path inside the container (common Linux path: `/usr/share/tesseract-ocr/4.00/tessdata` or distro equivalent).
-- Start the JVM with:
-  - `--enable-native-access=ALL-UNNAMED`
-  - `-Djna.library.path=<native tesseract lib dir>`
+```bash
+mvn test
+```
 
-If native Tesseract or tessdata files are missing, the application now fails OCR startup validation when `ocr.enabled=true`.
+Examples of focused test commands:
 
-## Health and observability
+- `mvn -Dtest=AuthFlowIntegrationTest test`
+- `mvn -Dtest=TransactionFlowIntegrationTest test`
+- `mvn -Dtest=BudgetFlowIntegrationTest test`
+- `mvn -Dtest=ReportFlowIntegrationTest test`
+- `mvn -Dtest=ImportFlowIntegrationTest test`
+- `mvn -Dtest=OcrImportFlowIntegrationTest,OcrImportDisabledIntegrationTest test`
+- `mvn -Dtest=AuditFlowIntegrationTest test`
 
-- Actuator health endpoint: `GET /actuator/health`
-- OCR health contributes status details when OCR is enabled.
-- OCR health now reports:
-  - `enabled`
-  - `tessdataPathValid`
-  - `nativeLibraryLoaded`
-  - `language`
-- OCR processing logs duration and success/failure events; raw extracted text is masked unless `ocr.debug-logging=true`.
+## More Documentation
 
-## Test commands
+- `USER-GUIDE.md`
+- `MCP_ROADMAP.md`
+- `technical-doc.md`
 
-- Run full test suite: `mvn test`
-- Run auth integration flow only: `mvn -Dtest=AuthFlowIntegrationTest test`
-- Run account integration flow only: `mvn -Dtest=AccountFlowIntegrationTest test`
-- Run category integration flow only: `mvn -Dtest=CategoryFlowIntegrationTest test`
-- Run transaction integration flow only: `mvn -Dtest=TransactionFlowIntegrationTest test`
-- Run budget integration flow only: `mvn -Dtest=BudgetFlowIntegrationTest test`
-- Run budget controller/service tests only: `mvn -Dtest=BudgetControllerTest,BudgetServiceImplTest test`
-- Run report integration flow only: `mvn -Dtest=ReportFlowIntegrationTest test`
-- Run report controller/service tests only: `mvn -Dtest=ReportControllerTest,ReportServiceImplTest test`
-- Run automation controller/service tests only: `mvn -Dtest=RecurringTransactionControllerTest,RecurringTransactionServiceImplTest,RecurringTransactionExecutionServiceImplTest test`
-- Run notification integration flow only: `mvn -Dtest=NotificationFlowIntegrationTest test`
-- Run notification controller/service tests only: `mvn -Dtest=NotificationControllerTest,NotificationServiceImplTest test`
-- Run import integration flow only: `mvn -Dtest=ImportFlowIntegrationTest test`
-- Run import controller/service tests only: `mvn -Dtest=ImportControllerTest,ImportServiceImplTest test`
-- Run OCR import integration flow only: `mvn -Dtest=OcrImportFlowIntegrationTest,OcrImportDisabledIntegrationTest test`
-- Run OCR service unit tests only: `mvn -Dtest=TesseractOcrServiceTest test`
-- Run OCR golden regression test only: `mvn -Dtest=OcrGoldenImageRegressionTest test`
-- Run audit integration flow only: `mvn -Dtest=AuditFlowIntegrationTest test`
-- Run audit controller/service tests only: `mvn -Dtest=AuditLogControllerTest,AuditLogServiceImplTest test`
+## Repository Focus
+
+This repository focuses on the backend platform and assistant integration rather than a frontend UI.
