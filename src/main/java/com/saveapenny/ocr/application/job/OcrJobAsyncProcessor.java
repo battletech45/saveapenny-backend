@@ -1,6 +1,7 @@
 package com.saveapenny.ocr.application.job;
 
 import com.saveapenny.ocr.application.port.in.OcrService;
+import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
 import com.saveapenny.ocr.domain.exception.OcrProcessingException;
 import com.saveapenny.ocr.domain.model.OcrJob;
 import com.saveapenny.ocr.domain.model.OcrJobStatus;
@@ -14,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class OcrJobAsyncProcessor {
@@ -38,7 +38,7 @@ public class OcrJobAsyncProcessor {
     }
 
     @Async("ocrTaskExecutor")
-    public void process(UUID jobId, MultipartFile file) {
+    public void process(UUID jobId, OcrUploadPayload file) {
         long startedAt = System.nanoTime();
         OcrJob job = ocrJobRepository.findById(jobId).orElse(null);
         if (job == null) {
@@ -59,16 +59,16 @@ public class OcrJobAsyncProcessor {
             if (ocrProperties.debugLogging()) {
                 log.debug("OCR job {} rawText={}", job.getId(), mask(rawText));
             }
-        } catch (RuntimeException ex) {
+        } catch (Throwable ex) {
             job.setStatus(OcrJobStatus.FAILED);
-            job.setErrorMessage(truncate(ex.getMessage(), 240));
+            job.setErrorMessage(truncate(resolveMessage(ex), 240));
             ocrJobRepository.save(job);
             ocrMetrics.markFailure();
-            log.warn("OCR job {} failed in {} ms: {}", job.getId(), elapsedMillis(startedAt), ex.getMessage());
+            log.warn("OCR job {} failed in {} ms: {}", job.getId(), elapsedMillis(startedAt), resolveMessage(ex));
         }
     }
 
-    private String extractWithRetry(MultipartFile file) {
+    private String extractWithRetry(OcrUploadPayload file) {
         RuntimeException last = null;
         int attempts = Math.max(1, ocrProperties.maxRetries() + 1);
         for (int attempt = 1; attempt <= attempts; attempt++) {
@@ -127,5 +127,13 @@ public class OcrJobAsyncProcessor {
             return null;
         }
         return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
+    private String resolveMessage(Throwable throwable) {
+        String message = throwable.getMessage();
+        if (message != null && !message.isBlank()) {
+            return message;
+        }
+        return throwable.getClass().getSimpleName();
     }
 }

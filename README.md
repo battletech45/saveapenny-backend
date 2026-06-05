@@ -202,8 +202,47 @@ The project uses `tess4j`, which requires native Tesseract binaries and language
 
 - Install Tesseract: `brew install tesseract`
 - Verify install: `tesseract --version`
+- Verify native library exists: `ls "$(brew --prefix tesseract)/lib/libtesseract.dylib"`
 - Verify tessdata path exists: `ls /opt/homebrew/share/tessdata`
 - Ensure `ocr.tessdata-path` matches your machine path.
+
+#### `pom.xml` JNA path is hardcoded to the contributor's machine
+
+`pom.xml` configures `jna.library.path` (and `java.library.path` for tests) plus
+`--enable-native-access=ALL-UNNAMED` for both the `spring-boot-maven-plugin` and
+the `maven-surefire-plugin`. The current default is the Apple Silicon Homebrew
+path, so on most local setups you can run `mvn spring-boot:run` and `mvn test`
+without passing any extra JNA flags.
+
+Default values in `pom.xml`:
+
+```xml
+<systemPropertyVariables>
+    <jna.library.path>/opt/homebrew/lib</jna.library.path>
+    <java.library.path>/opt/homebrew/lib</java.library.path>
+</systemPropertyVariables>
+<argLine>--enable-native-access=ALL-UNNAMED</argLine>
+```
+
+> **If your Tesseract native library lives elsewhere, update these paths in
+> `pom.xml` to match your machine.** The hardcoded value assumes
+> `/opt/homebrew/lib` (Apple Silicon Homebrew). Common alternatives:
+>
+> - Intel Homebrew: `/usr/local/lib`
+> - Linux package manager: `/usr/lib` (or `/usr/lib/x86_64-linux-gnu`)
+> - Custom build: directory containing `libtesseract.dylib` / `libtesseract.so`
+>
+> Alternatively, override at runtime without editing `pom.xml`:
+>
+> ```bash
+> mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Djna.library.path=$(brew --prefix tesseract)/lib --enable-native-access=ALL-UNNAMED"
+> ```
+
+- Required application property (update if your tessdata path differs):
+
+```properties
+ocr.tessdata-path=/opt/homebrew/share/tessdata
+```
 
 ### CI environment
 
@@ -216,13 +255,21 @@ The project uses `tess4j`, which requires native Tesseract binaries and language
 - Install native Tesseract package in the application image.
 - Copy or install required `.traineddata` language files.
 - Set `ocr.tessdata-path` to the path inside the container (common Linux path: `/usr/share/tesseract-ocr/4.00/tessdata` or distro equivalent).
+- Start the JVM with:
+  - `--enable-native-access=ALL-UNNAMED`
+  - `-Djna.library.path=<native tesseract lib dir>`
 
-If Tesseract binary or tessdata files are missing, OCR requests will fail at runtime.
+If native Tesseract or tessdata files are missing, the application now fails OCR startup validation when `ocr.enabled=true`.
 
 ## Health and observability
 
 - Actuator health endpoint: `GET /actuator/health`
 - OCR health contributes status details when OCR is enabled.
+- OCR health now reports:
+  - `enabled`
+  - `tessdataPathValid`
+  - `nativeLibraryLoaded`
+  - `language`
 - OCR processing logs duration and success/failure events; raw extracted text is masked unless `ocr.debug-logging=true`.
 
 ## Test commands

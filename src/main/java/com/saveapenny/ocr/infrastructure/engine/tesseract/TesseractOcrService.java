@@ -1,10 +1,12 @@
 package com.saveapenny.ocr.infrastructure.engine.tesseract;
 
 import com.saveapenny.ocr.application.port.in.OcrService;
+import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
 import com.saveapenny.ocr.domain.exception.OcrProcessingException;
 import com.saveapenny.ocr.infrastructure.preprocessing.ImagePreprocessingService;
 import com.saveapenny.config.OcrProperties;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
@@ -18,7 +20,6 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class TesseractOcrService implements OcrService {
@@ -40,15 +41,15 @@ public class TesseractOcrService implements OcrService {
     }
 
     @Override
-    public String extractText(MultipartFile file) {
+    public String extractText(OcrUploadPayload file) {
         validateInput(file);
 
-        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
+        String contentType = file.contentType() == null ? "" : file.contentType().toLowerCase(Locale.ROOT);
         if ("application/pdf".equals(contentType)) {
             return extractFromPdf(file);
         }
 
-        try (InputStream inputStream = file.getInputStream()) {
+        try (InputStream inputStream = new ByteArrayInputStream(file.content())) {
             BufferedImage inputImage = ImageIO.read(inputStream);
             if (inputImage == null) {
                 throw new OcrProcessingException("Unsupported file content");
@@ -65,14 +66,14 @@ public class TesseractOcrService implements OcrService {
     }
 
     @Override
-    public CompletableFuture<String> extractTextAsync(MultipartFile file) {
-        if (file == null || file.getSize() < ASYNC_FILE_SIZE_THRESHOLD_BYTES) {
+    public CompletableFuture<String> extractTextAsync(OcrUploadPayload file) {
+        if (file == null || file.size() < ASYNC_FILE_SIZE_THRESHOLD_BYTES) {
             return CompletableFuture.completedFuture(extractText(file));
         }
         return CompletableFuture.supplyAsync(() -> extractText(file), ocrTaskExecutor);
     }
 
-    private void validateInput(MultipartFile file) {
+    private void validateInput(OcrUploadPayload file) {
         if (!ocrProperties.enabled()) {
             throw new OcrProcessingException("OCR is disabled");
         }
@@ -81,8 +82,8 @@ public class TesseractOcrService implements OcrService {
         }
     }
 
-    private String extractFromPdf(MultipartFile file) {
-        try (PDDocument document = Loader.loadPDF(file.getBytes())) {
+    private String extractFromPdf(OcrUploadPayload file) {
+        try (PDDocument document = Loader.loadPDF(file.content())) {
             PDFRenderer renderer = new PDFRenderer(document);
             Tesseract tesseract = createTesseract();
             StringBuilder builder = new StringBuilder();

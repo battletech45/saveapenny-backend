@@ -1,0 +1,21 @@
+logging:
+  level:
+    root: info
+    com.saveapenny: debug
+    org.springframework: debug
+    org.springframework.security: debug
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
+
+spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+ocr:
+  debug-logging: true
+
+assistant:
+  enabled: true

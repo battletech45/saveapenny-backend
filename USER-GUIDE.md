@@ -348,6 +348,22 @@ Verify tessdata exists:
 ls /opt/homebrew/share/tessdata
 ```
 
+> **Note on the JNA path in `pom.xml`.** `pom.xml` hardcodes `jna.library.path`
+> to `/opt/homebrew/lib` (Apple Silicon Homebrew) for both the Spring Boot run
+> and the test plugins, so on a default local macOS setup you can just run
+> `mvn spring-boot:run` and `mvn test` without extra JNA flags. If your
+> Tesseract native library lives elsewhere (Intel Homebrew at `/usr/local/lib`,
+> a Linux package path, or a custom build location), update the `jna.library.path`
+> (and `java.library.path` for tests) values in `pom.xml` to match your
+> machine, or override at runtime:
+>
+> ```bash
+> mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Djna.library.path=$(brew --prefix tesseract)/lib --enable-native-access=ALL-UNNAMED"
+> ```
+>
+> See the `README.md` "OCR setup (Tess4J + Tesseract)" section for full
+> details.
+
 ## Common Problems
 
 ### Assistant returns `503 ASSISTANT_DISABLED`

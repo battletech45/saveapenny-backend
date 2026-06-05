@@ -16,6 +16,18 @@ public interface OcrJobMapper {
     OcrSubmitResponse toSubmitResponse(OcrJob job);
 
     @Mapping(target = "jobId", source = "id")
+    @Mapping(target = "documentType", ignore = true)
+    @Mapping(target = "currency", ignore = true)
+    @Mapping(target = "merchantName", ignore = true)
+    @Mapping(target = "paymentDate", ignore = true)
+    @Mapping(target = "issueDate", ignore = true)
+    @Mapping(target = "extractedDates", ignore = true)
+    @Mapping(target = "extractedAmounts", ignore = true)
+    @Mapping(target = "referenceNumbers", ignore = true)
+    @Mapping(target = "labels", ignore = true)
+    @Mapping(target = "parseConfidence", ignore = true)
+    @Mapping(target = "parseWarning", ignore = true)
+    @Mapping(target = "parseDiagnostics", ignore = true)
     @Mapping(target = "transactionCandidates", ignore = true)
     OcrJobStatusResponse toStatusResponse(OcrJob job);
 
