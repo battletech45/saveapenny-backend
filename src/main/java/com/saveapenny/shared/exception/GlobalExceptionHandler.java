@@ -32,6 +32,7 @@ import com.saveapenny.auth.exception.RefreshTokenExpiredException;
 import com.saveapenny.imports.exception.ImportAlreadyRunningException;
 import com.saveapenny.imports.exception.ImportNotFoundException;
 import com.saveapenny.imports.exception.InvalidImportFileException;
+import com.saveapenny.mcp.error.ToolExecutionException;
 import com.saveapenny.ocr.domain.exception.InvalidOcrFileException;
 import com.saveapenny.ocr.domain.exception.OcrJobNotFoundException;
 import com.saveapenny.ocr.domain.exception.OcrProcessingException;
@@ -53,6 +54,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ToolExecutionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleToolExecutionException(ToolExecutionException ex) {
+        ApiError error = ApiError.builder()
+                .code(ex.getCode().name())
+                .message(ex.getMessage())
+                .details(ex.getErrors().stream()
+                        .map(item -> item.field() == null ? item.message() : item.field() + ": " + item.message())
+                        .toList())
+                .build();
+        return ResponseEntity.status(resolveToolStatus(ex)).body(ApiResponse.failure(error));
+    }
+
     @ExceptionHandler(TransactionNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleTransactionNotFound(TransactionNotFoundException ex) {
         ApiError error = ApiError.builder()
@@ -61,6 +74,17 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    private HttpStatus resolveToolStatus(ToolExecutionException ex) {
+        return switch (ex.getCode()) {
+            case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case VALIDATION_ERROR -> HttpStatus.BAD_REQUEST;
+            case FEATURE_DISABLED -> HttpStatus.SERVICE_UNAVAILABLE;
+            case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
+            case TOOL_EXECUTION_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
     }
 
     @ExceptionHandler(InvalidTransferException.class)
