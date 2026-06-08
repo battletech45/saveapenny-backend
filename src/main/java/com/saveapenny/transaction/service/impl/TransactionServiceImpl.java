@@ -215,7 +215,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Account findOwnedActiveAccount(UUID currentUserId, UUID accountId) {
-        return accountRepository.findByIdAndUserIdAndActiveTrue(accountId, currentUserId)
+        return accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, currentUserId)
                 .orElseThrow(() -> new InvalidTransferException("Account not found or inactive: " + accountId));
     }
 
