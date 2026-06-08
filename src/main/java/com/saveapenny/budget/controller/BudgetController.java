@@ -1,9 +1,6 @@
 package com.saveapenny.budget.controller;
 
-import com.saveapenny.budget.dto.BudgetResponse;
-import com.saveapenny.budget.dto.BudgetStatusResponse;
-import com.saveapenny.budget.dto.CreateBudgetRequest;
-import com.saveapenny.budget.dto.UpdateBudgetRequest;
+import com.saveapenny.budget.dto.*;
 import com.saveapenny.budget.entity.BudgetPeriod;
 import com.saveapenny.budget.service.BudgetService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
@@ -13,6 +10,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
+
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -95,6 +94,15 @@ public class BudgetController {
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID budgetId) {
         budgetService.delete(getCurrentUserId(principal), budgetId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping("/batch")
+    public ResponseEntity<ApiResponse<Void>> batchDelete(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @Valid @RequestBody BatchDeleteBudgetsRequest request
+            ) {
+        budgetService.batchDelete(getCurrentUserId(principal), request.getBudgetIds());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

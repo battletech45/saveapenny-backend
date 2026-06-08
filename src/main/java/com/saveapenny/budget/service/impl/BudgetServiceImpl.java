@@ -7,6 +7,7 @@ import com.saveapenny.budget.dto.UpdateBudgetRequest;
 import com.saveapenny.budget.entity.Budget;
 import com.saveapenny.budget.entity.BudgetPeriod;
 import com.saveapenny.budget.exception.BudgetAlreadyExistsException;
+import com.saveapenny.budget.exception.BudgetBatchDeleteException;
 import com.saveapenny.budget.exception.BudgetNotFoundException;
 import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
 import com.saveapenny.budget.mapper.BudgetMapper;
@@ -148,6 +149,14 @@ public class BudgetServiceImpl implements BudgetService {
     public void delete(UUID currentUserId, UUID budgetId) {
         Budget budget = findOwnedBudget(currentUserId, budgetId);
         budgetRepository.delete(budget);
+    }
+
+    @Override
+    public void batchDelete(UUID currentUserId, Set<UUID> budgetIds) {
+        int deleted = budgetRepository.deleteAllByIdAndUserId(budgetIds, currentUserId);
+        if (deleted != budgetIds.size()) {
+            throw new BudgetBatchDeleteException(budgetIds.size(), deleted);
+        }
     }
 
     private Budget findOwnedBudget(UUID currentUserId, UUID budgetId) {

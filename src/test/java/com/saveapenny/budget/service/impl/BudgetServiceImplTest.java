@@ -14,6 +14,7 @@ import com.saveapenny.budget.dto.UpdateBudgetRequest;
 import com.saveapenny.budget.entity.Budget;
 import com.saveapenny.budget.entity.BudgetPeriod;
 import com.saveapenny.budget.exception.BudgetAlreadyExistsException;
+import com.saveapenny.budget.exception.BudgetBatchDeleteException;
 import com.saveapenny.budget.exception.BudgetNotFoundException;
 import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
 import com.saveapenny.budget.mapper.BudgetMapper;
@@ -28,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -234,6 +236,24 @@ class BudgetServiceImplTest {
 
         assertThrows(BudgetAlreadyExistsException.class, () -> budgetService.update(userId, budgetId, request));
         verify(budgetMapper, never()).updateEntity(any(Budget.class), any(UpdateBudgetRequest.class));
+    }
+
+    @Test
+    void batchDelete_deletesAll_whenAllOwned() {
+        Set<UUID> ids = Set.of(budgetId, UUID.randomUUID());
+        when(budgetRepository.deleteAllByIdAndUserId(ids, userId)).thenReturn(2);
+
+        budgetService.batchDelete(userId, ids);
+
+        verify(budgetRepository).deleteAllByIdAndUserId(ids, userId);
+    }
+
+    @Test
+    void batchDelete_throws_whenSomeNotOwned() {
+        Set<UUID> ids = Set.of(budgetId, UUID.randomUUID());
+        when(budgetRepository.deleteAllByIdAndUserId(ids, userId)).thenReturn(1);
+
+        assertThrows(BudgetBatchDeleteException.class, () -> budgetService.batchDelete(userId, ids));
     }
 
     private TransactionRepository.CategoryDailyExpenseTotal dailyTotal(
