@@ -47,6 +47,7 @@ rate-limit:
 security:
   jwt:
     secret: ${JWT_SECRET}
+    refresh-token-expiry-days: 7
 
 management:
   endpoints:
