@@ -1,11 +1,27 @@
 package com.saveapenny.mcp.adapter.springai;
 
 import com.saveapenny.assistant.tool.AssistantToolContextHolder;
+import com.saveapenny.goal.entity.GoalStatus;
+import com.saveapenny.goal.entity.GoalType;
 import com.saveapenny.mcp.budget.MonthlyBudgetStatusToolInput;
 import com.saveapenny.mcp.budget.MonthlyBudgetStatusToolResult;
+import com.saveapenny.mcp.goal.CompareScenariosToolInput;
 import com.saveapenny.mcp.execution.ToolExecutionContext;
 import com.saveapenny.mcp.execution.ToolHandler;
 import com.saveapenny.mcp.execution.ToolResult;
+import com.saveapenny.mcp.goal.GetGoalProgressToolInput;
+import com.saveapenny.mcp.goal.GetGoalProgressToolResult;
+import com.saveapenny.mcp.goal.GetGoalToolInput;
+import com.saveapenny.mcp.goal.GetGoalToolResult;
+import com.saveapenny.mcp.goal.GoalToolModels;
+import com.saveapenny.mcp.goal.ListGoalRunsToolInput;
+import com.saveapenny.mcp.goal.ListGoalRunsToolResult;
+import com.saveapenny.mcp.goal.ListGoalScenariosToolInput;
+import com.saveapenny.mcp.goal.ListGoalScenariosToolResult;
+import com.saveapenny.mcp.goal.ListGoalsToolInput;
+import com.saveapenny.mcp.goal.ListGoalsToolResult;
+import com.saveapenny.mcp.goal.SimulateGoalToolInput;
+import com.saveapenny.mcp.goal.WhatIfToolInput;
 import com.saveapenny.mcp.registry.ToolRegistry;
 import com.saveapenny.mcp.report.CurrentMonthSummaryToolInput;
 import com.saveapenny.mcp.report.CurrentMonthSummaryToolResult;
@@ -13,6 +29,7 @@ import com.saveapenny.mcp.report.TopSpendingCategoriesToolInput;
 import com.saveapenny.mcp.report.TopSpendingCategoriesToolResult;
 import com.saveapenny.mcp.transaction.RecentTransactionsToolInput;
 import com.saveapenny.mcp.transaction.RecentTransactionsToolResult;
+import java.util.UUID;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -24,6 +41,14 @@ public class SpringAiMcpToolAdapter {
     private static final String TOP_SPENDING_CATEGORIES_TOOL = "getTopSpendingCategories";
     private static final String MONTHLY_BUDGET_STATUS_TOOL = "getMonthlyBudgetStatus";
     private static final String RECENT_TRANSACTIONS_TOOL = "getRecentTransactions";
+    private static final String LIST_GOALS_TOOL = "list_goals";
+    private static final String GET_GOAL_TOOL = "get_goal";
+    private static final String GET_GOAL_PROGRESS_TOOL = "get_goal_progress";
+    private static final String LIST_GOAL_SCENARIOS_TOOL = "list_goal_scenarios";
+    private static final String LIST_GOAL_RUNS_TOOL = "list_goal_runs";
+    private static final String SIMULATE_GOAL_TOOL = "simulate_goal";
+    private static final String COMPARE_SCENARIOS_TOOL = "compare_scenarios";
+    private static final String WHAT_IF_TOOL = "what_if";
 
     private final ToolRegistry toolRegistry;
     private final AssistantToolContextHolder assistantToolContextHolder;
@@ -143,6 +168,161 @@ public class SpringAiMcpToolAdapter {
         return builder.toString();
     }
 
+    @Tool(name = LIST_GOALS_TOOL, description = "List the authenticated user's goals with optional status and type filters.")
+    public String listGoals(
+            @ToolParam(description = "Optional status filter.", required = false) String status,
+            @ToolParam(description = "Optional goal type filter.", required = false) String type,
+            @ToolParam(description = "Maximum number of goals to include.", required = false) int limit) {
+        ListGoalsToolResult result = execute(
+                LIST_GOALS_TOOL,
+                new ListGoalsToolInput(parseGoalStatus(status), parseGoalType(type), limit <= 0 ? null : limit),
+                ListGoalsToolResult.class);
+        if (result.goals().isEmpty()) {
+            return "Goals: none.";
+        }
+        StringBuilder builder = new StringBuilder("Goals: ");
+        for (int i = 0; i < result.goals().size(); i++) {
+            var item = result.goals().get(i);
+            if (i > 0) {
+                builder.append("; ");
+            }
+            builder.append(item.title())
+                    .append(" [")
+                    .append(item.type())
+                    .append(", ")
+                    .append(item.status())
+                    .append("] target=")
+                    .append(item.targetAmount())
+                    .append(' ')
+                    .append(item.currency());
+        }
+        builder.append('.');
+        return builder.toString();
+    }
+
+    @Tool(name = GET_GOAL_TOOL, description = "Get one goal with scenarios and latest run.")
+    public String getGoal(@ToolParam(description = "Goal id.") String goalId) {
+        GetGoalToolResult result = execute(GET_GOAL_TOOL, new GetGoalToolInput(UUID.fromString(goalId)), GetGoalToolResult.class);
+        var goal = result.goal();
+        return "Goal: " + goal.title() + " [" + goal.type() + ", " + goal.status() + "] target="
+                + goal.targetAmount() + ' ' + goal.currency()
+                + ", scenarios=" + goal.scenarios().size()
+                + ", latestRun=" + (goal.latestRun() == null ? "none" : goal.latestRun().feasibility()) + '.';
+    }
+
+    @Tool(name = GET_GOAL_PROGRESS_TOOL, description = "Get the authenticated user's progress snapshot for a goal.")
+    public String getGoalProgress(@ToolParam(description = "Goal id.") String goalId) {
+        GetGoalProgressToolResult result = execute(
+                GET_GOAL_PROGRESS_TOOL,
+                new GetGoalProgressToolInput(UUID.fromString(goalId)),
+                GetGoalProgressToolResult.class);
+        return "Goal progress: status=" + result.status()
+                + ", currentAmount=" + result.currentAmount()
+                + ", projectedAmountAtTarget=" + result.projectedAmountAtTarget()
+                + ", gap=" + result.gap()
+                + ", offTrackForMonthsCount=" + result.offTrackForMonthsCount() + '.';
+    }
+
+    @Tool(name = LIST_GOAL_SCENARIOS_TOOL, description = "List scenarios for a goal.")
+    public String listGoalScenarios(@ToolParam(description = "Goal id.") String goalId) {
+        ListGoalScenariosToolResult result = execute(
+                LIST_GOAL_SCENARIOS_TOOL,
+                new ListGoalScenariosToolInput(UUID.fromString(goalId)),
+                ListGoalScenariosToolResult.class);
+        if (result.scenarios().isEmpty()) {
+            return "Goal scenarios: none.";
+        }
+        StringBuilder builder = new StringBuilder("Goal scenarios: ");
+        for (int i = 0; i < result.scenarios().size(); i++) {
+            var scenario = result.scenarios().get(i);
+            if (i > 0) {
+                builder.append("; ");
+            }
+            builder.append(scenario.name());
+            if (scenario.isBaseline()) {
+                builder.append(" [baseline]");
+            }
+        }
+        builder.append('.');
+        return builder.toString();
+    }
+
+    @Tool(name = LIST_GOAL_RUNS_TOOL, description = "List simulation runs for a goal.")
+    public String listGoalRuns(
+            @ToolParam(description = "Goal id.") String goalId,
+            @ToolParam(description = "Maximum number of runs to include.", required = false) int limit) {
+        ListGoalRunsToolResult result = execute(
+                LIST_GOAL_RUNS_TOOL,
+                new ListGoalRunsToolInput(UUID.fromString(goalId), limit <= 0 ? null : limit),
+                ListGoalRunsToolResult.class);
+        if (result.runs().isEmpty()) {
+            return "Goal runs: none.";
+        }
+        StringBuilder builder = new StringBuilder("Goal runs: ");
+        for (int i = 0; i < result.runs().size(); i++) {
+            var run = result.runs().get(i);
+            if (i > 0) {
+                builder.append("; ");
+            }
+            builder.append(run.runId()).append(" [").append(run.feasibility()).append("]");
+        }
+        builder.append('.');
+        return builder.toString();
+    }
+
+    @Tool(name = SIMULATE_GOAL_TOOL, description = "Run a live simulation for an existing goal.")
+    public String simulateGoal(@ToolParam(description = "Goal id.") String goalId) {
+        var result = execute(
+                SIMULATE_GOAL_TOOL,
+                new SimulateGoalToolInput(UUID.fromString(goalId), null),
+                com.saveapenny.goal.simulation.SimulationResult.class);
+        return "Goal simulation: feasibility=" + result.getFeasibility()
+                + ", horizonMonths=" + result.getHorizonMonths()
+                + ", warnings=" + result.getWarnings().size() + '.';
+    }
+
+    @Tool(name = COMPARE_SCENARIOS_TOOL, description = "Compare scenarios for a goal.")
+    public String compareScenarios(@ToolParam(description = "Goal id.") String goalId) {
+        var result = execute(
+                COMPARE_SCENARIOS_TOOL,
+                new CompareScenariosToolInput(UUID.fromString(goalId), null),
+                com.saveapenny.goal.simulation.dto.GoalScenarioComparisonResponse.class);
+        if (result.getScenarios().isEmpty()) {
+            return "Scenario comparison: none.";
+        }
+        StringBuilder builder = new StringBuilder("Scenario comparison: ");
+        for (int i = 0; i < result.getScenarios().size(); i++) {
+            var scenario = result.getScenarios().get(i);
+            if (i > 0) {
+                builder.append("; ");
+            }
+            builder.append(scenario.getScenarioName())
+                    .append(" feasibility=")
+                    .append(scenario.getFeasibility())
+                    .append(" projected=")
+                    .append(scenario.getProjectedAmount());
+        }
+        builder.append('.');
+        return builder.toString();
+    }
+
+    @Tool(name = WHAT_IF_TOOL, description = "Run a one-off what-if simulation for a goal.")
+    public String whatIf(
+            @ToolParam(description = "Goal id.") String goalId,
+            @ToolParam(description = "New monthly contribution for savings-style goals.", required = false) double monthlyContribution) {
+        com.fasterxml.jackson.databind.node.ObjectNode overrides = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
+        if (monthlyContribution > 0) {
+            overrides.put("monthlyContribution", monthlyContribution);
+        }
+        var result = execute(
+                WHAT_IF_TOOL,
+                new WhatIfToolInput(UUID.fromString(goalId), overrides),
+                com.saveapenny.goal.simulation.dto.GoalWhatIfResponse.class);
+        return "What-if result: feasibility=" + result.getResult().getFeasibility()
+                + ", projected=" + result.getResult().getSummary().get("projectedAmount")
+                + ", deltaVsBaseline=" + (result.getDeltaVsBaseline() == null ? "none" : result.getDeltaVsBaseline().getProjectedAmountDelta()) + '.';
+    }
+
     @SuppressWarnings("unchecked")
     private <I, O> O execute(String toolName, I input, Class<O> outputType) {
         ToolHandler<I, O> handler = (ToolHandler<I, O>) toolRegistry.findByName(toolName)
@@ -153,5 +333,19 @@ public class SpringAiMcpToolAdapter {
 
     private ToolExecutionContext currentContext() {
         return new ToolExecutionContext(assistantToolContextHolder.requireCurrentUserId());
+    }
+
+    private GoalStatus parseGoalStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return GoalStatus.valueOf(status.trim().toUpperCase());
+    }
+
+    private GoalType parseGoalType(String type) {
+        if (type == null || type.isBlank()) {
+            return null;
+        }
+        return GoalType.valueOf(type.trim().toUpperCase());
     }
 }
