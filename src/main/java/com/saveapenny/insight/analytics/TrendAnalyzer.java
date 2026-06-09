@@ -69,7 +69,7 @@ public class TrendAnalyzer {
                 if (cmp > 0) consistentlyDown = false;
             }
 
-            if (consistentlyUp || consistentlyDown) {
+            if ((consistentlyUp || consistentlyDown) && last.compareTo(first) != 0) {
                 String direction = consistentlyUp ? "increasing" : "decreasing";
                 BigDecimal totalChange = last.subtract(first).divide(first, 4, RoundingMode.HALF_UP);
 
