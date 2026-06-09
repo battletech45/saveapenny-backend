@@ -10,6 +10,7 @@ import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
-    private static final long REFRESH_TOKEN_EXPIRY_DAYS = 7L;
     private static final int TOKEN_RANDOM_BYTES = 64;
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
+    private final long refreshTokenExpiryDays;
 
-    public RefreshTokenServiceImpl(RefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenServiceImpl(
+            RefreshTokenRepository refreshTokenRepository,
+            @Value("${security.jwt.refresh-token-expiry-days:7}") long refreshTokenExpiryDays) {
         this.refreshTokenRepository = refreshTokenRepository;
+        this.refreshTokenExpiryDays = refreshTokenExpiryDays;
     }
 
     @Override
@@ -32,7 +36,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken refreshToken = RefreshToken.builder()
                 .userId(user.getId())
                 .token(generateToken())
-                .expiryDate(OffsetDateTime.now().plusDays(REFRESH_TOKEN_EXPIRY_DAYS))
+                .expiryDate(OffsetDateTime.now().plusDays(refreshTokenExpiryDays))
                 .revoked(false)
                 .build();
         return refreshTokenRepository.save(refreshToken);
@@ -63,7 +67,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshToken rotated = RefreshToken.builder()
                 .userId(existingToken.getUserId())
                 .token(generateToken())
-                .expiryDate(OffsetDateTime.now().plusDays(REFRESH_TOKEN_EXPIRY_DAYS))
+                .expiryDate(OffsetDateTime.now().plusDays(refreshTokenExpiryDays))
                 .revoked(false)
                 .build();
         return refreshTokenRepository.save(rotated);

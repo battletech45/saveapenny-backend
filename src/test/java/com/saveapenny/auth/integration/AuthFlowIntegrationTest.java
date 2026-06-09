@@ -52,7 +52,7 @@ class AuthFlowIntegrationTest {
         String registerBody = """
                 {
                   "email": "flow.user@example.com",
-                  "password": "strong-pass-123",
+                  "password": "Strong@123",
                   "fullName": "Flow User"
                 }
                 """;
@@ -73,7 +73,7 @@ class AuthFlowIntegrationTest {
         String loginBody = """
                 {
                   "email": "flow.user@example.com",
-                  "password": "strong-pass-123"
+                  "password": "Strong@123"
                 }
                 """;
 

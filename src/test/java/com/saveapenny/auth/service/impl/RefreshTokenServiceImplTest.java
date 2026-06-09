@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,7 +31,6 @@ class RefreshTokenServiceImplTest {
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
 
-    @InjectMocks
     private RefreshTokenServiceImpl refreshTokenService;
 
     private User user;
@@ -40,6 +38,7 @@ class RefreshTokenServiceImplTest {
     @BeforeEach
     void setUp() {
         user = User.builder().id(UUID.randomUUID()).build();
+        refreshTokenService = new RefreshTokenServiceImpl(refreshTokenRepository, 7);
     }
 
     @Test

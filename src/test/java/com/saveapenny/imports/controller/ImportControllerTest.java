@@ -2,6 +2,7 @@ package com.saveapenny.imports.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -12,14 +13,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
+import com.saveapenny.config.security.RateLimitingFilter;
 import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.imports.dto.ImportPreviewResponse;
 import com.saveapenny.imports.dto.ImportStatusResponse;
 import com.saveapenny.imports.entity.ImportStatus;
 import com.saveapenny.imports.exception.ImportNotFoundException;
 import com.saveapenny.imports.service.ImportService;
+import jakarta.servlet.FilterChain;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -44,6 +48,18 @@ class ImportControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private RateLimitingFilter rateLimitingFilter;
+
+    @BeforeEach
+    void setUpRateLimitingFilter() throws Exception {
+        doAnswer(invocation -> {
+            invocation.getArgument(2, FilterChain.class)
+                    .doFilter(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(rateLimitingFilter).doFilter(any(), any(), any());
+    }
 
     @Test
     void preview_returnsCreatedEnvelope() throws Exception {

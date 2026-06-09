@@ -1,6 +1,7 @@
 package com.saveapenny.auth.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,8 +18,11 @@ import com.saveapenny.auth.dto.RegisterRequest;
 import com.saveapenny.auth.service.AuthService;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
+import com.saveapenny.config.security.RateLimitingFilter;
 import com.saveapenny.config.security.SecurityConfig;
+import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -42,11 +46,23 @@ class AuthControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
+    @MockitoBean
+    private RateLimitingFilter rateLimitingFilter;
+
+    @BeforeEach
+    void setUpRateLimitingFilter() throws Exception {
+        doAnswer(invocation -> {
+            invocation.getArgument(2, FilterChain.class)
+                    .doFilter(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(rateLimitingFilter).doFilter(any(), any(), any());
+    }
+
     @Test
     void register_returnsAuthTokensEnvelope() throws Exception {
         RegisterRequest request = RegisterRequest.builder()
                 .email("john@example.com")
-                .password("strong-pass")
+                .password("Strong@123")
                 .fullName("John Doe")
                 .build();
         AuthTokenResponse response = AuthTokenResponse.builder()

@@ -53,7 +53,7 @@ class BudgetFlowIntegrationTest {
         String registerBody = """
                 {
                   "email": "budget.flow@example.com",
-                  "password": "strong-pass-123",
+                  "password": "Strong@123",
                   "fullName": "Budget Flow"
                 }
                 """;

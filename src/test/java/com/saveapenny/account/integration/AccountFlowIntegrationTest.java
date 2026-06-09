@@ -53,7 +53,7 @@ class AccountFlowIntegrationTest {
         String registerBody = """
                 {
                   "email": "account.flow@example.com",
-                  "password": "strong-pass-123",
+                  "password": "Strong@123",
                   "fullName": "Account Flow"
                 }
                 """;

@@ -2,6 +2,7 @@ package com.saveapenny.category.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -19,10 +20,13 @@ import com.saveapenny.category.dto.UpdateCategoryRequest;
 import com.saveapenny.category.entity.CategoryType;
 import com.saveapenny.category.service.CategoryService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
+import com.saveapenny.config.security.RateLimitingFilter;
 import com.saveapenny.config.security.SecurityConfig;
+import jakarta.servlet.FilterChain;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -46,6 +50,18 @@ class CategoryControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private RateLimitingFilter rateLimitingFilter;
+
+    @BeforeEach
+    void setUpRateLimitingFilter() throws Exception {
+        doAnswer(invocation -> {
+            invocation.getArgument(2, FilterChain.class)
+                    .doFilter(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(rateLimitingFilter).doFilter(any(), any(), any());
+    }
 
     @Test
     void create_returnsCreated() throws Exception {

@@ -91,7 +91,7 @@ class TransactionServiceImplTest {
         Transaction saved = Transaction.builder().id(UUID.randomUUID()).userId(userId).build();
         TransactionResponse response = TransactionResponse.builder().id(saved.getId()).build();
 
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
         when(transactionMapper.toEntity(request)).thenReturn(mapped);
         when(accountRepository.save(account)).thenReturn(account);
@@ -148,8 +148,8 @@ class TransactionServiceImplTest {
                 .amount(new BigDecimal("50.0000")).build();
         TransferResponse response = TransferResponse.builder().transactionId(savedTxn.getId()).build();
 
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(toId, userId)).thenReturn(Optional.of(toAccount));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(toId, userId)).thenReturn(Optional.of(toAccount));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
         when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTxn);
         when(transferRepository.save(any(Transfer.class))).thenReturn(savedTransfer);
@@ -175,7 +175,7 @@ class TransactionServiceImplTest {
                 .build();
         Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
 
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
 
         assertThrows(InsufficientBalanceException.class, () -> transactionService.create(userId, request));

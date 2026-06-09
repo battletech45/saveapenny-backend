@@ -23,6 +23,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
+            RateLimitingFilter rateLimitingFilter,
             HeaderUserAuthenticationFilter headerUserAuthenticationFilter,
             ObjectMapper objectMapper)
             throws Exception {
@@ -43,6 +44,7 @@ public class SecurityConfig {
                                 writeUnauthorizedResponse(response, objectMapper, "Unauthorized."))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeUnauthorizedResponse(response, objectMapper, accessDeniedException.getMessage())))
+                .addFilterBefore(rateLimitingFilter, AnonymousAuthenticationFilter.class)
                 .addFilterBefore(headerUserAuthenticationFilter, AnonymousAuthenticationFilter.class);
 
         return http.build();

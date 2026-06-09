@@ -139,7 +139,7 @@ class NotificationFlowIntegrationTest {
         String registerBody = """
                 {
                   "email": "%s",
-                  "password": "strong-pass-123",
+                  "password": "Strong@123",
                   "fullName": "%s"
                 }
                 """.formatted(email, fullName);

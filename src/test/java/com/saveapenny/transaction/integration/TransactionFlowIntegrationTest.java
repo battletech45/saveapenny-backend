@@ -53,7 +53,7 @@ class TransactionFlowIntegrationTest {
         String registerBody = """
                 {
                   "email": "transaction.flow@example.com",
-                  "password": "strong-pass-123",
+                  "password": "Strong@123",
                   "fullName": "Transaction Flow"
                 }
                 """;
