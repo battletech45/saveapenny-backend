@@ -39,6 +39,8 @@ import com.saveapenny.goal.exception.InvalidGoalStatusTransitionException;
 import com.saveapenny.goal.exception.InvalidGoalTypeException;
 import com.saveapenny.goal.exception.LinkedAccountNotFoundException;
 import com.saveapenny.goal.exception.ScenarioNotFoundException;
+import com.saveapenny.insight.exception.InsightGenerationException;
+import com.saveapenny.insight.exception.InsightNotFoundException;
 import com.saveapenny.mcp.error.ToolExecutionException;
 import com.saveapenny.ocr.domain.exception.InvalidOcrFileException;
 import com.saveapenny.ocr.domain.exception.OcrJobNotFoundException;
@@ -346,6 +348,26 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InsightNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInsightNotFound(InsightNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("INSIGHT_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InsightGenerationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInsightGeneration(InsightGenerationException ex) {
+        ApiError error = ApiError.builder()
+                .code("INSIGHT_GENERATION_FAILED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(AuditLogNotFoundException.class)

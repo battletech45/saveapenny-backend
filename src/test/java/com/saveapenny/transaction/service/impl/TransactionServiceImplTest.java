@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,8 +36,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceImplTest {
@@ -202,17 +205,7 @@ class TransactionServiceImplTest {
                 .build();
         TransactionResponse response = TransactionResponse.builder().id(transaction.getId()).build();
 
-        when(transactionRepository.search(
-                        eq(userId),
-                        eq(from),
-                        eq(to),
-                        eq(TransactionType.EXPENSE),
-                        eq(accountId),
-                        eq(categoryId),
-                        eq(minAmount),
-                        eq(maxAmount),
-                        eq("groceries"),
-                        eq(pageable)))
+        when(transactionRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(transaction), pageable, 1));
         when(transactionMapper.toResponse(transaction)).thenReturn(response);
 
@@ -230,16 +223,29 @@ class TransactionServiceImplTest {
 
         assertEquals(1, result.getTotalElements());
         assertEquals(transaction.getId(), result.getContent().get(0).getId());
-        verify(transactionRepository).search(
+        verify(transactionRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void getAll_normalizesBlankKeywordToNull() {
+        PageRequest pageable = PageRequest.of(0, 20);
+
+        when(transactionRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(Page.empty(pageable));
+
+        var result = transactionService.getAll(
                 userId,
-                from,
-                to,
-                TransactionType.EXPENSE,
-                accountId,
-                categoryId,
-                minAmount,
-                maxAmount,
-                "groceries",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "   ",
                 pageable);
+
+        assertEquals(0, result.getTotalElements());
+        verify(transactionRepository).findAll(any(Specification.class), eq(pageable));
     }
 }

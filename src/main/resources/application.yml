@@ -108,6 +108,19 @@ goal:
     off-track-persistence-months: 2
     cron: "0 0 6 * * *"
 
+insight:
+  enabled: true
+  cron: "0 30 6 * * *"
+  max-insights-per-generation: 10
+  deduplication-window-days: 7
+  stddev-threshold: 3.0
+  max-amount-ratio: 0.5
+  ai-enhanced: false
+  model: ${INSIGHT_MODEL:poolside/laguna-xs.2:free}
+  provider: ${INSIGHT_AI_PROVIDER:openrouter}
+  openrouter-api-key: ${OPENROUTER_API_KEY:}
+  openrouter-base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
+
 ocr:
   enabled: true
   tessdata-path: /opt/homebrew/share/tessdata

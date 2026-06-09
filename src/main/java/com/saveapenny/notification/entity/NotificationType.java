@@ -5,5 +5,6 @@ public enum NotificationType {
     BUDGET_EXCEEDED,
     RECURRING_TRANSACTION_CREATED,
     GOAL_OFF_TRACK,
+    INSIGHT_GENERATED,
     SYSTEM
 }

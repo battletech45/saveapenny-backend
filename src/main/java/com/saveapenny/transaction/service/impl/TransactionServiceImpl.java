@@ -19,14 +19,18 @@ import com.saveapenny.transaction.mapper.TransactionMapper;
 import com.saveapenny.transaction.repository.TransactionRepository;
 import com.saveapenny.transaction.repository.TransferRepository;
 import com.saveapenny.transaction.service.TransactionService;
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @Transactional
@@ -133,18 +137,43 @@ public class TransactionServiceImpl implements TransactionService {
             BigDecimal maxAmount,
             String keyword,
             Pageable pageable) {
-        String normalizedKeyword = keyword == null ? null : keyword.trim();
-        Page<Transaction> page = transactionRepository.search(
-                currentUserId,
-                from,
-                to,
-                type,
-                accountId,
-                categoryId,
-                minAmount,
-                maxAmount,
-                normalizedKeyword,
-                pageable);
+        String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : null;
+        String keywordPattern = normalizedKeyword == null ? null : "%" + normalizedKeyword.toLowerCase(Locale.ROOT) + "%";
+        Specification<Transaction> specification = (root, query, criteriaBuilder) -> {
+            var predicates = new ArrayList<Predicate>();
+            predicates.add(criteriaBuilder.equal(root.get("userId"), currentUserId));
+
+            if (from != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("transactionDate"), from));
+            }
+            if (to != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("transactionDate"), to));
+            }
+            if (type != null) {
+                predicates.add(criteriaBuilder.equal(root.get("type"), type));
+            }
+            if (accountId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("accountId"), accountId));
+            }
+            if (categoryId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("categoryId"), categoryId));
+            }
+            if (minAmount != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("amount"), minAmount));
+            }
+            if (maxAmount != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("amount"), maxAmount));
+            }
+            if (keywordPattern != null) {
+                predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("description"), "")),
+                        keywordPattern));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        };
+
+        Page<Transaction> page = transactionRepository.findAll(specification, pageable);
         return page.map(transactionMapper::toResponse);
     }
 

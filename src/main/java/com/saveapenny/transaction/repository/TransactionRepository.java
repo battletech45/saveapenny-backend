@@ -10,10 +10,11 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
+public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
 
     Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
 
@@ -36,31 +37,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             TransactionType type,
             LocalDate from,
             LocalDate to);
-
-    @Query("""
-            select t
-            from Transaction t
-            where t.userId = :userId
-              and (:from is null or t.transactionDate >= :from)
-              and (:to is null or t.transactionDate <= :to)
-              and (:type is null or t.type = :type)
-              and (:accountId is null or t.accountId = :accountId)
-              and (:categoryId is null or t.categoryId = :categoryId)
-              and (:minAmount is null or t.amount >= :minAmount)
-              and (:maxAmount is null or t.amount <= :maxAmount)
-              and (:keyword is null or trim(:keyword) = '' or lower(coalesce(t.description, '')) like lower(concat('%', :keyword, '%')))
-            """)
-    Page<Transaction> search(
-            @Param("userId") UUID userId,
-            @Param("from") LocalDate from,
-            @Param("to") LocalDate to,
-            @Param("type") TransactionType type,
-            @Param("accountId") UUID accountId,
-            @Param("categoryId") UUID categoryId,
-            @Param("minAmount") BigDecimal minAmount,
-            @Param("maxAmount") BigDecimal maxAmount,
-            @Param("keyword") String keyword,
-            Pageable pageable);
 
     @Query("""
             select coalesce(sum(t.amount), 0)
