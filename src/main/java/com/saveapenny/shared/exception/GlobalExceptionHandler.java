@@ -32,6 +32,13 @@ import com.saveapenny.auth.exception.RefreshTokenExpiredException;
 import com.saveapenny.imports.exception.ImportAlreadyRunningException;
 import com.saveapenny.imports.exception.ImportNotFoundException;
 import com.saveapenny.imports.exception.InvalidImportFileException;
+import com.saveapenny.goal.exception.GoalNotFoundException;
+import com.saveapenny.goal.exception.GoalSimulationValidationException;
+import com.saveapenny.goal.exception.InvalidGoalDateException;
+import com.saveapenny.goal.exception.InvalidGoalStatusTransitionException;
+import com.saveapenny.goal.exception.InvalidGoalTypeException;
+import com.saveapenny.goal.exception.LinkedAccountNotFoundException;
+import com.saveapenny.goal.exception.ScenarioNotFoundException;
 import com.saveapenny.mcp.error.ToolExecutionException;
 import com.saveapenny.ocr.domain.exception.InvalidOcrFileException;
 import com.saveapenny.ocr.domain.exception.OcrJobNotFoundException;
@@ -265,6 +272,76 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccountInactive(AccountInactiveException ex) {
         ApiError error = ApiError.builder()
                 .code("ACCOUNT_INACTIVE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(GoalNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleGoalNotFound(GoalNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("GOAL_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(ScenarioNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleScenarioNotFound(ScenarioNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("SCENARIO_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidGoalDateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidGoalDate(InvalidGoalDateException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_GOAL_DATE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidGoalStatusTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidGoalStatusTransition(InvalidGoalStatusTransitionException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_GOAL_STATUS_TRANSITION")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidGoalTypeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidGoalType(InvalidGoalTypeException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_GOAL_TYPE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(LinkedAccountNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLinkedAccountNotFound(LinkedAccountNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("LINKED_ACCOUNT_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(GoalSimulationValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleGoalSimulationValidation(GoalSimulationValidationException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_GOAL_SIMULATION_REQUEST")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();

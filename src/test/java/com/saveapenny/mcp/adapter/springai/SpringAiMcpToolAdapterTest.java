@@ -8,11 +8,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.assistant.tool.AssistantToolContextHolder;
+import com.saveapenny.goal.entity.GoalStatus;
+import com.saveapenny.goal.entity.GoalType;
 import com.saveapenny.mcp.budget.MonthlyBudgetStatusToolInput;
 import com.saveapenny.mcp.budget.MonthlyBudgetStatusToolResult;
+import com.saveapenny.mcp.goal.CompareScenariosToolInput;
 import com.saveapenny.mcp.execution.ToolExecutionContext;
 import com.saveapenny.mcp.execution.ToolHandler;
 import com.saveapenny.mcp.execution.ToolResult;
+import com.saveapenny.mcp.goal.GetGoalProgressToolInput;
+import com.saveapenny.mcp.goal.GetGoalProgressToolResult;
+import com.saveapenny.mcp.goal.GetGoalToolInput;
+import com.saveapenny.mcp.goal.GetGoalToolResult;
+import com.saveapenny.mcp.goal.GoalToolModels;
+import com.saveapenny.mcp.goal.ListGoalRunsToolInput;
+import com.saveapenny.mcp.goal.ListGoalRunsToolResult;
+import com.saveapenny.mcp.goal.ListGoalScenariosToolInput;
+import com.saveapenny.mcp.goal.ListGoalScenariosToolResult;
+import com.saveapenny.mcp.goal.ListGoalsToolInput;
+import com.saveapenny.mcp.goal.ListGoalsToolResult;
+import com.saveapenny.mcp.goal.WhatIfToolInput;
 import com.saveapenny.mcp.registry.ToolRegistry;
 import com.saveapenny.mcp.report.CurrentMonthSummaryToolInput;
 import com.saveapenny.mcp.report.CurrentMonthSummaryToolResult;
@@ -53,6 +68,27 @@ class SpringAiMcpToolAdapterTest {
 
     @Mock
     private ToolHandler<RecentTransactionsToolInput, RecentTransactionsToolResult> recentTransactionsHandler;
+
+    @Mock
+    private ToolHandler<ListGoalsToolInput, ListGoalsToolResult> listGoalsHandler;
+
+    @Mock
+    private ToolHandler<GetGoalToolInput, GetGoalToolResult> getGoalHandler;
+
+    @Mock
+    private ToolHandler<GetGoalProgressToolInput, GetGoalProgressToolResult> getGoalProgressHandler;
+
+    @Mock
+    private ToolHandler<ListGoalScenariosToolInput, ListGoalScenariosToolResult> listGoalScenariosHandler;
+
+    @Mock
+    private ToolHandler<ListGoalRunsToolInput, ListGoalRunsToolResult> listGoalRunsHandler;
+
+    @Mock
+    private ToolHandler<CompareScenariosToolInput, com.saveapenny.goal.simulation.dto.GoalScenarioComparisonResponse> compareScenariosHandler;
+
+    @Mock
+    private ToolHandler<WhatIfToolInput, com.saveapenny.goal.simulation.dto.GoalWhatIfResponse> whatIfHandler;
 
     private SpringAiMcpToolAdapter adapter;
 
@@ -153,5 +189,86 @@ class SpringAiMcpToolAdapterTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class, adapter::getCurrentMonthSummary);
 
         assertTrue(exception.getMessage().contains("could not resolve tool"));
+    }
+
+    @Test
+    void listGoals_formatsGoalSummaries() {
+        when(assistantToolContextHolder.requireCurrentUserId()).thenReturn(UUID.randomUUID());
+        when(toolRegistry.findByName("list_goals")).thenReturn(Optional.of(listGoalsHandler));
+        when(listGoalsHandler.execute(any(ToolExecutionContext.class), any(ListGoalsToolInput.class)))
+                .thenReturn(ToolResult.of(new ListGoalsToolResult(List.of(
+                        new GoalToolModels.GoalItem(
+                                UUID.randomUUID(), GoalType.SAVINGS, "House Fund", GoalStatus.ACTIVE,
+                                new BigDecimal("20000.00"), "USD", LocalDate.of(2030, 6, 1))))));
+
+        String result = adapter.listGoals(null, null, 5);
+
+        assertTrue(result.contains("House Fund"));
+        assertTrue(result.contains("SAVINGS"));
+    }
+
+    @Test
+    void getGoal_formatsGoalDetail() {
+        UUID goalId = UUID.randomUUID();
+        when(assistantToolContextHolder.requireCurrentUserId()).thenReturn(UUID.randomUUID());
+        when(toolRegistry.findByName("get_goal")).thenReturn(Optional.of(getGoalHandler));
+        when(getGoalHandler.execute(any(ToolExecutionContext.class), any(GetGoalToolInput.class)))
+                .thenReturn(ToolResult.of(new GetGoalToolResult(
+                        new GoalToolModels.GoalDetailItem(
+                                goalId,
+                                GoalType.SAVINGS,
+                                "House Fund",
+                                GoalStatus.ACTIVE,
+                                new BigDecimal("20000.00"),
+                                "USD",
+                                LocalDate.of(2030, 6, 1),
+                                List.of(new GoalToolModels.ScenarioItem(UUID.randomUUID(), "Baseline", true, null)),
+                                null))));
+
+        String result = adapter.getGoal(goalId.toString());
+
+        assertTrue(result.contains("House Fund"));
+        assertTrue(result.contains("scenarios=1"));
+    }
+
+    @Test
+    void compareScenarios_formatsScenarioComparison() {
+        when(assistantToolContextHolder.requireCurrentUserId()).thenReturn(UUID.randomUUID());
+        when(toolRegistry.findByName("compare_scenarios")).thenReturn(Optional.of(compareScenariosHandler));
+        when(compareScenariosHandler.execute(any(ToolExecutionContext.class), any(CompareScenariosToolInput.class)))
+                .thenReturn(ToolResult.of(com.saveapenny.goal.simulation.dto.GoalScenarioComparisonResponse.builder()
+                        .scenarios(List.of(com.saveapenny.goal.simulation.dto.GoalScenarioComparisonResponse.ScenarioComparisonItem.builder()
+                                .scenarioId(UUID.randomUUID())
+                                .scenarioName("Baseline")
+                                .feasibility("ON_TRACK")
+                                .projectedAmount(new BigDecimal("5000.00"))
+                                .build()))
+                        .build()));
+
+        String result = adapter.compareScenarios(UUID.randomUUID().toString());
+
+        assertTrue(result.contains("Scenario comparison"));
+        assertTrue(result.contains("Baseline"));
+    }
+
+    @Test
+    void whatIf_formatsProjectionResponse() {
+        when(assistantToolContextHolder.requireCurrentUserId()).thenReturn(UUID.randomUUID());
+        when(toolRegistry.findByName("what_if")).thenReturn(Optional.of(whatIfHandler));
+        when(whatIfHandler.execute(any(ToolExecutionContext.class), any(WhatIfToolInput.class)))
+                .thenReturn(ToolResult.of(com.saveapenny.goal.simulation.dto.GoalWhatIfResponse.builder()
+                        .result(com.saveapenny.goal.simulation.SimulationResult.builder()
+                                .feasibility(com.saveapenny.goal.entity.Feasibility.ON_TRACK)
+                                .summary(java.util.Map.of("projectedAmount", new BigDecimal("5200.00")))
+                                .build())
+                        .deltaVsBaseline(com.saveapenny.goal.simulation.dto.GoalWhatIfResponse.DeltaVsBaseline.builder()
+                                .projectedAmountDelta(new BigDecimal("200.00"))
+                                .build())
+                        .build()));
+
+        String result = adapter.whatIf(UUID.randomUUID().toString(), 500);
+
+        assertTrue(result.contains("What-if result"));
+        assertTrue(result.contains("200.00"));
     }
 }

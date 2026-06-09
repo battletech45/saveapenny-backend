@@ -1,6 +1,8 @@
 package com.saveapenny.notification.repository;
 
 import com.saveapenny.notification.entity.Notification;
+import com.saveapenny.notification.entity.NotificationType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     Page<Notification> findAllByUserId(UUID userId, Pageable pageable);
 
     Page<Notification> findAllByUserIdAndRead(UUID userId, Boolean read, Pageable pageable);
+
+    List<Notification> findAllByUserIdAndTypeAndReadFalse(UUID userId, NotificationType type);
 
     long countByUserIdAndReadFalse(UUID userId);
 }

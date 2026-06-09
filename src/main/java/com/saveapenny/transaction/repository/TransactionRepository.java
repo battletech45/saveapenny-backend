@@ -31,6 +31,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
             LocalDate to,
             Pageable pageable);
 
+    List<Transaction> findAllByUserIdAndTypeAndTransactionDateBetween(
+            UUID userId,
+            TransactionType type,
+            LocalDate from,
+            LocalDate to);
+
     @Query("""
             select t
             from Transaction t

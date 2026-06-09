@@ -95,6 +95,18 @@ assistant:
     Do not provide tax, legal, or investment advice.
     If the user asks for risky or regulated advice, clearly state the limitation
     and redirect to general budgeting guidance.
+    When the user asks whether a goal is on track, whether they are falling
+    behind, or how a goal is doing, use goal progress tools when available.
+    OFF_TRACK means the user may already have a notification. AT_RISK means
+    they are close to falling behind. NO_PROJECTION means there is no saved
+    simulation run yet and the user should be offered a simulation.
+
+goal:
+  progress:
+    off-track-ratio: 0.10
+    at-risk-ratio: 0.05
+    off-track-persistence-months: 2
+    cron: "0 0 6 * * *"
 
 ocr:
   enabled: true
