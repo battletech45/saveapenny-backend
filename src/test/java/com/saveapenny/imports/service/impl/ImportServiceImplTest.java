@@ -126,6 +126,33 @@ class ImportServiceImplTest {
     }
 
     @Test
+    void getStatus_returnsResponse_whenFound() {
+        Import importEntity = Import.builder()
+                .id(importId)
+                .userId(userId)
+                .status(ImportStatus.COMPLETED)
+                .totalRows(5)
+                .importedRows(5)
+                .failedRows(0)
+                .build();
+        ImportStatusResponse mapped = ImportStatusResponse.builder()
+                .importId(importId)
+                .status(ImportStatus.COMPLETED)
+                .totalRows(5)
+                .importedRows(5)
+                .failedRows(0)
+                .build();
+
+        when(importRepository.findByIdAndUserId(importId, userId)).thenReturn(Optional.of(importEntity));
+        when(importMapper.toStatusResponse(importEntity)).thenReturn(mapped);
+
+        ImportStatusResponse result = importService.getStatus(userId, importId);
+
+        assertEquals(ImportStatus.COMPLETED, result.getStatus());
+        assertEquals(5, result.getImportedRows());
+    }
+
+    @Test
     void getStatus_throws_whenNotFound() {
         when(importRepository.findByIdAndUserId(importId, userId)).thenReturn(Optional.empty());
 

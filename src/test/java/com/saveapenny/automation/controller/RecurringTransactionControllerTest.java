@@ -18,6 +18,7 @@ import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
 import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.entity.RecurringFrequency;
+import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDateException;
 import com.saveapenny.automation.exception.RecurringTransactionNotFoundException;
 import com.saveapenny.automation.service.RecurringTransactionService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
@@ -147,6 +148,40 @@ class RecurringTransactionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void create_returnsBadRequest_whenInvalidDate() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(recurringTransactionService.create(eq(userId), any(CreateRecurringTransactionRequest.class)))
+                .thenThrow(new InvalidRecurringTransactionNextRunDateException(LocalDate.now().minusDays(1)));
+
+        CreateRecurringTransactionRequest request = CreateRecurringTransactionRequest.builder()
+                .accountId(UUID.randomUUID())
+                .categoryId(UUID.randomUUID())
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.0000"))
+                .frequency(RecurringFrequency.MONTHLY)
+                .nextRunDate(LocalDate.now().minusDays(1))
+                .build();
+
+        mockMvc.perform(post("/api/v1/automations/recurring-transactions")
+                        .header("Authorization", "Bearer token-err-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_RECURRING_TRANSACTION_NEXT_RUN_DATE"));
     }
 
     @Test

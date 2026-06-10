@@ -18,7 +18,9 @@ import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.imports.dto.ImportPreviewResponse;
 import com.saveapenny.imports.dto.ImportStatusResponse;
 import com.saveapenny.imports.entity.ImportStatus;
+import com.saveapenny.imports.exception.ImportAlreadyRunningException;
 import com.saveapenny.imports.exception.ImportNotFoundException;
+import com.saveapenny.imports.exception.InvalidImportFileException;
 import com.saveapenny.imports.service.ImportService;
 import jakarta.servlet.FilterChain;
 import java.util.List;
@@ -88,6 +90,52 @@ class ImportControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.importId").value(importId.toString()));
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/imports/transactions/{importId}/status", UUID.randomUUID()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void preview_returnsBadRequest_whenFileInvalid() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(importService.preview(eq(userId), any()))
+                .thenThrow(new InvalidImportFileException("Unsupported file format"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "bad.xyz", "application/octet-stream", "bad".getBytes());
+
+        mockMvc.perform(multipart("/api/v1/imports/transactions/preview")
+                        .file(file)
+                        .header("Authorization", "Bearer token-err-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_IMPORT_FILE"));
+    }
+
+    @Test
+    void confirm_returnsConflict_whenAlreadyRunning() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID importId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-2")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-2")).thenReturn(userId);
+        when(importService.confirm(userId, importId)).thenThrow(new ImportAlreadyRunningException(importId));
+
+        String body = objectMapper.writeValueAsString(java.util.Map.of("importId", importId));
+
+        mockMvc.perform(post("/api/v1/imports/transactions/confirm")
+                        .header("Authorization", "Bearer token-err-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("IMPORT_ALREADY_RUNNING"));
     }
 
     @Test

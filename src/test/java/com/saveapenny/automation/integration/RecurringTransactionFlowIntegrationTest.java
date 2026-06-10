@@ -1,0 +1,197 @@
+package com.saveapenny.automation.integration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.automation.repository.RecurringTransactionRepository;
+import com.saveapenny.automation.service.RecurringTransactionExecutionService;
+import com.saveapenny.transaction.repository.TransactionRepository;
+import com.saveapenny.user.entity.Role;
+import com.saveapenny.user.repository.RoleRepository;
+import java.time.LocalDate;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:recurring-flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.flyway.enabled=false",
+        "security.jwt.secret=0123456789012345678901234567890123456789012345678901234567890123",
+        "automation.recurring.cron=-"
+})
+class RecurringTransactionFlowIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private RecurringTransactionExecutionService executionService;
+
+    @Autowired
+    private RecurringTransactionRepository recurringTransactionRepository;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
+
+    private static final String TODAY = "2026-06-10";
+    private static final String TOMORROW = "2026-06-11";
+
+    @BeforeEach
+    void setUpRole() {
+        roleRepository.findByName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
+    }
+
+    @Test
+    void recurringTransactionFullLifecycle_withExecution_works() throws Exception {
+        String token = registerAndGetToken("recurring.flow@example.com", "Recurring Flow");
+
+        String accountId = createAccount(token, "Cash", "CASH", "USD", "1000.0000");
+        String categoryId = createCategory(token, "Salary", "INCOME", "#00ff00", "dollar");
+
+        String createBody = """
+                {
+                  "accountId":"%s",
+                  "categoryId":"%s",
+                  "type":"INCOME",
+                  "amount":50.0000,
+                  "frequency":"DAILY",
+                  "nextRunDate":"%s"
+                }
+                """.formatted(accountId, categoryId, TODAY);
+
+        String recurringId = extractId(mockMvc.perform(post("/api/v1/automations/recurring-transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.nextRunDate").value(TODAY))
+                .andReturn());
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/{id}", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(recurringId))
+                .andExpect(jsonPath("$.data.amount").value(50.0))
+                .andExpect(jsonPath("$.data.active").value(true));
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content.length()").value(1));
+
+        executionService.processDueRecurringTransactions(LocalDate.parse(TODAY));
+
+        assertThat(transactionRepository.count()).isPositive();
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/{id}", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nextRunDate").value(TOMORROW));
+
+        String updateBody = """
+                {
+                  "accountId":"%s",
+                  "categoryId":"%s",
+                  "type":"INCOME",
+                  "amount":75.0000,
+                  "frequency":"DAILY",
+                  "nextRunDate":"%s",
+                  "active":true
+                }
+                """.formatted(accountId, categoryId, TOMORROW);
+
+        mockMvc.perform(put("/api/v1/automations/recurring-transactions/{id}", recurringId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amount").value(75.0));
+
+        mockMvc.perform(delete("/api/v1/automations/recurring-transactions/{id}", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/{id}", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("RECURRING_TRANSACTION_NOT_FOUND"));
+    }
+
+    private String registerAndGetToken(String email, String fullName) throws Exception {
+        String registerBody = """
+                {
+                  "email": "%s",
+                  "password": "Strong@123",
+                  "fullName": "%s"
+                }
+                """.formatted(email, fullName);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return json.path("data").path("accessToken").asText();
+    }
+
+    private String createAccount(String token, String name, String type, String currency, String balance) throws Exception {
+        String body = """
+                {"name":"%s","type":"%s","currency":"%s","initialBalance":%s}
+                """.formatted(name, type, currency, balance);
+
+        return extractId(mockMvc.perform(post("/api/v1/accounts")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn());
+    }
+
+    private String createCategory(String token, String name, String type, String color, String icon) throws Exception {
+        String body = """
+                {"name":"%s","type":"%s","color":"%s","icon":"%s"}
+                """.formatted(name, type, color, icon);
+
+        return extractId(mockMvc.perform(post("/api/v1/categories")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn());
+    }
+
+    private String extractId(MvcResult result) throws Exception {
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return json.path("data").path("id").asText();
+    }
+}

@@ -154,6 +154,51 @@ class BudgetServiceImplTest {
     }
 
     @Test
+    void delete_deletesOwnedBudget() {
+        when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
+
+        budgetService.delete(userId, budgetId);
+
+        verify(budgetRepository).delete(budget);
+    }
+
+    @Test
+    void delete_throws_whenNotOwned() {
+        when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.empty());
+
+        assertThrows(BudgetNotFoundException.class, () -> budgetService.delete(userId, budgetId));
+        verify(budgetRepository, never()).delete(any(Budget.class));
+    }
+
+    @Test
+    void getStatus_returnsOnTrack_whenUsageBelowEighty() {
+        when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).name("Food").userId(userId).build()));
+        when(transactionRepository.sumAmountByUserIdAndCategoryIdAndTypeAndTransactionDateBetween(
+                userId, categoryId, TransactionType.EXPENSE, budget.getStartDate(), budget.getEndDate()))
+                .thenReturn(new BigDecimal("100.0000"));
+
+        BudgetStatusResponse result = budgetService.getStatus(userId, budgetId);
+
+        assertEquals("ON_TRACK", result.getStatus());
+        assertEquals(new BigDecimal("25.00"), result.getUsagePercentage());
+    }
+
+    @Test
+    void getStatus_returnsExceeded_whenUsageAboveHundred() {
+        when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).name("Food").userId(userId).build()));
+        when(transactionRepository.sumAmountByUserIdAndCategoryIdAndTypeAndTransactionDateBetween(
+                userId, categoryId, TransactionType.EXPENSE, budget.getStartDate(), budget.getEndDate()))
+                .thenReturn(new BigDecimal("450.0000"));
+
+        BudgetStatusResponse result = budgetService.getStatus(userId, budgetId);
+
+        assertEquals("EXCEEDED", result.getStatus());
+        assertEquals(new BigDecimal("112.50"), result.getUsagePercentage());
+    }
+
+    @Test
     void getStatus_returnsWarning_whenUsageAtOrAboveEighty() {
         when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).name("Food").userId(userId).build()));

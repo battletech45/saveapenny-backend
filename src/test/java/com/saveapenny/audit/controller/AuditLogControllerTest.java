@@ -134,6 +134,14 @@ class AuditLogControllerTest {
     }
 
     @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/audits"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
     void getAll_returnsBadRequest_whenDateRangeInvalid() throws Exception {
         UUID userId = UUID.randomUUID();
         when(jwtService.isAccessTokenValid("token-a4")).thenReturn(true);

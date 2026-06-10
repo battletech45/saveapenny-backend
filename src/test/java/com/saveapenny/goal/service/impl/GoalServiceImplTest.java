@@ -11,9 +11,15 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.goal.dto.CreateGoalRequest;
+import com.saveapenny.goal.dto.CreateScenarioRequest;
 import com.saveapenny.goal.dto.GoalResponse;
+import com.saveapenny.goal.dto.ScenarioResponse;
+import com.saveapenny.goal.dto.GoalRunResponse;
 import com.saveapenny.goal.dto.UpdateGoalRequest;
+import com.saveapenny.goal.entity.Feasibility;
 import com.saveapenny.goal.entity.GoalEntity;
+import com.saveapenny.goal.entity.GoalRunEntity;
+import com.saveapenny.goal.entity.GoalRunTrigger;
 import com.saveapenny.goal.entity.GoalStatus;
 import com.saveapenny.goal.entity.GoalType;
 import com.saveapenny.goal.entity.ScenarioEntity;
@@ -28,6 +34,7 @@ import com.saveapenny.goal.repository.ScenarioRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -217,6 +224,122 @@ class GoalServiceImplTest {
         assertEquals(GoalStatus.ABANDONED, goal.getStatus());
         assertNotNull(goal.getDeletedAt());
         verify(goalRepository).save(goal);
+    }
+
+    @Test
+    void createScenario_persistsAndReturnsResponse() {
+        CreateScenarioRequest request = new CreateScenarioRequest();
+        request.setName(" Aggressive ");
+        request.setInputs(objectMapper.createObjectNode()
+                .put("version", 1)
+                .put("type", "SAVINGS")
+                .set("values", objectMapper.createObjectNode().put("monthlyContribution", 500)));
+        request.setIsBaseline(true);
+
+        when(goalRepository.findByIdAndUserIdAndDeletedAtIsNull(goalId, userId)).thenReturn(Optional.of(goal));
+        when(scenarioRepository.findByGoalIdAndIsBaselineTrue(goalId)).thenReturn(Optional.empty());
+        when(scenarioRepository.save(any(ScenarioEntity.class))).thenAnswer(inv -> {
+            ScenarioEntity se = inv.getArgument(0);
+            se.setId(UUID.randomUUID());
+            return se;
+        });
+
+        ScenarioResponse result = goalService.createScenario(userId, goalId, request);
+
+        assertNotNull(result.getId());
+        assertEquals("Aggressive", result.getName());
+        ArgumentCaptor<ScenarioEntity> captor = ArgumentCaptor.forClass(ScenarioEntity.class);
+        verify(scenarioRepository).save(captor.capture());
+        assertEquals(goalId, captor.getValue().getGoalId());
+    }
+
+    @Test
+    void listScenarios_returnsScenarios() {
+        ScenarioEntity scenarioEntity = ScenarioEntity.builder()
+                .id(UUID.randomUUID())
+                .goalId(goalId)
+                .name("Baseline")
+                .isBaseline(true)
+                .build();
+        when(goalRepository.findByIdAndUserIdAndDeletedAtIsNull(goalId, userId)).thenReturn(Optional.of(goal));
+        when(scenarioRepository.findAllByGoalIdOrderByCreatedAtAsc(goalId)).thenReturn(List.of(scenarioEntity));
+
+        List<ScenarioResponse> result = goalService.listScenarios(userId, goalId);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void listRuns_returnsPagedRuns() {
+        GoalRunEntity runEntity = GoalRunEntity.builder()
+                .id(UUID.randomUUID())
+                .goalId(goalId)
+                .feasibility(Feasibility.ON_TRACK)
+                .triggeredBy(GoalRunTrigger.USER)
+                .createdAt(OffsetDateTime.now())
+                .build();
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(goalRepository.findByIdAndUserIdAndDeletedAtIsNull(goalId, userId)).thenReturn(Optional.of(goal));
+        when(goalRunRepository.findAllByGoalIdOrderByCreatedAtDesc(goalId, pageable))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(runEntity)));
+
+        var result = goalService.listRuns(userId, goalId, pageable);
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void updateStatus_allowsDraftToActive() {
+        goal.setStatus(GoalStatus.DRAFT);
+        when(goalRepository.findByIdAndUserIdAndDeletedAtIsNull(goalId, userId)).thenReturn(Optional.of(goal));
+        when(goalRepository.save(goal)).thenReturn(goal);
+
+        GoalResponse result = goalService.updateStatus(userId, goalId, GoalStatus.ACTIVE);
+
+        assertEquals(GoalStatus.ACTIVE, result.getStatus());
+    }
+
+    @Test
+    void updateStatus_allowsActiveToAchieved() {
+        when(goalRepository.findByIdAndUserIdAndDeletedAtIsNull(goalId, userId)).thenReturn(Optional.of(goal));
+        when(goalRepository.save(goal)).thenReturn(goal);
+
+        GoalResponse result = goalService.updateStatus(userId, goalId, GoalStatus.ACHIEVED);
+
+        assertEquals(GoalStatus.ACHIEVED, result.getStatus());
+    }
+
+    @Test
+    void getAll_filtersByStatus() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(goalRepository.findAllByUserIdAndStatusAndDeletedAtIsNull(userId, GoalStatus.ACTIVE, pageable))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(goal)));
+
+        var result = goalService.getAll(userId, GoalStatus.ACTIVE, null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void getAll_filtersByType() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(goalRepository.findAllByUserIdAndTypeAndDeletedAtIsNull(userId, GoalType.SAVINGS, pageable))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(goal)));
+
+        var result = goalService.getAll(userId, null, GoalType.SAVINGS, pageable);
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void getAll_filtersByStatusAndType() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(goalRepository.findAllByUserIdAndStatusAndTypeAndDeletedAtIsNull(userId, GoalStatus.ACTIVE, GoalType.SAVINGS, pageable))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(goal)));
+
+        var result = goalService.getAll(userId, GoalStatus.ACTIVE, GoalType.SAVINGS, pageable);
+
+        assertEquals(1, result.getTotalElements());
     }
 
     @Test

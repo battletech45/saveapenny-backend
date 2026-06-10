@@ -120,6 +120,19 @@ class RecurringTransactionServiceImplTest {
     }
 
     @Test
+    void getById_returnsResponse_whenFound() {
+        RecurringTransaction entity = RecurringTransaction.builder().id(recurringId).userId(userId).build();
+        RecurringTransactionResponse response = RecurringTransactionResponse.builder().id(recurringId).build();
+
+        when(recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(recurringId, userId)).thenReturn(Optional.of(entity));
+        when(recurringTransactionMapper.toResponse(entity)).thenReturn(response);
+
+        RecurringTransactionResponse result = recurringTransactionService.getById(userId, recurringId);
+
+        assertEquals(recurringId, result.getId());
+    }
+
+    @Test
     void getById_throws_whenNotFound() {
         when(recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(recurringId, userId)).thenReturn(Optional.empty());
         assertThrows(RecurringTransactionNotFoundException.class, () -> recurringTransactionService.getById(userId, recurringId));

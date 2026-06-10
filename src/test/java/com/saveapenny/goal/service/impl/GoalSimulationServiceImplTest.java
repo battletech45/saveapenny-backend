@@ -25,6 +25,7 @@ import com.saveapenny.goal.simulation.dto.CompareScenariosRequest;
 import com.saveapenny.goal.simulation.dto.DraftGoalSimulationRequest;
 import com.saveapenny.goal.simulation.dto.GoalScenarioComparisonResponse;
 import com.saveapenny.goal.simulation.dto.GoalSimulationResponse;
+import com.saveapenny.goal.simulation.dto.ParsedGoalDraft;
 import com.saveapenny.goal.simulation.dto.WhatIfRequest;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -88,6 +89,37 @@ class GoalSimulationServiceImplTest {
 
         lenient().when(assistantClock.instant()).thenReturn(Instant.parse("2026-06-15T10:00:00Z"));
         lenient().when(assistantClock.getZone()).thenReturn(ZoneId.of("UTC"));
+    }
+
+    @Test
+    void simulatePrompt_parsesAndSimulates() {
+        String prompt = "I want to save $10,000 in 2 years";
+        ParsedGoalDraft draft = ParsedGoalDraft.builder()
+                .type(GoalType.SAVINGS)
+                .title("Save $10k")
+                .targetAmount(new BigDecimal("10000"))
+                .currency("USD")
+                .targetDate(LocalDate.of(2028, 6, 1))
+                .inputs(realObjectMapper.createObjectNode()
+                        .set("values", realObjectMapper.createObjectNode()
+                                .put("monthlyContribution", 400)))
+                .build();
+
+        SimulationResult expectedResult = SimulationResult.builder()
+                .feasibility(Feasibility.ON_TRACK)
+                .summary(java.util.Map.of("requiredMonthlyContribution", new BigDecimal("400"),
+                        "projectedAmount", new BigDecimal("10500")))
+                .build();
+
+        when(goalPromptParser.parse(prompt)).thenReturn(draft);
+        when(goalContextProvider.getContext(userId)).thenReturn(context);
+        when(mockEngine.simulate(any(com.saveapenny.goal.simulation.SimulationInput.class))).thenReturn(expectedResult);
+
+        GoalSimulationResponse response = goalSimulationService.simulatePrompt(userId, prompt);
+
+        assertNotNull(response);
+        assertEquals(Feasibility.ON_TRACK, response.getResult().getFeasibility());
+        assertEquals("Save $10k", response.getParsedGoal().getTitle());
     }
 
     @Test

@@ -140,6 +140,44 @@ class InsightServiceImplTest {
     }
 
     @Test
+    void getAll_filtersBySeverity() {
+        Page<InsightEntity> page = new PageImpl<>(List.of(insightEntity));
+        when(insightRepository.findAllByUserIdAndSeverity(userId, "INFO", PageRequest.of(0, 20)))
+                .thenReturn(page);
+
+        InsightListResponse response = insightService.getAll(userId, null, "INFO", null, PageRequest.of(0, 20));
+
+        assertNotNull(response);
+        assertEquals(1, response.getInsights().size());
+    }
+
+    @Test
+    void getAll_filtersByReadStatus() {
+        Page<InsightEntity> page = new PageImpl<>(List.of(insightEntity));
+        when(insightRepository.findAllByUserIdAndRead(userId, false, PageRequest.of(0, 20)))
+                .thenReturn(page);
+
+        InsightListResponse response = insightService.getAll(userId, null, null, false, PageRequest.of(0, 20));
+
+        assertNotNull(response);
+        assertEquals(1, response.getInsights().size());
+    }
+
+    @Test
+    void getAll_filtersByTypeAndSeverityAndRead() {
+        Page<InsightEntity> page = new PageImpl<>(List.of(insightEntity));
+        when(insightRepository.findAllByUserIdAndTypeAndSeverityAndRead(
+                userId, InsightType.SPENDING_PATTERN, "INFO", false, PageRequest.of(0, 20)))
+                .thenReturn(page);
+
+        InsightListResponse response = insightService.getAll(
+                userId, InsightType.SPENDING_PATTERN, "INFO", false, PageRequest.of(0, 20));
+
+        assertNotNull(response);
+        assertEquals(1, response.getInsights().size());
+    }
+
+    @Test
     void getAll_filtersByType() {
         Page<InsightEntity> page = new PageImpl<>(List.of(insightEntity));
         when(insightRepository.findAllByUserIdAndType(userId, InsightType.SPENDING_PATTERN, PageRequest.of(0, 20)))

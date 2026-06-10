@@ -17,6 +17,8 @@ import com.saveapenny.account.dto.AccountResponse;
 import com.saveapenny.account.dto.CreateAccountRequest;
 import com.saveapenny.account.dto.UpdateAccountRequest;
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
+import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.service.AccountService;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
@@ -142,6 +144,53 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/accounts"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void getById_returnsNotFound_whenMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(accountService.getById(userId, accountId)).thenThrow(new AccountNotFoundException(accountId));
+
+        mockMvc.perform(get("/api/v1/accounts/{id}", accountId)
+                        .header("Authorization", "Bearer token-err-1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_FOUND"));
+    }
+
+    @Test
+    void create_returnsConflict_whenNameAlreadyExists() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-2")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-2")).thenReturn(userId);
+        when(accountService.create(eq(userId), any(CreateAccountRequest.class)))
+                .thenThrow(new AccountNameAlreadyExistsException("Wallet"));
+
+        CreateAccountRequest request = CreateAccountRequest.builder()
+                .name("Wallet")
+                .type(AccountType.CASH)
+                .currency("USD")
+                .initialBalance(new BigDecimal("0"))
+                .build();
+
+        mockMvc.perform(post("/api/v1/accounts")
+                        .header("Authorization", "Bearer token-err-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_ALREADY_EXISTS"));
     }
 
     private AccountResponse sampleResponse() {

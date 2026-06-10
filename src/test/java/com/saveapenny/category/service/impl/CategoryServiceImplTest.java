@@ -108,6 +108,46 @@ class CategoryServiceImplTest {
     }
 
     @Test
+    void getById_returnsResponse_whenVisible() {
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryMapper.toResponse(category)).thenReturn(CategoryResponse.builder().id(categoryId).name("Food").build());
+
+        CategoryResponse result = categoryService.getById(userId, categoryId);
+
+        assertEquals("Food", result.getName());
+    }
+
+    @Test
+    void update_returnsResponse_whenValid() {
+        UpdateCategoryRequest request = UpdateCategoryRequest.builder()
+                .name("Groceries")
+                .type(CategoryType.EXPENSE)
+                .color("#00FF00")
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.existsByUserIdAndNameIgnoreCaseAndTypeAndIdNot(userId, "Groceries", CategoryType.EXPENSE, categoryId))
+                .thenReturn(false);
+        when(categoryRepository.save(category)).thenReturn(category);
+        when(categoryMapper.toResponse(category)).thenReturn(CategoryResponse.builder().name("Groceries").build());
+
+        CategoryResponse result = categoryService.update(userId, categoryId, request);
+
+        assertEquals("Groceries", result.getName());
+        assertEquals("#00FF00", category.getColor());
+        verify(categoryMapper).updateEntity(category, request);
+    }
+
+    @Test
+    void delete_returnsOk_whenOwned() {
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+
+        categoryService.delete(userId, categoryId);
+
+        verify(categoryRepository).delete(category);
+    }
+
+    @Test
     void update_throws_forSystemCategory() {
         Category systemCategory = Category.builder().id(categoryId).userId(null).name("System").build();
         UpdateCategoryRequest request = UpdateCategoryRequest.builder()

@@ -1,6 +1,7 @@
 package com.saveapenny.transaction.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -20,8 +21,10 @@ import com.saveapenny.transaction.dto.TransferResponse;
 import com.saveapenny.transaction.entity.Transaction;
 import com.saveapenny.transaction.entity.TransactionType;
 import com.saveapenny.transaction.entity.Transfer;
+import com.saveapenny.transaction.dto.UpdateTransactionRequest;
 import com.saveapenny.transaction.exception.InsufficientBalanceException;
 import com.saveapenny.transaction.exception.InvalidTransferException;
+import com.saveapenny.transaction.exception.TransactionNotFoundException;
 import com.saveapenny.transaction.mapper.TransactionMapper;
 import com.saveapenny.transaction.repository.TransactionRepository;
 import com.saveapenny.transaction.repository.TransferRepository;
@@ -224,6 +227,181 @@ class TransactionServiceImplTest {
         assertEquals(1, result.getTotalElements());
         assertEquals(transaction.getId(), result.getContent().get(0).getId());
         verify(transactionRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void createIncome_addsToBalance() {
+        CreateTransactionRequest request = CreateTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.INCOME)
+                .amount(new BigDecimal("500.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.INCOME).build();
+        Transaction mapped = Transaction.builder().amount(request.getAmount()).type(TransactionType.INCOME).build();
+        Transaction saved = Transaction.builder().id(UUID.randomUUID()).userId(userId).build();
+        TransactionResponse response = TransactionResponse.builder().id(saved.getId()).build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(transactionMapper.toEntity(request)).thenReturn(mapped);
+        when(accountRepository.save(account)).thenReturn(account);
+        when(transactionRepository.save(mapped)).thenReturn(saved);
+        when(transactionMapper.toResponse(saved)).thenReturn(response);
+
+        TransactionResponse result = transactionService.create(userId, request);
+
+        assertEquals(response.getId(), result.getId());
+        assertEquals(new BigDecimal("1500.0000"), account.getBalance());
+    }
+
+    @Test
+    void createTransfer_throws_whenCurrencyMismatch() {
+        UUID toId = UUID.randomUUID();
+        Account toAccount = Account.builder()
+                .id(toId)
+                .userId(userId)
+                .currency("EUR")
+                .balance(new BigDecimal("200.0000"))
+                .active(true)
+                .build();
+
+        CreateTransferRequest request = CreateTransferRequest.builder()
+                .fromAccountId(accountId)
+                .toAccountId(toId)
+                .categoryId(categoryId)
+                .amount(new BigDecimal("50.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(toId, userId)).thenReturn(Optional.of(toAccount));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).userId(userId).build()));
+
+        assertThrows(InvalidTransferException.class, () -> transactionService.createTransfer(userId, request));
+    }
+
+    @Test
+    void getById_returnsResponse_whenFound() {
+        UUID txId = UUID.randomUUID();
+        Transaction transaction = Transaction.builder().id(txId).userId(userId).build();
+        TransactionResponse response = TransactionResponse.builder().id(txId).build();
+
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(transaction));
+        when(transactionMapper.toResponse(transaction)).thenReturn(response);
+
+        TransactionResponse result = transactionService.getById(userId, txId);
+
+        assertNotNull(result);
+        assertEquals(txId, result.getId());
+    }
+
+    @Test
+    void getById_throws_whenNotFound() {
+        UUID txId = UUID.randomUUID();
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.empty());
+
+        assertThrows(TransactionNotFoundException.class, () -> transactionService.getById(userId, txId));
+    }
+
+    @Test
+    void update_reversesOldAndAppliesNewImpact() {
+        UUID txId = UUID.randomUUID();
+        Transaction existing = Transaction.builder()
+                .id(txId)
+                .userId(userId)
+                .accountId(accountId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.0000"))
+                .currency("USD")
+                .build();
+
+        UpdateTransactionRequest request = UpdateTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.INCOME)
+                .amount(new BigDecimal("200.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.INCOME).build();
+        TransactionResponse response = TransactionResponse.builder().id(txId).build();
+
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(existing));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(transactionRepository.save(existing)).thenReturn(existing);
+        when(transactionMapper.toResponse(existing)).thenReturn(response);
+
+        TransactionResponse result = transactionService.update(userId, txId, request);
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("1300.0000"), account.getBalance());
+        verify(transactionMapper).updateEntity(existing, request);
+    }
+
+    @Test
+    void delete_reversesExpenseImpact() {
+        UUID txId = UUID.randomUUID();
+        Transaction transaction = Transaction.builder()
+                .id(txId)
+                .userId(userId)
+                .accountId(accountId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.0000"))
+                .build();
+
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(transaction));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+
+        transactionService.delete(userId, txId);
+
+        assertEquals(new BigDecimal("1100.0000"), account.getBalance());
+        verify(transactionRepository).delete(transaction);
+    }
+
+    @Test
+    void delete_reversesTransferImpact() {
+        UUID txId = UUID.randomUUID();
+        UUID toId = UUID.randomUUID();
+        Account toAccount = Account.builder()
+                .id(toId)
+                .userId(userId)
+                .currency("USD")
+                .balance(new BigDecimal("200.0000"))
+                .active(true)
+                .build();
+
+        Transaction transferTxn = Transaction.builder()
+                .id(txId)
+                .userId(userId)
+                .accountId(accountId)
+                .type(TransactionType.TRANSFER)
+                .amount(new BigDecimal("50.0000"))
+                .build();
+
+        Transfer transfer = Transfer.builder()
+                .transactionId(txId)
+                .fromAccountId(accountId)
+                .toAccountId(toId)
+                .amount(new BigDecimal("50.0000"))
+                .build();
+
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(transferTxn));
+        when(transferRepository.findByTransactionId(txId)).thenReturn(Optional.of(transfer));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(toId, userId)).thenReturn(Optional.of(toAccount));
+
+        transactionService.delete(userId, txId);
+
+        assertEquals(new BigDecimal("1050.0000"), account.getBalance());
+        assertEquals(new BigDecimal("150.0000"), toAccount.getBalance());
+        verify(transferRepository).delete(transfer);
+        verify(transactionRepository).delete(transferTxn);
     }
 
     @Test

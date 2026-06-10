@@ -114,6 +114,31 @@ class NotificationServiceImplTest {
     }
 
     @Test
+    void getAll_withoutReadFilter_returnsAll() {
+        when(notificationRepository.findAllByUserId(userId, PageRequest.of(0, 20)))
+                .thenReturn(new PageImpl<>(java.util.List.of(notification)));
+        when(notificationMapper.toResponse(notification)).thenReturn(NotificationResponse.builder().id(notificationId).build());
+
+        var result = notificationService.getAll(userId, null, PageRequest.of(0, 20));
+
+        assertEquals(1, result.getTotalElements());
+        verify(notificationRepository).findAllByUserId(userId, PageRequest.of(0, 20));
+    }
+
+    @Test
+    void markAllAsRead_setsAllUnreadToTrue() {
+        Notification unread1 = Notification.builder().id(UUID.randomUUID()).userId(userId).read(false).build();
+        Notification unread2 = Notification.builder().id(UUID.randomUUID()).userId(userId).read(false).build();
+        when(notificationRepository.findAllByUserIdAndRead(userId, false, org.springframework.data.domain.Pageable.unpaged()))
+                .thenReturn(new PageImpl<>(java.util.List.of(unread1, unread2)));
+
+        notificationService.markAllAsRead(userId);
+
+        assertEquals(true, unread1.getRead());
+        assertEquals(true, unread2.getRead());
+    }
+
+    @Test
     void delete_throws_whenMissing() {
         when(notificationRepository.findByIdAndUserId(notificationId, userId)).thenReturn(Optional.empty());
 
