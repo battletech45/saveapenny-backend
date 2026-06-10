@@ -35,6 +35,9 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY:}
 
+cors:
+  allowed-origins: http://localhost:3000
+
 server:
   port: 8080
 
