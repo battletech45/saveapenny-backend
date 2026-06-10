@@ -10,6 +10,7 @@ import com.saveapenny.assistant.exception.AssistantChatSessionNotFoundException;
 import com.saveapenny.assistant.exception.AssistantDisabledException;
 import com.saveapenny.assistant.exception.AssistantProcessingException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDateException;
+import com.saveapenny.automation.exception.InvalidRecurringTransactionStatusTransitionException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionTypeException;
 import com.saveapenny.automation.exception.RecurringTransactionDependencyNotFoundException;
 import com.saveapenny.automation.exception.RecurringTransactionNotFoundException;
@@ -234,6 +235,17 @@ public class GlobalExceptionHandler {
             InvalidRecurringTransactionTypeException ex) {
         ApiError error = ApiError.builder()
                 .code("INVALID_RECURRING_TRANSACTION_TYPE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidRecurringTransactionStatusTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRecurringTransactionStatusTransition(
+            InvalidRecurringTransactionStatusTransitionException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_RECURRING_TRANSACTION_STATUS_TRANSITION")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
