@@ -117,6 +117,45 @@ Budget periods:
 - `MONTHLY`
 - `YEARLY`
 
+## Recurring Transactions
+
+Recurring transactions automate regular income or expense entries. Create one with a frequency, and the scheduler will automatically generate transactions.
+
+Main endpoints:
+
+- `POST /api/v1/automations/recurring-transactions`
+- `GET /api/v1/automations/recurring-transactions`
+- `GET /api/v1/automations/recurring-transactions/{id}`
+- `PUT /api/v1/automations/recurring-transactions/{id}`
+- `PATCH /api/v1/automations/recurring-transactions/{id}/pause`
+- `PATCH /api/v1/automations/recurring-transactions/{id}/resume`
+- `DELETE /api/v1/automations/recurring-transactions/{id}`
+- `GET /api/v1/automations/recurring-transactions/{id}/history`
+- `GET /api/v1/automations/recurring-transactions/upcoming`
+
+### Lifecycle
+
+Each recurring item has an explicit status:
+
+- `ACTIVE` — the scheduler processes it normally
+- `PAUSED` — temporarily suspended; use `resume` to reactivate
+- `EXPIRED` — past its `endDate` or soft-deleted
+- `FAILED` — the last execution attempt failed (will be retried)
+
+### Execution History
+
+The `history` endpoint returns per-run records with status (`SUCCESS`, `FAILED`, or `SKIPPED`), the generated transaction ID (if any), and the failure reason. The scheduler is idempotent — it skips dates that already have a `SUCCESS` history entry.
+
+### Upcoming Preview
+
+The `upcoming` endpoint projects future runs for all active recurring items, so you can preview expected cash flow.
+
+### Classification
+
+Optional classification field helps categorize items for UI display:
+
+- `PAYCHECK`, `SUBSCRIPTION`, `RENT`, `UTILITY`, `LOAN_PAYMENT`, `SAVINGS_CONTRIBUTION`, `OTHER`
+
 ## Reports
 
 Reports turn transaction history into financial summaries.
@@ -129,12 +168,14 @@ Main endpoints:
 - `GET /api/v1/reports/cash-flow?from=YYYY-MM-DD&to=YYYY-MM-DD`
 - `GET /api/v1/reports/net-worth?snapshotDate=YYYY-MM-DD`
 
+Net worth is computed as total assets minus total liabilities as of the given `snapshotDate`. Results are persisted on first access per (user, date), and a daily background job pre-computes snapshots so historical queries return stable, previously-captured values.
+
 Use these for:
 
 - spending review
 - cash flow analysis
 - category concentration
-- net worth snapshots
+- net worth tracking
 - monthly CSV exports
 
 ## Notifications And Insights

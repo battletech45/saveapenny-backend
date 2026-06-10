@@ -162,19 +162,60 @@ Transaction query filters:
 
 ### Reports
 
-- `GET /api/v1/reports/monthly-summary`
-- `GET /api/v1/reports/monthly-summary/export`
-- `GET /api/v1/reports/category-spending`
-- `GET /api/v1/reports/cash-flow`
-- `GET /api/v1/reports/net-worth`
+- `GET /api/v1/reports/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/monthly-summary/export?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/category-spending?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/cash-flow?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/reports/net-worth?snapshotDate=YYYY-MM-DD`
+
+Net worth snapshots:
+
+The `/net-worth` endpoint returns total assets minus total liabilities as of the given `snapshotDate`. Snapshots are persisted on first access per (user, date) and served from the snapshot table on subsequent requests. A daily scheduled job pre-computes snapshots for all active users so historical dates return stable, previously-captured values.
 
 ### Recurring Transactions
+
+Recurring transactions automate regular income/expense entries. Each recurring item follows a lifecycle with explicit status:
+
+- `ACTIVE` — normal scheduling
+- `PAUSED` — temporarily suspended, not processed
+- `EXPIRED` — past `endDate` or explicitly ended
+- `FAILED` — last execution failed
+
+Optional classification metadata (for UI analytics):
+
+- `PAYCHECK`, `SUBSCRIPTION`, `RENT`, `UTILITY`, `LOAN_PAYMENT`, `SAVINGS_CONTRIBUTION`, `OTHER`
+
+Endpoints:
 
 - `POST /api/v1/automations/recurring-transactions`
 - `GET /api/v1/automations/recurring-transactions`
 - `GET /api/v1/automations/recurring-transactions/{recurringTransactionId}`
 - `PUT /api/v1/automations/recurring-transactions/{recurringTransactionId}`
 - `DELETE /api/v1/automations/recurring-transactions/{recurringTransactionId}`
+- `PATCH /api/v1/automations/recurring-transactions/{recurringTransactionId}/pause`
+- `PATCH /api/v1/automations/recurring-transactions/{recurringTransactionId}/resume`
+- `GET /api/v1/automations/recurring-transactions/{recurringTransactionId}/history`
+- `GET /api/v1/automations/recurring-transactions/upcoming?limit=10`
+
+Create/Update request fields:
+
+- `accountId` (UUID, required)
+- `categoryId` (UUID, required)
+- `type` (INCOME or EXPENSE, required)
+- `amount` (decimal, required)
+- `frequency` (DAILY, WEEKLY, MONTHLY, or YEARLY, required)
+- `nextRunDate` (date, required)
+- `name` (string, optional) — display name
+- `description` (string, optional) — copied into generated transactions
+- `startDate` (date, optional)
+- `endDate` (date, optional) — auto-expires after this date
+- `classification` (enum, optional) — see list above
+
+Status management:
+
+- `pause` transitions from `ACTIVE` to `PAUSED`
+- `resume` transitions from `PAUSED` to `ACTIVE`
+- `delete` transitions to `EXPIRED` (soft-delete)
 
 ### Notifications
 
