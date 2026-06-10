@@ -2,15 +2,21 @@ package com.saveapenny.automation.service.impl;
 
 import com.saveapenny.account.entity.Account;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.automation.entity.RecurringExecutionHistory;
+import com.saveapenny.automation.entity.RecurringExecutionStatus;
 import com.saveapenny.automation.entity.RecurringFrequency;
+import com.saveapenny.automation.entity.RecurringStatus;
 import com.saveapenny.automation.entity.RecurringTransaction;
+import com.saveapenny.automation.repository.RecurringExecutionHistoryRepository;
 import com.saveapenny.automation.repository.RecurringTransactionRepository;
 import com.saveapenny.automation.service.AutomationDistributedLockService;
 import com.saveapenny.automation.service.RecurringTransactionExecutionService;
 import com.saveapenny.transaction.dto.CreateTransactionRequest;
 import com.saveapenny.transaction.service.TransactionService;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,16 +29,19 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
     private static final String RECURRING_LOCK_NAME = "automation:recurring-transactions";
 
     private final RecurringTransactionRepository recurringTransactionRepository;
+    private final RecurringExecutionHistoryRepository executionHistoryRepository;
     private final TransactionService transactionService;
     private final AccountRepository accountRepository;
     private final AutomationDistributedLockService lockService;
 
     public RecurringTransactionExecutionServiceImpl(
             RecurringTransactionRepository recurringTransactionRepository,
+            RecurringExecutionHistoryRepository executionHistoryRepository,
             TransactionService transactionService,
             AccountRepository accountRepository,
             AutomationDistributedLockService lockService) {
         this.recurringTransactionRepository = recurringTransactionRepository;
+        this.executionHistoryRepository = executionHistoryRepository;
         this.transactionService = transactionService;
         this.accountRepository = accountRepository;
         this.lockService = lockService;
@@ -48,25 +57,55 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
         try {
             LocalDate effectiveRunDate = runDate == null ? LocalDate.now() : runDate;
             List<RecurringTransaction> dueTransactions =
-                    recurringTransactionRepository.findAllByActiveTrueAndNextRunDateLessThanEqual(effectiveRunDate);
+                    recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(RecurringStatus.ACTIVE, effectiveRunDate);
 
             for (RecurringTransaction recurringTransaction : dueTransactions) {
-                processSingleRecurringTransaction(recurringTransaction);
+                processSingleRecurringTransaction(recurringTransaction, effectiveRunDate);
             }
         } finally {
             lockService.unlock(RECURRING_LOCK_NAME);
         }
     }
 
-    private void processSingleRecurringTransaction(RecurringTransaction recurringTransaction) {
+    private void processSingleRecurringTransaction(RecurringTransaction recurringTransaction, LocalDate effectiveRunDate) {
+        while (!recurringTransaction.getNextRunDate().isAfter(effectiveRunDate)) {
+            LocalDate currentRun = recurringTransaction.getNextRunDate();
+
+            if (isAlreadyExecuted(recurringTransaction.getId(), currentRun)) {
+                advanceNextRunDate(recurringTransaction);
+                recurringTransactionRepository.save(recurringTransaction);
+                continue;
+            }
+
+            boolean advanced = executeRun(recurringTransaction, currentRun);
+            if (!advanced) {
+                break;
+            }
+        }
+    }
+
+    private boolean executeRun(RecurringTransaction recurringTransaction, LocalDate currentRun) {
         try {
             Account account = accountRepository
                     .findByIdAndUserIdAndActiveTrue(recurringTransaction.getAccountId(), recurringTransaction.getUserId())
                     .orElse(null);
             if (account == null) {
+                recordHistory(recurringTransaction, RecurringExecutionStatus.SKIPPED,
+                        null, "Account is missing or inactive");
                 log.warn("Skipping recurring transaction {} because account is missing or inactive", recurringTransaction.getId());
-                return;
+                return false;
             }
+
+            if (recurringTransaction.getEndDate() != null
+                    && currentRun.isAfter(recurringTransaction.getEndDate())) {
+                recurringTransaction.setStatus(RecurringStatus.EXPIRED);
+                recurringTransactionRepository.save(recurringTransaction);
+                return false;
+            }
+
+            String description = recurringTransaction.getDescription() != null
+                    ? recurringTransaction.getDescription()
+                    : "Recurring transaction";
 
             CreateTransactionRequest request = CreateTransactionRequest.builder()
                     .accountId(recurringTransaction.getAccountId())
@@ -74,16 +113,54 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
                     .type(recurringTransaction.getType())
                     .amount(recurringTransaction.getAmount())
                     .currency(account.getCurrency())
-                    .description("Recurring transaction")
-                    .transactionDate(recurringTransaction.getNextRunDate())
+                    .description(description)
+                    .transactionDate(currentRun)
                     .build();
 
-            transactionService.create(recurringTransaction.getUserId(), request);
+            var transactionResponse = transactionService.create(recurringTransaction.getUserId(), request);
 
-            recurringTransaction.setNextRunDate(nextRunDate(recurringTransaction.getNextRunDate(), recurringTransaction.getFrequency()));
+            recurringTransaction.setLastRunAt(OffsetDateTime.now());
+            advanceNextRunDate(recurringTransaction);
             recurringTransactionRepository.save(recurringTransaction);
+
+            recordHistory(recurringTransaction, RecurringExecutionStatus.SUCCESS,
+                    transactionResponse.getId(), null);
+            return true;
         } catch (RuntimeException ex) {
+            recordHistory(recurringTransaction, RecurringExecutionStatus.FAILED,
+                    null, ex.getMessage());
             log.warn("Failed to process recurring transaction {}: {}", recurringTransaction.getId(), ex.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isAlreadyExecuted(UUID recurringTransactionId, LocalDate scheduledDate) {
+        List<RecurringExecutionHistory> existing =
+                executionHistoryRepository.findAllByRecurringTransactionIdAndScheduledDate(recurringTransactionId, scheduledDate);
+        return existing.stream().anyMatch(h -> h.getStatus() == RecurringExecutionStatus.SUCCESS);
+    }
+
+    private void advanceNextRunDate(RecurringTransaction recurringTransaction) {
+        LocalDate next = nextRunDate(recurringTransaction.getNextRunDate(), recurringTransaction.getFrequency());
+        recurringTransaction.setNextRunDate(next);
+    }
+
+    private void recordHistory(RecurringTransaction recurringTransaction,
+                                RecurringExecutionStatus status,
+                                UUID transactionId,
+                                String failureReason) {
+        try {
+            RecurringExecutionHistory history = RecurringExecutionHistory.builder()
+                    .recurringTransactionId(recurringTransaction.getId())
+                    .userId(recurringTransaction.getUserId())
+                    .status(status)
+                    .scheduledDate(recurringTransaction.getNextRunDate())
+                    .transactionId(transactionId)
+                    .failureReason(failureReason)
+                    .build();
+            executionHistoryRepository.save(history);
+        } catch (Exception ex) {
+            log.warn("Failed to persist execution history for {}: {}", recurringTransaction.getId(), ex.getMessage());
         }
     }
 
