@@ -18,6 +18,8 @@ import com.saveapenny.category.dto.CategoryResponse;
 import com.saveapenny.category.dto.CreateCategoryRequest;
 import com.saveapenny.category.dto.UpdateCategoryRequest;
 import com.saveapenny.category.entity.CategoryType;
+import com.saveapenny.category.exception.CategoryNameAlreadyExistsException;
+import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.service.CategoryService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
@@ -138,6 +140,51 @@ class CategoryControllerTest {
                         .header("Authorization", "Bearer token-4"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/categories"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void getById_returnsNotFound_whenMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(categoryService.getById(userId, categoryId)).thenThrow(new CategoryNotFoundException(categoryId));
+
+        mockMvc.perform(get("/api/v1/categories/{id}", categoryId)
+                        .header("Authorization", "Bearer token-err-1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("CATEGORY_NOT_FOUND"));
+    }
+
+    @Test
+    void create_returnsConflict_whenNameAlreadyExists() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-2")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-2")).thenReturn(userId);
+        when(categoryService.create(eq(userId), any(CreateCategoryRequest.class)))
+                .thenThrow(new CategoryNameAlreadyExistsException("Food"));
+
+        CreateCategoryRequest request = CreateCategoryRequest.builder()
+                .name("Food")
+                .type(CategoryType.EXPENSE)
+                .build();
+
+        mockMvc.perform(post("/api/v1/categories")
+                        .header("Authorization", "Bearer token-err-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("CATEGORY_NAME_ALREADY_EXISTS"));
     }
 
     private CategoryResponse sampleResponse() {

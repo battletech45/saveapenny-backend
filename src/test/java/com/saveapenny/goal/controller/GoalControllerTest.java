@@ -29,6 +29,8 @@ import com.saveapenny.goal.entity.Feasibility;
 import com.saveapenny.goal.entity.GoalRunTrigger;
 import com.saveapenny.goal.entity.GoalStatus;
 import com.saveapenny.goal.entity.GoalType;
+import com.saveapenny.goal.exception.GoalNotFoundException;
+import com.saveapenny.goal.exception.InvalidGoalStatusTransitionException;
 import com.saveapenny.goal.service.GoalService;
 import jakarta.servlet.FilterChain;
 import java.math.BigDecimal;
@@ -306,6 +308,42 @@ class GoalControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void getById_returnsNotFound_whenMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID goalId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(goalService.getById(userId, goalId)).thenThrow(new GoalNotFoundException(goalId));
+
+        mockMvc.perform(get("/api/v1/goals/{goalId}", goalId)
+                        .header("Authorization", "Bearer token-err-1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("GOAL_NOT_FOUND"));
+    }
+
+    @Test
+    void updateStatus_returnsBadRequest_whenInvalidTransition() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID goalId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-2")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-2")).thenReturn(userId);
+        when(goalService.updateStatus(eq(userId), eq(goalId), eq(GoalStatus.ACHIEVED)))
+                .thenThrow(new InvalidGoalStatusTransitionException(goalId, GoalStatus.DRAFT, GoalStatus.ACHIEVED));
+
+        UpdateGoalStatusRequest request = new UpdateGoalStatusRequest();
+        request.setStatus(GoalStatus.ACHIEVED);
+
+        mockMvc.perform(patch("/api/v1/goals/{goalId}/status", goalId)
+                        .header("Authorization", "Bearer token-err-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_GOAL_STATUS_TRANSITION"));
     }
 
     private GoalResponse sampleResponse() {

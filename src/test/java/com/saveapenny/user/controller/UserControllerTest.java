@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -18,6 +19,7 @@ import jakarta.servlet.FilterChain;
 import com.saveapenny.user.dto.ChangePasswordRequest;
 import com.saveapenny.user.dto.UpdateUserProfileRequest;
 import com.saveapenny.user.dto.UserProfileResponse;
+import com.saveapenny.user.exception.InvalidPasswordException;
 import com.saveapenny.user.service.UserService;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -129,6 +131,28 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.error").isEmpty());
+    }
+
+    @Test
+    void changeCurrentUserPassword_returnsBadRequest_whenPasswordInvalid() throws Exception {
+        UUID userId = UUID.randomUUID();
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .currentPassword("correct-password")
+                .newPassword("Str0ng!NewPass")
+                .build();
+
+        doThrow(new InvalidPasswordException())
+                .when(userService).changeCurrentUserPassword(eq(userId), any(ChangePasswordRequest.class));
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+
+        mockMvc.perform(put("/api/v1/users/me/password")
+                        .header("Authorization", "Bearer token-err-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_PASSWORD"));
     }
 
     @Test

@@ -17,6 +17,8 @@ import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
 import com.saveapenny.config.security.SecurityConfig;
+import com.saveapenny.transaction.exception.InvalidTransferException;
+import com.saveapenny.transaction.exception.TransactionNotFoundException;
 import jakarta.servlet.FilterChain;
 import com.saveapenny.transaction.dto.CreateTransactionRequest;
 import com.saveapenny.transaction.dto.CreateTransferRequest;
@@ -199,6 +201,55 @@ class TransactionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/transactions"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void getById_returnsNotFound_whenMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID txId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(transactionService.getById(userId, txId)).thenThrow(new TransactionNotFoundException(txId));
+
+        mockMvc.perform(get("/api/v1/transactions/{id}", txId)
+                        .header("Authorization", "Bearer token-err-1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("TRANSACTION_NOT_FOUND"));
+    }
+
+    @Test
+    void createTransfer_returnsBadRequest_whenInvalid() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-2")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-2")).thenReturn(userId);
+        when(transactionService.createTransfer(eq(userId), any(CreateTransferRequest.class)))
+                .thenThrow(new InvalidTransferException("Cannot transfer to the same account"));
+
+        CreateTransferRequest request = CreateTransferRequest.builder()
+                .fromAccountId(UUID.randomUUID())
+                .toAccountId(UUID.randomUUID())
+                .categoryId(UUID.randomUUID())
+                .amount(new BigDecimal("50.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+
+        mockMvc.perform(post("/api/v1/transactions/transfer")
+                        .header("Authorization", "Bearer token-err-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_TRANSFER"));
     }
 
     private TransactionResponse sampleResponse() {

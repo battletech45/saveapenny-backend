@@ -146,6 +146,14 @@ class ReportControllerTest {
     }
 
     @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/reports/monthly-summary"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
     void getMonthlySummary_returnsBadRequest_whenDateRangeInvalid() throws Exception {
         UUID userId = UUID.randomUUID();
         when(jwtService.isAccessTokenValid("token-r5")).thenReturn(true);

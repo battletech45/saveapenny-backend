@@ -18,6 +18,7 @@ import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.insight.dto.InsightListResponse;
 import com.saveapenny.insight.dto.InsightResponse;
 import com.saveapenny.insight.entity.InsightType;
+import com.saveapenny.insight.exception.InsightNotFoundException;
 import com.saveapenny.insight.service.InsightService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
@@ -189,6 +190,22 @@ class InsightControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.generatedCount").value(3));
+    }
+
+    @Test
+    void getById_returnsNotFound_whenMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID insightId = UUID.randomUUID();
+        String token = "insight-token-err-1";
+        when(jwtService.isAccessTokenValid(token)).thenReturn(true);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(insightService.getById(userId, insightId)).thenThrow(new InsightNotFoundException(insightId));
+
+        mockMvc.perform(get("/api/v1/insights/{id}", insightId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INSIGHT_NOT_FOUND"));
     }
 
     @Test

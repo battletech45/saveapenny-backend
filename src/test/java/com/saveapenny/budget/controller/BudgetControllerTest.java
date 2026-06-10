@@ -21,6 +21,7 @@ import com.saveapenny.budget.dto.UpdateBudgetRequest;
 import com.saveapenny.budget.entity.BudgetPeriod;
 import com.saveapenny.budget.exception.BudgetAlreadyExistsException;
 import com.saveapenny.budget.exception.BudgetNotFoundException;
+import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
 import com.saveapenny.budget.service.BudgetService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
@@ -157,6 +158,39 @@ class BudgetControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.amount").value(500.0));
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/budgets"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void create_returnsBadRequest_whenDateRangeInvalid() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(budgetService.create(eq(userId), any(CreateBudgetRequest.class)))
+                .thenThrow(new InvalidBudgetDateRangeException(LocalDate.of(2026, 5, 31), LocalDate.of(2026, 5, 1)));
+
+        CreateBudgetRequest request = CreateBudgetRequest.builder()
+                .categoryId(UUID.randomUUID())
+                .amount(new BigDecimal("400.0000"))
+                .period(BudgetPeriod.MONTHLY)
+                .startDate(LocalDate.of(2026, 5, 31))
+                .endDate(LocalDate.of(2026, 5, 1))
+                .build();
+
+        mockMvc.perform(post("/api/v1/budgets")
+                        .header("Authorization", "Bearer token-err-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_BUDGET_DATE_RANGE"));
     }
 
     @Test

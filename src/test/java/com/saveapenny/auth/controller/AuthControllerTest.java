@@ -15,6 +15,8 @@ import com.saveapenny.auth.dto.LogoutRequest;
 import com.saveapenny.auth.dto.RefreshTokenRequest;
 import com.saveapenny.auth.dto.RefreshTokenResponse;
 import com.saveapenny.auth.dto.RegisterRequest;
+import com.saveapenny.auth.exception.EmailAlreadyExistsException;
+import com.saveapenny.auth.exception.InvalidCredentialsException;
 import com.saveapenny.auth.service.AuthService;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
@@ -140,6 +142,43 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.error").isEmpty());
+    }
+
+    @Test
+    void login_returnsUnauthorized_whenInvalidCredentials() throws Exception {
+        LoginRequest request = LoginRequest.builder()
+                .email("wrong@example.com")
+                .password("wrong")
+                .build();
+
+        when(authService.login(any(LoginRequest.class)))
+                .thenThrow(new InvalidCredentialsException());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void register_returnsConflict_whenEmailExists() throws Exception {
+        RegisterRequest request = RegisterRequest.builder()
+                .email("existing@example.com")
+                .password("Strong@123")
+                .fullName("Existing User")
+                .build();
+
+        when(authService.register(any(RegisterRequest.class)))
+                .thenThrow(new EmailAlreadyExistsException("existing@example.com"));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("EMAIL_ALREADY_EXISTS"));
     }
 
     @Test

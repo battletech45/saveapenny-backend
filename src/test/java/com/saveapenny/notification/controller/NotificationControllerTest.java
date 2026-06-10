@@ -167,6 +167,14 @@ class NotificationControllerTest {
     }
 
     @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/notifications"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
     void delete_returnsSuccessEnvelope() throws Exception {
         UUID userId = UUID.randomUUID();
         UUID notificationId = UUID.randomUUID();

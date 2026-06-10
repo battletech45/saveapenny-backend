@@ -15,6 +15,7 @@ import com.saveapenny.config.security.RateLimitingFilter;
 import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.goal.entity.Feasibility;
 import com.saveapenny.goal.entity.GoalType;
+import com.saveapenny.goal.exception.GoalSimulationValidationException;
 import com.saveapenny.goal.service.GoalSimulationService;
 import com.saveapenny.goal.simulation.SimulationResult;
 import com.saveapenny.goal.simulation.dto.GoalSimulationPromptRequest;
@@ -97,6 +98,33 @@ class GoalSimulationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.parsedGoal.type").value("SAVINGS"))
                 .andExpect(jsonPath("$.data.result.feasibility").value("TIGHT"));
+    }
+
+    @Test
+    void unauthenticatedRequest_returnsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/goals/simulate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void simulatePrompt_returnsBadRequest_whenValidationFails() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-err-1")).thenReturn(true);
+        when(jwtService.extractUserId("token-err-1")).thenReturn(userId);
+        when(goalSimulationService.simulatePrompt(eq(userId), any()))
+                .thenThrow(new GoalSimulationValidationException("Prompt is too vague"));
+
+        mockMvc.perform(post("/api/v1/goals/simulate")
+                        .header("Authorization", "Bearer token-err-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new GoalSimulationPromptRequest("Save some money"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_GOAL_SIMULATION_REQUEST"));
     }
 
     @Test
