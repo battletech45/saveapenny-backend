@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.saveapenny.automation.entity.RecurringFrequency;
+import com.saveapenny.automation.entity.RecurringStatus;
 import com.saveapenny.automation.entity.RecurringTransaction;
 import com.saveapenny.transaction.entity.TransactionType;
 import java.math.BigDecimal;
@@ -48,7 +49,7 @@ class RecurringTransactionRepositoryTest {
                 .amount(new BigDecimal("50.0000"))
                 .frequency(RecurringFrequency.MONTHLY)
                 .nextRunDate(LocalDate.now())
-                .active(true)
+                .status(RecurringStatus.ACTIVE)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -62,7 +63,7 @@ class RecurringTransactionRepositoryTest {
                 .amount(new BigDecimal("100.0000"))
                 .frequency(RecurringFrequency.MONTHLY)
                 .nextRunDate(LocalDate.now().plusDays(5))
-                .active(true)
+                .status(RecurringStatus.ACTIVE)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -76,7 +77,7 @@ class RecurringTransactionRepositoryTest {
                 .amount(new BigDecimal("2000.0000"))
                 .frequency(RecurringFrequency.MONTHLY)
                 .nextRunDate(LocalDate.now().minusDays(1))
-                .active(false)
+                .status(RecurringStatus.EXPIRED)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -87,53 +88,53 @@ class RecurringTransactionRepositoryTest {
     }
 
     @Test
-    void findByIdAndUserIdAndActiveTrue_returnsActive() {
-        Optional<RecurringTransaction> found = recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(
-                activeDue.getId(), userId);
+    void findByIdAndUserIdAndStatus_returnsActive() {
+        Optional<RecurringTransaction> found = recurringTransactionRepository.findByIdAndUserIdAndStatus(
+                activeDue.getId(), userId, RecurringStatus.ACTIVE);
         assertTrue(found.isPresent());
         assertEquals(activeDue.getId(), found.get().getId());
     }
 
     @Test
-    void findByIdAndUserIdAndActiveTrue_returnsEmptyForWrongUser() {
-        Optional<RecurringTransaction> found = recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(
-                activeDue.getId(), UUID.randomUUID());
+    void findByIdAndUserIdAndStatus_returnsEmptyForWrongUser() {
+        Optional<RecurringTransaction> found = recurringTransactionRepository.findByIdAndUserIdAndStatus(
+                activeDue.getId(), UUID.randomUUID(), RecurringStatus.ACTIVE);
         assertTrue(found.isEmpty());
     }
 
     @Test
-    void findByIdAndUserIdAndActiveTrue_returnsEmptyForInactive() {
-        Optional<RecurringTransaction> found = recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(
-                inactiveDue.getId(), userId);
+    void findByIdAndUserIdAndStatus_returnsEmptyForExpired() {
+        Optional<RecurringTransaction> found = recurringTransactionRepository.findByIdAndUserIdAndStatus(
+                inactiveDue.getId(), userId, RecurringStatus.ACTIVE);
         assertTrue(found.isEmpty());
     }
 
     @Test
-    void findAllByUserIdAndActiveTrue_returnsActiveOnly() {
-        Page<RecurringTransaction> page = recurringTransactionRepository.findAllByUserIdAndActiveTrue(
-                userId, PageRequest.of(0, 20));
+    void findAllByUserIdAndStatus_returnsActiveOnly() {
+        Page<RecurringTransaction> page = recurringTransactionRepository.findAllByUserIdAndStatus(
+                userId, RecurringStatus.ACTIVE, PageRequest.of(0, 20));
         assertEquals(2, page.getTotalElements());
     }
 
     @Test
-    void findAllByUserIdAndActiveTrue_excludesInactive() {
-        Page<RecurringTransaction> page = recurringTransactionRepository.findAllByUserIdAndActiveTrue(
-                UUID.randomUUID(), PageRequest.of(0, 20));
+    void findAllByUserIdAndStatus_excludesExpired() {
+        Page<RecurringTransaction> page = recurringTransactionRepository.findAllByUserIdAndStatus(
+                UUID.randomUUID(), RecurringStatus.ACTIVE, PageRequest.of(0, 20));
         assertTrue(page.isEmpty());
     }
 
     @Test
-    void findAllByActiveTrueAndNextRunDateLessThanEqual_returnsDueTransactions() {
-        List<RecurringTransaction> due = recurringTransactionRepository.findAllByActiveTrueAndNextRunDateLessThanEqual(
-                LocalDate.now());
+    void findAllByStatusAndNextRunDateLessThanEqual_returnsDueTransactions() {
+        List<RecurringTransaction> due = recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(
+                RecurringStatus.ACTIVE, LocalDate.now());
         assertEquals(1, due.size());
         assertEquals(activeDue.getId(), due.getFirst().getId());
     }
 
     @Test
-    void findAllByActiveTrueAndNextRunDateLessThanEqual_excludesFutureAndInactive() {
-        List<RecurringTransaction> due = recurringTransactionRepository.findAllByActiveTrueAndNextRunDateLessThanEqual(
-                LocalDate.now().minusDays(1));
+    void findAllByStatusAndNextRunDateLessThanEqual_excludesFutureAndInactive() {
+        List<RecurringTransaction> due = recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(
+                RecurringStatus.ACTIVE, LocalDate.now().minusDays(1));
         assertTrue(due.isEmpty());
     }
 }

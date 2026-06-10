@@ -12,11 +12,14 @@ import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
 import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.entity.RecurringFrequency;
+import com.saveapenny.automation.entity.RecurringStatus;
 import com.saveapenny.automation.entity.RecurringTransaction;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDateException;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionTypeException;
 import com.saveapenny.automation.exception.RecurringTransactionNotFoundException;
+import com.saveapenny.automation.mapper.RecurringExecutionHistoryMapper;
 import com.saveapenny.automation.mapper.RecurringTransactionMapper;
+import com.saveapenny.automation.repository.RecurringExecutionHistoryRepository;
 import com.saveapenny.automation.repository.RecurringTransactionRepository;
 import com.saveapenny.category.entity.Category;
 import com.saveapenny.category.repository.CategoryRepository;
@@ -42,6 +45,10 @@ class RecurringTransactionServiceImplTest {
     private RecurringTransactionRepository recurringTransactionRepository;
     @Mock
     private RecurringTransactionMapper recurringTransactionMapper;
+    @Mock
+    private RecurringExecutionHistoryRepository executionHistoryRepository;
+    @Mock
+    private RecurringExecutionHistoryMapper executionHistoryMapper;
     @Mock
     private AccountRepository accountRepository;
     @Mock
@@ -121,10 +128,10 @@ class RecurringTransactionServiceImplTest {
 
     @Test
     void getById_returnsResponse_whenFound() {
-        RecurringTransaction entity = RecurringTransaction.builder().id(recurringId).userId(userId).build();
+        RecurringTransaction entity = RecurringTransaction.builder().id(recurringId).userId(userId).status(RecurringStatus.ACTIVE).build();
         RecurringTransactionResponse response = RecurringTransactionResponse.builder().id(recurringId).build();
 
-        when(recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(recurringId, userId)).thenReturn(Optional.of(entity));
+        when(recurringTransactionRepository.findById(recurringId)).thenReturn(Optional.of(entity));
         when(recurringTransactionMapper.toResponse(entity)).thenReturn(response);
 
         RecurringTransactionResponse result = recurringTransactionService.getById(userId, recurringId);
@@ -134,14 +141,14 @@ class RecurringTransactionServiceImplTest {
 
     @Test
     void getById_throws_whenNotFound() {
-        when(recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(recurringId, userId)).thenReturn(Optional.empty());
+        when(recurringTransactionRepository.findById(recurringId)).thenReturn(Optional.empty());
         assertThrows(RecurringTransactionNotFoundException.class, () -> recurringTransactionService.getById(userId, recurringId));
     }
 
     @Test
     void getAll_returnsPage() {
         RecurringTransaction row = RecurringTransaction.builder().id(recurringId).build();
-        when(recurringTransactionRepository.findAllByUserIdAndActiveTrue(userId, PageRequest.of(0, 20)))
+        when(recurringTransactionRepository.findAllByUserIdAndStatus(userId, RecurringStatus.ACTIVE, PageRequest.of(0, 20)))
                 .thenReturn(new PageImpl<>(List.of(row)));
         when(recurringTransactionMapper.toResponse(row)).thenReturn(RecurringTransactionResponse.builder().id(recurringId).build());
 
@@ -150,14 +157,13 @@ class RecurringTransactionServiceImplTest {
     }
 
     @Test
-    void delete_setsActiveFalse() {
-        RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).active(true).build();
-        when(recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(recurringId, userId))
-                .thenReturn(Optional.of(recurringTransaction));
+    void delete_setsStatusExpired() {
+        RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).userId(userId).status(RecurringStatus.ACTIVE).build();
+        when(recurringTransactionRepository.findById(recurringId)).thenReturn(Optional.of(recurringTransaction));
 
         recurringTransactionService.delete(userId, recurringId);
 
-        assertEquals(false, recurringTransaction.getActive());
+        assertEquals(RecurringStatus.EXPIRED, recurringTransaction.getStatus());
         verify(recurringTransactionRepository).save(recurringTransaction);
     }
 
@@ -165,7 +171,7 @@ class RecurringTransactionServiceImplTest {
     void getDueRecurringTransactions_returnsMappedList() {
         LocalDate runDate = LocalDate.now();
         RecurringTransaction due = RecurringTransaction.builder().id(recurringId).build();
-        when(recurringTransactionRepository.findAllByActiveTrueAndNextRunDateLessThanEqual(runDate)).thenReturn(List.of(due));
+        when(recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(RecurringStatus.ACTIVE, runDate)).thenReturn(List.of(due));
         when(recurringTransactionMapper.toResponse(due)).thenReturn(RecurringTransactionResponse.builder().id(recurringId).build());
 
         List<RecurringTransactionResponse> result = recurringTransactionService.getDueRecurringTransactions(runDate);
@@ -183,14 +189,14 @@ class RecurringTransactionServiceImplTest {
                 .amount(new BigDecimal("50.0000"))
                 .frequency(RecurringFrequency.DAILY)
                 .nextRunDate(LocalDate.now().plusDays(1))
-                .active(true)
+                .status(RecurringStatus.ACTIVE)
                 .build();
-        RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).userId(userId).build();
+        RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).userId(userId).status(RecurringStatus.ACTIVE).build();
         RecurringTransactionResponse response = RecurringTransactionResponse.builder().id(recurringId).build();
 
         when(accountRepository.existsByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(true);
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).userId(userId).build()));
-        when(recurringTransactionRepository.findByIdAndUserIdAndActiveTrue(recurringId, userId)).thenReturn(Optional.of(recurringTransaction));
+        when(recurringTransactionRepository.findById(recurringId)).thenReturn(Optional.of(recurringTransaction));
         when(recurringTransactionRepository.save(recurringTransaction)).thenReturn(recurringTransaction);
         when(recurringTransactionMapper.toResponse(recurringTransaction)).thenReturn(response);
 

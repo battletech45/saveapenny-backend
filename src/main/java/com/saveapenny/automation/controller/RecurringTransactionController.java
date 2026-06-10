@@ -1,16 +1,19 @@
 package com.saveapenny.automation.controller;
 
 import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
+import com.saveapenny.automation.dto.RecurringExecutionHistoryResponse;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
+import com.saveapenny.automation.dto.UpcomingRunResponse;
 import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.service.RecurringTransactionService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springdoc.core.annotations.ParameterObject;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -20,11 +23,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -84,6 +89,43 @@ public class RecurringTransactionController {
             @PathVariable UUID recurringTransactionId) {
         recurringTransactionService.delete(getCurrentUserId(principal), recurringTransactionId);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PatchMapping("/{recurringTransactionId}/pause")
+    public ResponseEntity<ApiResponse<RecurringTransactionResponse>> pause(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable UUID recurringTransactionId) {
+        RecurringTransactionResponse response = recurringTransactionService.pause(
+                getCurrentUserId(principal), recurringTransactionId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PatchMapping("/{recurringTransactionId}/resume")
+    public ResponseEntity<ApiResponse<RecurringTransactionResponse>> resume(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable UUID recurringTransactionId) {
+        RecurringTransactionResponse response = recurringTransactionService.resume(
+                getCurrentUserId(principal), recurringTransactionId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/{recurringTransactionId}/history")
+    public ResponseEntity<ApiResponse<Page<RecurringExecutionHistoryResponse>>> getHistory(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable UUID recurringTransactionId,
+            @ParameterObject Pageable pageable) {
+        Page<RecurringExecutionHistoryResponse> response = recurringTransactionService.getHistory(
+                getCurrentUserId(principal), recurringTransactionId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/upcoming")
+    public ResponseEntity<ApiResponse<List<UpcomingRunResponse>>> getUpcoming(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<UpcomingRunResponse> response = recurringTransactionService.getUpcoming(
+                getCurrentUserId(principal), limit);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     private UUID getCurrentUserId(CurrentUserPrincipal principal) {
