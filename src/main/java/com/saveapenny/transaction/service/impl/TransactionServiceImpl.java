@@ -13,6 +13,7 @@ import com.saveapenny.transaction.entity.Transaction;
 import com.saveapenny.transaction.entity.TransactionType;
 import com.saveapenny.transaction.entity.Transfer;
 import com.saveapenny.transaction.exception.InsufficientBalanceException;
+import com.saveapenny.transaction.exception.InvalidTransactionCurrencyException;
 import com.saveapenny.transaction.exception.InvalidTransferException;
 import com.saveapenny.transaction.exception.TransactionNotFoundException;
 import com.saveapenny.transaction.mapper.TransactionMapper;
@@ -63,13 +64,15 @@ public class TransactionServiceImpl implements TransactionService {
 
         Account account = findOwnedActiveAccount(currentUserId, request.getAccountId());
         ensureCategoryVisible(currentUserId, request.getCategoryId());
+        String normalizedCurrency = normalizeCurrency(request.getCurrency());
+        ensureTransactionCurrencyMatchesAccount(account, normalizedCurrency);
 
         BigDecimal amount = request.getAmount();
         applyTransactionImpact(account, request.getType(), amount, true);
 
         Transaction transaction = transactionMapper.toEntity(request);
         transaction.setUserId(currentUserId);
-        transaction.setCurrency(normalizeCurrency(request.getCurrency()));
+        transaction.setCurrency(normalizedCurrency);
 
         Account savedAccount = accountRepository.save(account);
         Transaction savedTransaction = transactionRepository.save(transaction);
@@ -195,16 +198,19 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         Account oldAccount = findOwnedActiveAccount(currentUserId, existing.getAccountId());
+        Account newAccount = findOwnedActiveAccount(currentUserId, request.getAccountId());
+        ensureCategoryVisible(currentUserId, request.getCategoryId());
+        String normalizedCurrency = normalizeCurrency(request.getCurrency());
+        ensureTransactionCurrencyMatchesAccount(newAccount, normalizedCurrency);
+
         applyTransactionImpact(oldAccount, existing.getType(), existing.getAmount(), false);
         accountRepository.save(oldAccount);
 
-        Account newAccount = findOwnedActiveAccount(currentUserId, request.getAccountId());
-        ensureCategoryVisible(currentUserId, request.getCategoryId());
         applyTransactionImpact(newAccount, request.getType(), request.getAmount(), true);
         accountRepository.save(newAccount);
 
         transactionMapper.updateEntity(existing, request);
-        existing.setCurrency(normalizeCurrency(request.getCurrency()));
+        existing.setCurrency(normalizedCurrency);
         Transaction saved = transactionRepository.save(existing);
         return transactionMapper.toResponse(saved);
     }
@@ -258,6 +264,12 @@ public class TransactionServiceImpl implements TransactionService {
 
     private String normalizeCurrency(String currency) {
         return currency == null ? null : currency.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void ensureTransactionCurrencyMatchesAccount(Account account, String normalizedCurrency) {
+        if (!account.getCurrency().equals(normalizedCurrency)) {
+            throw new InvalidTransactionCurrencyException(account.getId(), account.getCurrency(), normalizedCurrency);
+        }
     }
 
     private void applyTransactionImpact(Account account, TransactionType type, BigDecimal amount, boolean apply) {

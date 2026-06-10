@@ -108,8 +108,8 @@ class AccountRepositoryTest {
     }
 
     @Test
-    void existsByUserIdAndNameIgnoreCaseAndActiveTrue_findsByName() {
-        assertTrue(accountRepository.existsByUserIdAndNameIgnoreCaseAndActiveTrue(userId, "wallet"));
+    void existsByUserIdAndNameIgnoreCase_findsByName() {
+        assertTrue(accountRepository.existsByUserIdAndNameIgnoreCase(userId, "wallet"));
     }
 
     @Test

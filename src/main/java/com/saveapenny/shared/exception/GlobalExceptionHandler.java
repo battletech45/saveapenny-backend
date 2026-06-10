@@ -1,6 +1,7 @@
 package com.saveapenny.shared.exception;
 
 import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
+import com.saveapenny.account.exception.AccountMutationNotAllowedException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.exception.AccountInactiveException;
 import com.saveapenny.audit.exception.AuditLogAccessDeniedException;
@@ -24,6 +25,7 @@ import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
 import com.saveapenny.report.exception.InvalidNetWorthSnapshotDateException;
 import com.saveapenny.report.exception.InvalidReportDateRangeException;
 import com.saveapenny.transaction.exception.InsufficientBalanceException;
+import com.saveapenny.transaction.exception.InvalidTransactionCurrencyException;
 import com.saveapenny.transaction.exception.InvalidTransferException;
 import com.saveapenny.transaction.exception.TransactionNotFoundException;
 import com.saveapenny.auth.exception.EmailAlreadyExistsException;
@@ -111,6 +113,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleInsufficientBalance(InsufficientBalanceException ex) {
         ApiError error = ApiError.builder()
                 .code("INSUFFICIENT_BALANCE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidTransactionCurrencyException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidTransactionCurrency(InvalidTransactionCurrencyException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_TRANSACTION_CURRENCY")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
@@ -286,6 +298,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccountInactive(AccountInactiveException ex) {
         ApiError error = ApiError.builder()
                 .code("ACCOUNT_INACTIVE")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(AccountMutationNotAllowedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountMutationNotAllowed(AccountMutationNotAllowedException ex) {
+        ApiError error = ApiError.builder()
+                .code("ACCOUNT_MUTATION_NOT_ALLOWED")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();

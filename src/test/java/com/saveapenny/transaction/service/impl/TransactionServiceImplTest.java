@@ -23,6 +23,7 @@ import com.saveapenny.transaction.entity.TransactionType;
 import com.saveapenny.transaction.entity.Transfer;
 import com.saveapenny.transaction.dto.UpdateTransactionRequest;
 import com.saveapenny.transaction.exception.InsufficientBalanceException;
+import com.saveapenny.transaction.exception.InvalidTransactionCurrencyException;
 import com.saveapenny.transaction.exception.InvalidTransferException;
 import com.saveapenny.transaction.exception.TransactionNotFoundException;
 import com.saveapenny.transaction.mapper.TransactionMapper;
@@ -111,6 +112,24 @@ class TransactionServiceImplTest {
         assertEquals("USD", mapped.getCurrency());
         verify(accountRepository).save(account);
         verify(transactionRepository).save(mapped);
+    }
+
+    @Test
+    void create_throws_whenTransactionCurrencyDoesNotMatchAccountCurrency() {
+        CreateTransactionRequest request = CreateTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("25.0000"))
+                .currency("EUR")
+                .transactionDate(LocalDate.now())
+                .build();
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+
+        assertThrows(InvalidTransactionCurrencyException.class, () -> transactionService.create(userId, request));
     }
 
     @Test
@@ -425,5 +444,33 @@ class TransactionServiceImplTest {
 
         assertEquals(0, result.getTotalElements());
         verify(transactionRepository).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void update_throws_whenTransactionCurrencyDoesNotMatchAccountCurrency() {
+        UUID txId = UUID.randomUUID();
+        Transaction existing = Transaction.builder()
+                .id(txId)
+                .userId(userId)
+                .accountId(accountId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("100.0000"))
+                .currency("USD")
+                .build();
+        UpdateTransactionRequest request = UpdateTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("80.0000"))
+                .currency("EUR")
+                .transactionDate(LocalDate.now())
+                .build();
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
+
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(existing));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+
+        assertThrows(InvalidTransactionCurrencyException.class, () -> transactionService.update(userId, txId, request));
     }
 }

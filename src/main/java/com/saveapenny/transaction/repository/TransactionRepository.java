@@ -32,6 +32,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
             LocalDate to,
             Pageable pageable);
 
+    boolean existsByUserIdAndAccountId(UUID userId, UUID accountId);
+
     List<Transaction> findAllByUserIdAndTypeAndTransactionDateBetween(
             UUID userId,
             TransactionType type,

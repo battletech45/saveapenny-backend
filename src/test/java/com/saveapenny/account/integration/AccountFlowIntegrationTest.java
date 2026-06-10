@@ -98,8 +98,8 @@ class AccountFlowIntegrationTest {
         String updateBody = """
                 {
                   "name": "Main Wallet",
-                  "type": "BANK",
-                  "currency": "EUR"
+                  "type": "CASH",
+                  "currency": "USD"
                 }
                 """;
 
@@ -109,12 +109,29 @@ class AccountFlowIntegrationTest {
                         .content(updateBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Main Wallet"))
-                .andExpect(jsonPath("$.data.currency").value("EUR"));
+                .andExpect(jsonPath("$.data.currency").value("USD"));
 
         mockMvc.perform(delete("/api/v1/accounts/{id}", accountId)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+
+        String recreateReservedNameBody = """
+                {
+                  "name": "Main Wallet",
+                  "type": "CASH",
+                  "currency": "USD",
+                  "initialBalance": 250.0000
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/accounts")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(recreateReservedNameBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("ACCOUNT_NAME_ALREADY_EXISTS"));
 
         mockMvc.perform(get("/api/v1/accounts/{id}", accountId)
                         .header("Authorization", "Bearer " + accessToken))

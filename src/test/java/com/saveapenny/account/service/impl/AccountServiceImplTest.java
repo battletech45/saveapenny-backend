@@ -14,9 +14,12 @@ import com.saveapenny.account.dto.UpdateAccountRequest;
 import com.saveapenny.account.entity.Account;
 import com.saveapenny.account.entity.AccountType;
 import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
+import com.saveapenny.account.exception.AccountMutationNotAllowedException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.mapper.AccountMapper;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.transaction.repository.TransactionRepository;
+import com.saveapenny.transaction.repository.TransferRepository;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -39,6 +42,12 @@ class AccountServiceImplTest {
 
     @Mock
     private AccountMapper accountMapper;
+
+    @Mock
+    private TransactionRepository transactionRepository;
+
+    @Mock
+    private TransferRepository transferRepository;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -83,7 +92,7 @@ class AccountServiceImplTest {
                 .build();
         AccountResponse response = AccountResponse.builder().id(accountId).name("Wallet").build();
 
-        when(accountRepository.existsByUserIdAndNameIgnoreCaseAndActiveTrue(userId, "Wallet")).thenReturn(false);
+        when(accountRepository.existsByUserIdAndNameIgnoreCase(userId, "Wallet")).thenReturn(false);
         when(accountMapper.toEntity(request)).thenReturn(mapped);
         when(accountRepository.save(mapped)).thenReturn(account);
         when(accountMapper.toResponse(account)).thenReturn(response);
@@ -105,7 +114,7 @@ class AccountServiceImplTest {
                 .initialBalance(BigDecimal.ZERO)
                 .build();
 
-        when(accountRepository.existsByUserIdAndNameIgnoreCaseAndActiveTrue(userId, "Wallet")).thenReturn(true);
+        when(accountRepository.existsByUserIdAndNameIgnoreCase(userId, "Wallet")).thenReturn(true);
 
         assertThrows(AccountNameAlreadyExistsException.class, () -> accountService.create(userId, request));
         verify(accountRepository, never()).save(any(Account.class));
@@ -134,16 +143,16 @@ class AccountServiceImplTest {
     }
 
     @Test
-    void update_appliesChanges_whenValid() {
+    void update_appliesNameChange_whenValid() {
         UpdateAccountRequest request = UpdateAccountRequest.builder()
                 .name(" Main Wallet ")
-                .type(AccountType.BANK)
-                .currency("eur")
+                .type(AccountType.CASH)
+                .currency("usd")
                 .build();
-        AccountResponse response = AccountResponse.builder().id(accountId).name("Main Wallet").currency("EUR").build();
+        AccountResponse response = AccountResponse.builder().id(accountId).name("Main Wallet").currency("USD").build();
 
         when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
-        when(accountRepository.existsByUserIdAndNameIgnoreCaseAndActiveTrueAndIdNot(userId, "Main Wallet", accountId))
+        when(accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, "Main Wallet", accountId))
                 .thenReturn(false);
         when(accountRepository.save(account)).thenReturn(account);
         when(accountMapper.toResponse(account)).thenReturn(response);
@@ -152,7 +161,49 @@ class AccountServiceImplTest {
 
         assertEquals("Main Wallet", result.getName());
         assertEquals("Main Wallet", account.getName());
-        assertEquals("EUR", account.getCurrency());
+        assertEquals("USD", account.getCurrency());
+    }
+
+    @Test
+    void update_throws_whenChangingTypeAfterAccountHasBalance() {
+        UpdateAccountRequest request = UpdateAccountRequest.builder()
+                .name("Wallet")
+                .type(AccountType.BANK)
+                .currency("USD")
+                .build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, "Wallet", accountId)).thenReturn(false);
+
+        assertThrows(AccountMutationNotAllowedException.class, () -> accountService.update(userId, accountId, request));
+    }
+
+    @Test
+    void update_throws_whenChangingCurrencyAfterAccountHasBalance() {
+        UpdateAccountRequest request = UpdateAccountRequest.builder()
+                .name("Wallet")
+                .type(AccountType.CASH)
+                .currency("EUR")
+                .build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, "Wallet", accountId)).thenReturn(false);
+
+        assertThrows(AccountMutationNotAllowedException.class, () -> accountService.update(userId, accountId, request));
+    }
+
+    @Test
+    void create_throws_whenNameExistsOnInactiveAccount() {
+        CreateAccountRequest request = CreateAccountRequest.builder()
+                .name("Wallet")
+                .type(AccountType.CASH)
+                .currency("USD")
+                .initialBalance(BigDecimal.ZERO)
+                .build();
+
+        when(accountRepository.existsByUserIdAndNameIgnoreCase(userId, "Wallet")).thenReturn(true);
+
+        assertThrows(AccountNameAlreadyExistsException.class, () -> accountService.create(userId, request));
     }
 
     @Test

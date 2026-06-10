@@ -26,7 +26,7 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     boolean existsByIdAndUserIdAndActiveTrue(UUID id, UUID userId);
 
-    boolean existsByUserIdAndNameIgnoreCaseAndActiveTrue(UUID userId, String name);
+    boolean existsByUserIdAndNameIgnoreCase(UUID userId, String name);
 
-    boolean existsByUserIdAndNameIgnoreCaseAndActiveTrueAndIdNot(UUID userId, String name, UUID id);
+    boolean existsByUserIdAndNameIgnoreCaseAndIdNot(UUID userId, String name, UUID id);
 }

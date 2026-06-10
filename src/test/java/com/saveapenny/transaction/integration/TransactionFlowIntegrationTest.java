@@ -165,6 +165,26 @@ class TransactionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+
+        String invalidCurrencyTransactionBody = """
+                {
+                  "accountId":"%s",
+                  "categoryId":"%s",
+                  "type":"EXPENSE",
+                  "amount":25.0000,
+                  "currency":"EUR",
+                  "description":"Wrong currency",
+                  "transactionDate":"2026-05-13"
+                }
+                """.formatted(fromAccountId, categoryId);
+
+        mockMvc.perform(post("/api/v1/transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidCurrencyTransactionBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_TRANSACTION_CURRENCY"));
     }
 
     private String extractId(MvcResult result) throws Exception {

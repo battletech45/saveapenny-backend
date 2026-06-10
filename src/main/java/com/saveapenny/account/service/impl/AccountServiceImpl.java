@@ -4,11 +4,15 @@ import com.saveapenny.account.dto.AccountResponse;
 import com.saveapenny.account.dto.CreateAccountRequest;
 import com.saveapenny.account.dto.UpdateAccountRequest;
 import com.saveapenny.account.entity.Account;
+import com.saveapenny.account.exception.AccountMutationNotAllowedException;
 import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.mapper.AccountMapper;
 import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.account.service.AccountService;
+import com.saveapenny.transaction.repository.TransactionRepository;
+import com.saveapenny.transaction.repository.TransferRepository;
+import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -22,16 +26,24 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
+    private final TransactionRepository transactionRepository;
+    private final TransferRepository transferRepository;
 
-    public AccountServiceImpl(AccountRepository accountRepository, AccountMapper accountMapper) {
+    public AccountServiceImpl(
+            AccountRepository accountRepository,
+            AccountMapper accountMapper,
+            TransactionRepository transactionRepository,
+            TransferRepository transferRepository) {
         this.accountRepository = accountRepository;
         this.accountMapper = accountMapper;
+        this.transactionRepository = transactionRepository;
+        this.transferRepository = transferRepository;
     }
 
     @Override
     public AccountResponse create(UUID currentUserId, CreateAccountRequest request) {
         String normalizedName = normalizeName(request.getName());
-        if (accountRepository.existsByUserIdAndNameIgnoreCaseAndActiveTrue(currentUserId, normalizedName)) {
+        if (accountRepository.existsByUserIdAndNameIgnoreCase(currentUserId, normalizedName)) {
             throw new AccountNameAlreadyExistsException(normalizedName);
         }
 
@@ -63,13 +75,23 @@ public class AccountServiceImpl implements AccountService {
         Account account = findOwnedActiveAccount(currentUserId, accountId);
 
         String normalizedName = normalizeName(request.getName());
-        if (accountRepository.existsByUserIdAndNameIgnoreCaseAndActiveTrueAndIdNot(currentUserId, normalizedName, accountId)) {
+        if (accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(currentUserId, normalizedName, accountId)) {
             throw new AccountNameAlreadyExistsException(normalizedName);
+        }
+
+        String normalizedCurrency = normalizeCurrency(request.getCurrency());
+        if (hasAccountBeenUsed(account)
+                && account.getType() != request.getType()) {
+            throw new AccountMutationNotAllowedException(accountId, "type");
+        }
+        if (hasAccountBeenUsed(account)
+                && !account.getCurrency().equals(normalizedCurrency)) {
+            throw new AccountMutationNotAllowedException(accountId, "currency");
         }
 
         accountMapper.updateEntity(account, request);
         account.setName(normalizedName);
-        account.setCurrency(normalizeCurrency(request.getCurrency()));
+        account.setCurrency(normalizedCurrency);
 
         Account saved = accountRepository.save(account);
         return accountMapper.toResponse(saved);
@@ -93,5 +115,12 @@ public class AccountServiceImpl implements AccountService {
 
     private String normalizeCurrency(String currency) {
         return currency == null ? null : currency.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private boolean hasAccountBeenUsed(Account account) {
+        return account.getBalance().compareTo(BigDecimal.ZERO) != 0
+                || account.getInitialBalance().compareTo(BigDecimal.ZERO) != 0
+                || transactionRepository.existsByUserIdAndAccountId(account.getUserId(), account.getId())
+                || transferRepository.existsByAccountId(account.getId());
     }
 }
