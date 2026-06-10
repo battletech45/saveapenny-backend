@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,6 +19,7 @@ import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
 import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.entity.RecurringFrequency;
+import com.saveapenny.automation.entity.RecurringStatus;
 import com.saveapenny.automation.exception.InvalidRecurringTransactionNextRunDateException;
 import com.saveapenny.automation.exception.RecurringTransactionNotFoundException;
 import com.saveapenny.automation.service.RecurringTransactionService;
@@ -139,7 +141,7 @@ class RecurringTransactionControllerTest {
                 .amount(new BigDecimal("50.0000"))
                 .frequency(RecurringFrequency.WEEKLY)
                 .nextRunDate(LocalDate.now().plusDays(2))
-                .active(true)
+                .status(RecurringStatus.ACTIVE)
                 .build();
 
         mockMvc.perform(put("/api/v1/automations/recurring-transactions/{id}", recurringId)
@@ -198,6 +200,34 @@ class RecurringTransactionControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    @Test
+    void pause_returnsEnvelope() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID recurringId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-p1")).thenReturn(true);
+        when(jwtService.extractUserId("token-p1")).thenReturn(userId);
+        when(recurringTransactionService.pause(userId, recurringId)).thenReturn(sampleResponse());
+
+        mockMvc.perform(patch("/api/v1/automations/recurring-transactions/{id}/pause", recurringId)
+                        .header("Authorization", "Bearer token-p1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void resume_returnsEnvelope() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID recurringId = UUID.randomUUID();
+        when(jwtService.isAccessTokenValid("token-r1")).thenReturn(true);
+        when(jwtService.extractUserId("token-r1")).thenReturn(userId);
+        when(recurringTransactionService.resume(userId, recurringId)).thenReturn(sampleResponse());
+
+        mockMvc.perform(patch("/api/v1/automations/recurring-transactions/{id}/resume", recurringId)
+                        .header("Authorization", "Bearer token-r1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
     private RecurringTransactionResponse sampleResponse() {
         return RecurringTransactionResponse.builder()
                 .id(UUID.randomUUID())
@@ -208,7 +238,7 @@ class RecurringTransactionControllerTest {
                 .amount(new BigDecimal("100.0000"))
                 .frequency(RecurringFrequency.MONTHLY)
                 .nextRunDate(LocalDate.now().plusDays(1))
-                .active(true)
+                .status(RecurringStatus.ACTIVE)
                 .createdAt(OffsetDateTime.now().minusDays(1))
                 .updatedAt(OffsetDateTime.now())
                 .build();

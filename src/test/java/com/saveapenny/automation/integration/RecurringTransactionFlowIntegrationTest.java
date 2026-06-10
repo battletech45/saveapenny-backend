@@ -3,6 +3,7 @@ package com.saveapenny.automation.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -98,7 +99,7 @@ class RecurringTransactionFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(recurringId))
                 .andExpect(jsonPath("$.data.amount").value(50.0))
-                .andExpect(jsonPath("$.data.active").value(true));
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
 
         mockMvc.perform(get("/api/v1/automations/recurring-transactions")
                         .header("Authorization", "Bearer " + token))
@@ -123,7 +124,7 @@ class RecurringTransactionFlowIntegrationTest {
                   "amount":75.0000,
                   "frequency":"DAILY",
                   "nextRunDate":"%s",
-                  "active":true
+                  "status":"ACTIVE"
                 }
                 """.formatted(accountId, categoryId, TOMORROW);
 
@@ -133,6 +134,26 @@ class RecurringTransactionFlowIntegrationTest {
                         .content(updateBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.amount").value(75.0));
+
+        mockMvc.perform(patch("/api/v1/automations/recurring-transactions/{id}/pause", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(patch("/api/v1/automations/recurring-transactions/{id}/resume", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/{id}/history", recurringId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/upcoming")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
 
         mockMvc.perform(delete("/api/v1/automations/recurring-transactions/{id}", recurringId)
                         .header("Authorization", "Bearer " + token))

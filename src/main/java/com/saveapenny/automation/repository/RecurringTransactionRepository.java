@@ -1,5 +1,6 @@
 package com.saveapenny.automation.repository;
 
+import com.saveapenny.automation.entity.RecurringStatus;
 import com.saveapenny.automation.entity.RecurringTransaction;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,9 +12,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RecurringTransactionRepository extends JpaRepository<RecurringTransaction, UUID> {
 
-    Optional<RecurringTransaction> findByIdAndUserIdAndActiveTrue(UUID id, UUID userId);
+    Optional<RecurringTransaction> findByIdAndUserIdAndStatus(UUID id, UUID userId, RecurringStatus status);
 
-    Page<RecurringTransaction> findAllByUserIdAndActiveTrue(UUID userId, Pageable pageable);
+    Page<RecurringTransaction> findAllByUserIdAndStatus(UUID userId, RecurringStatus status, Pageable pageable);
 
-    List<RecurringTransaction> findAllByActiveTrueAndNextRunDateLessThanEqual(LocalDate runDate);
+    List<RecurringTransaction> findAllByStatusAndNextRunDateLessThanEqual(RecurringStatus status, LocalDate runDate);
 }

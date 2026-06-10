@@ -1,7 +1,9 @@
 package com.saveapenny.automation.service;
 
 import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
+import com.saveapenny.automation.dto.RecurringExecutionHistoryResponse;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
+import com.saveapenny.automation.dto.UpcomingRunResponse;
 import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import java.time.LocalDate;
 import java.util.List;
@@ -23,6 +25,15 @@ public interface RecurringTransactionService {
             UpdateRecurringTransactionRequest request);
 
     void delete(UUID currentUserId, UUID recurringTransactionId);
+
+    RecurringTransactionResponse pause(UUID currentUserId, UUID recurringTransactionId);
+
+    RecurringTransactionResponse resume(UUID currentUserId, UUID recurringTransactionId);
+
+    Page<RecurringExecutionHistoryResponse> getHistory(
+            UUID currentUserId, UUID recurringTransactionId, Pageable pageable);
+
+    List<UpcomingRunResponse> getUpcoming(UUID currentUserId, int limit);
 
     List<RecurringTransactionResponse> getDueRecurringTransactions(LocalDate runDate);
 }

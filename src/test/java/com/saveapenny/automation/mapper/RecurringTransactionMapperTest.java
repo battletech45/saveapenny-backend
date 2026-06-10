@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
 import com.saveapenny.automation.entity.RecurringFrequency;
+import com.saveapenny.automation.entity.RecurringStatus;
 import com.saveapenny.automation.entity.RecurringTransaction;
 import com.saveapenny.transaction.entity.TransactionType;
 import java.math.BigDecimal;
@@ -33,7 +34,7 @@ class RecurringTransactionMapperTest {
                 .amount(new BigDecimal("250.0000"))
                 .frequency(RecurringFrequency.MONTHLY)
                 .nextRunDate(LocalDate.of(2026, 7, 1))
-                .active(true)
+                .status(RecurringStatus.ACTIVE)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -48,7 +49,7 @@ class RecurringTransactionMapperTest {
         assertEquals(0, new BigDecimal("250.0000").compareTo(response.getAmount()));
         assertEquals(RecurringFrequency.MONTHLY, response.getFrequency());
         assertEquals(LocalDate.of(2026, 7, 1), response.getNextRunDate());
-        assertEquals(true, response.getActive());
+        assertEquals(RecurringStatus.ACTIVE, response.getStatus());
         assertEquals(now, response.getCreatedAt());
         assertEquals(now, response.getUpdatedAt());
     }

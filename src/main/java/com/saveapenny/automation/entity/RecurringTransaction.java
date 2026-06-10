@@ -55,9 +55,28 @@ public class RecurringTransaction {
     @Column(name = "next_run_date", nullable = false)
     private LocalDate nextRunDate;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean active = true;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private RecurringStatus status;
+
+    @Column(length = 150)
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "last_run_at")
+    private OffsetDateTime lastRunAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private RecurringClassification classification;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -71,8 +90,8 @@ public class RecurringTransaction {
             id = UUID.randomUUID();
         }
 
-        if (active == null) {
-            active = true;
+        if (status == null) {
+            status = RecurringStatus.ACTIVE;
         }
 
         OffsetDateTime now = OffsetDateTime.now();
