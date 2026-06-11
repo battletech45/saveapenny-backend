@@ -1,152 +1,126 @@
 # Deployment And Operations
 
-## Purpose
-
-This document covers the runtime requirements and operational expectations for running SaveAPenny outside basic local exploration.
-
 ## Runtime Dependencies
 
-Required:
+| Dependency | Required | Notes |
+|------------|----------|-------|
+| Java 24 | Yes | JVM runtime |
+| PostgreSQL 16+ | Yes | All data storage |
+| Tesseract | No | Needed only if OCR is enabled |
+| OpenAI / OpenRouter | No | Needed only if assistant is enabled |
 
-- Java 24
-- PostgreSQL 16+
-- network access between the application and PostgreSQL
+## Environment Variables
 
-Optional but feature-dependent:
+### Required
 
-- Tesseract for OCR
-- OpenAI or OpenRouter for assistant features
+| Variable | Description |
+|----------|-------------|
+| `DB_USERNAME` | PostgreSQL user |
+| `DB_PASSWORD` | PostgreSQL password |
+| `JWT_SECRET` | HS512 key, 64+ characters |
 
-## Required Environment Variables
+### Application Configuration (all have safe defaults)
 
-Database and auth:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SERVER_PORT` | `8080` | HTTP listen port |
+| `ASSISTANT_ENABLED` | `false` | Enable AI assistant chat |
+| `ASSISTANT_AI_PROVIDER` | `openrouter` | `openrouter` or `openai` |
+| `OPENROUTER_API_KEY` | — | OpenRouter API key |
+| `OPENAI_API_KEY` | — | OpenAI API key |
+| `INSIGHT_ENABLED` | `false` | Enable financial insight generation |
+| `GOAL_PROGRESS_ENABLED` | `false` | Enable scheduled goal progress checks |
 
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `JWT_SECRET`
+### Docker Compose Only
 
-Assistant:
+| Variable | Description |
+|----------|-------------|
+| `POSTGRES_DB` | Database name |
+| `POSTGRES_USER` | PostgreSQL admin user |
+| `POSTGRES_PASSWORD` | PostgreSQL admin password |
 
-- `ASSISTANT_ENABLED`
-- `ASSISTANT_AI_PROVIDER`
-- `OPENAI_API_KEY` when using OpenAI
-- `OPENROUTER_API_KEY` when using OpenRouter
+## Database
 
-Recommended Docker/PostgreSQL values:
+- Flyway applies migrations on startup
+- Hibernate validates schema against entities (`ddl-auto: validate`)
+- Default connection: `localhost:5432/saveapenny`
+- Migrations are in `src/main/resources/db/migration/`
 
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
+## Health Checks
 
-## Database Behavior
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `GET /actuator/health` | Public | Liveness and readiness |
+| `GET /v3/api-docs` | Public | OpenAPI spec |
+| `GET /swagger-ui.html` | Public | Interactive API browser |
 
-- the application uses Flyway migrations on startup
-- JPA validation expects the schema to match the migrations
-- the default local database target in `application.yml` is PostgreSQL on `localhost:5432`
+## Docker Compose
 
-## Health And Service Discovery
+The included `docker-compose.yml` starts PostgreSQL 16 + the app. Health check polls `/actuator/health`.
 
-Health endpoint:
+To run:
 
-- `GET /actuator/health`
+```bash
+cp .env.example .env   # fill in values
+docker compose up --build
+```
 
-Current behavior:
+## Reverse Proxy Recommendations
 
-- exposed over HTTP
-- does not require authentication
+In production, place the service behind a reverse proxy (nginx, Caddy, Cloudflare, or a Kubernetes ingress) that handles:
 
-Useful public operational endpoints:
+- TLS termination
+- Host-based routing
+- DDoS protection
+- Request logging
 
-- `GET /actuator/health`
-- `GET /v3/api-docs`
-- `GET /swagger-ui.html`
+The application does not handle TLS natively.
 
-## Docker Compose Notes
+## Security
 
-The repository includes `docker-compose.yml` for local containerized startup.
+- All business endpoints require `Authorization: Bearer <accessToken>`
+- Auth, health, and docs endpoints are public
+- Resources are scoped per authenticated user
+- Rate limiting: 5 POST/min for login, 60 POST/min for API (other methods are not rate-limited)
+- Tokens are stored hashed (refresh tokens) or signed (access tokens via JWT)
 
-The compose file:
+## Monitoring
 
-- starts PostgreSQL 16
-- builds the application container from the local `Dockerfile`
-- maps the app to port `8080`
-- maps PostgreSQL to port `5432`
-- uses an HTTP health check against `/actuator/health`
+| Metric | Source |
+|--------|--------|
+| Health | `/actuator/health` |
+| JVM metrics | `/actuator/metrics` (if enabled) |
+| Logs | Configured via `logging.level` in `application.yml` |
 
-## OCR Runtime Requirements
+## Deployment Smoke Checks
 
-OCR features depend on Tesseract and tessdata files being available to the runtime environment.
+1. `GET /actuator/health` returns `200 UP`
+2. `POST /api/v1/auth/register` succeeds
+3. `POST /api/v1/auth/login` returns tokens
+4. Call a protected endpoint with the access token
+5. `POST /api/v1/auth/refresh` returns new tokens
+6. Flyway migrations applied (check startup logs for `Successfully validated N migrations`)
 
-Expected local macOS tessdata path in current config:
+## Troubleshooting
 
-- `/opt/homebrew/share/tessdata`
+### App fails to start
 
-Container path in `docker-compose.yml`:
+Check startup logs for:
 
-- `/usr/share/tesseract-ocr/5/tessdata`
+- **Database connection**: verify PostgreSQL is running and `DB_USERNAME`/`DB_PASSWORD` are correct
+- **Flyway migration**: `Schema-validation: missing column` — the database schema is behind the code. Run all migrations or repair the schema
+- **JWT secret**: ensure `JWT_SECRET` is at least 64 characters for HS512
+- **OCR validation**: if OCR is enabled, Tesseract must be installed and tessdata path must exist
 
-If OCR is enabled but the runtime is missing Tesseract or a valid tessdata path, OCR features can fail and startup validation may fail.
+### 401 on all endpoints
 
-## Assistant Provider Notes
+- The access token is expired or invalid
+- The refresh token was revoked (e.g., by a password change on another device)
+- Solution: re-authenticate via login
 
-Assistant features are optional and controlled by configuration.
+### 429 Too Many Requests
 
-If the assistant is disabled:
-
-- `POST /api/v1/assistant/chat` returns `503 ASSISTANT_DISABLED`
-
-If the assistant is enabled, the selected provider credentials must be valid.
-
-## Security Expectations
-
-- all business endpoints are protected by bearer-token authentication except the public auth, docs, and health routes
-- user-owned resources are scoped per authenticated user
-- rate limiting is enabled for login and general API traffic
-
-## Operational Smoke Checks
-
-Recommended checks after deployment:
-
-1. `GET /actuator/health` returns `UP`
-2. Swagger UI loads
-3. user registration and login succeed
-4. a protected endpoint works with a valid token
-5. database migrations apply cleanly
-6. OCR and assistant paths are exercised only if enabled
-
-## Common Runtime Problems
-
-### Health endpoint returns unauthorized
-
-Expected behavior is public access. If it returns `401`, verify the running build includes the current security configuration.
-
-### Database connection failures
-
-Check:
-
-- host and port
-- credentials
-- PostgreSQL availability
-- network access from the application runtime
-
-### Assistant failures
-
-Check:
-
-- `ASSISTANT_ENABLED`
-- provider selection
-- provider API key
-- outbound network access
-
-### OCR failures
-
-Check:
-
-- Tesseract installation
-- tessdata path
-- OCR enabled state
-- file format and size
-
-## Recommended External Access Pattern
-
-For production-like environments, place the service behind a reverse proxy or ingress layer that handles TLS, host routing, and deployment-specific access controls.
+- Login rate limit: 5 POST requests per minute per IP
+- API rate limit: 60 POST requests per minute per user
+- Response includes `Retry-After: 60` header
+- Only POST requests are rate-limited

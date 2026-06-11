@@ -16,6 +16,8 @@ The typical order of use is:
 
 ## Authentication Flow
 
+See [Auth Flow](auth-flow.md) for the complete token lifecycle, including refresh rotation and mobile client implementation guidance.
+
 Public auth endpoints:
 
 - `POST /api/v1/auth/register`
@@ -223,8 +225,8 @@ Typical flow:
 
 OCR endpoints:
 
-- `POST /api/imports/ocr`
-- `GET /api/imports/ocr/{jobId}`
+- `POST /api/v1/imports/ocr`
+- `GET /api/v1/imports/ocr/{jobId}`
 
 Supported upload types:
 

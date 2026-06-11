@@ -3,9 +3,10 @@
 ## Base URLs
 
 - API base: `/api/v1`
-- OCR base: `/api/imports/ocr`
 
 ## Authentication
+
+See [Auth Flow](auth-flow.md) for the complete token lifecycle and [Error Codes](error-codes.md) for all error responses.
 
 Public endpoints:
 
@@ -235,8 +236,8 @@ Status management:
 
 ### OCR Imports
 
-- `POST /api/imports/ocr`
-- `GET /api/imports/ocr/{jobId}`
+- `POST /api/v1/imports/ocr`
+- `GET /api/v1/imports/ocr/{jobId}`
 
 ### Audits
 

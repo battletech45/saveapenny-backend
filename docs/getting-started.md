@@ -1,28 +1,24 @@
 # Getting Started
 
-## Who This Is For
-
-Use this guide if you want to get SaveAPenny running locally for development, testing, integration work, or product evaluation.
-
 ## Prerequisites
 
-Required:
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Java | 24 | JDK required |
+| Maven | 3.9+ | Build tool |
+| PostgreSQL | 16+ | Database |
+| Docker | Latest | Optional, for Docker Compose |
+| Tesseract | Latest | Optional, only if OCR is enabled |
 
-- Java 24
-- Maven 3.9+
-- PostgreSQL 16+
+## 1. Configure Environment
 
-Optional:
+Copy the example env file and fill in the values:
 
-- Docker and Docker Compose
-- Tesseract if you want OCR endpoints enabled
-- OpenAI or OpenRouter credentials if you want assistant features enabled
+```bash
+cp .env.example .env
+```
 
-## 1. Configure Environment Variables
-
-Create a local `.env` file from `.env.example`.
-
-Minimum required values:
+Minimum required values in `.env`:
 
 ```env
 POSTGRES_DB=saveapenny
@@ -31,33 +27,19 @@ POSTGRES_PASSWORD=change_me_local_only
 DB_USERNAME=saveapenny_app
 DB_PASSWORD=change_me_local_only
 JWT_SECRET=change_me_to_a_64_plus_char_secret_for_hs512_signing_key
-ASSISTANT_ENABLED=false
-ASSISTANT_AI_PROVIDER=openrouter
 ```
 
-Assistant provider values:
-
-- `OPENROUTER_API_KEY` for OpenRouter
-- `OPENAI_API_KEY` for OpenAI
-
-## 2. Start The Application
+## 2. Start the Application
 
 ### Option A: Docker Compose
-
-This starts PostgreSQL and the application together.
 
 ```bash
 docker compose up --build
 ```
 
-Default exposed ports:
+Starts PostgreSQL and the application together. Exposes app on `:8080` and PostgreSQL on `:5432`.
 
-- app: `8080`
-- PostgreSQL: `5432`
-
-### Option B: Run With Maven
-
-First make sure PostgreSQL is already running and matches your `.env` values.
+### Option B: Maven (PostgreSQL must be running separately)
 
 ```bash
 mvn spring-boot:run
@@ -67,9 +49,11 @@ mvn spring-boot:run
 
 Open these URLs after the app starts:
 
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-- Health: `http://localhost:8080/actuator/health`
+| URL | Purpose |
+|-----|---------|
+| `http://localhost:8080/swagger-ui.html` | Interactive API browser |
+| `http://localhost:8080/v3/api-docs` | OpenAPI spec (JSON) |
+| `http://localhost:8080/actuator/health` | Health check |
 
 Expected health response:
 
@@ -79,11 +63,9 @@ Expected health response:
 }
 ```
 
-`/actuator/health` is intentionally public and should not require a token.
+## 4. Smoke Test
 
-## 4. Run A First Smoke Test
-
-### Register
+### Register a user
 
 ```bash
 curl -X POST "http://localhost:8080/api/v1/auth/register" \
@@ -95,9 +77,20 @@ curl -X POST "http://localhost:8080/api/v1/auth/register" \
   }'
 ```
 
-### Create An Account
+### Log in
 
-Use the returned access token:
+```bash
+curl -X POST "http://localhost:8080/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "demo@example.com",
+    "password": "StrongPass123!"
+  }'
+```
+
+Save the `accessToken` and `refreshToken` from the response.
+
+### Create an account
 
 ```bash
 curl -X POST "http://localhost:8080/api/v1/accounts" \
@@ -111,36 +104,31 @@ curl -X POST "http://localhost:8080/api/v1/accounts" \
   }'
 ```
 
-## OCR Setup
-
-OCR depends on Tesseract.
-
-macOS example:
+### Refresh tokens
 
 ```bash
-brew install tesseract
-tesseract --version
-ls /opt/homebrew/share/tessdata
+curl -X POST "http://localhost:8080/api/v1/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "<refreshToken>"
+  }'
 ```
 
-If OCR is enabled and Tesseract is not available, startup validation can fail.
-
-## Useful Commands
-
-Run tests:
+## Running Tests
 
 ```bash
+# Full suite
 mvn test
+
+# Single test
+mvn -Dtest=TransactionFlowIntegrationTest test
 ```
 
-Run a focused test:
-
-```bash
-mvn -Dtest=AuthFlowIntegrationTest test
-```
+See [Testing Guide](testing-guide.md) for details.
 
 ## Next Steps
 
-1. Follow the [Usage Guide](usage-guide.md) for common workflows.
-2. Use the [API Reference](api-reference.md) for endpoint conventions.
-3. Review [Deployment And Operations](deployment-operations.md) before running outside local development.
+- [Usage Guide](usage-guide.md) — common workflows
+- [API Reference](api-reference.md) — endpoint list
+- [Auth Flow](auth-flow.md) — token lifecycle for mobile clients
+- [Deployment & Operations](deployment-operations.md) — production setup
