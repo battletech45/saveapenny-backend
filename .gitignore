@@ -34,3 +34,6 @@ target/
 
 # Local environment secrets
 .env
+
+# Development Documents
+/docs/development
