@@ -95,6 +95,12 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         ensureCategoryVisible(currentUserId, request.getCategoryId());
 
         RecurringTransaction recurringTransaction = findOwnedRecurringTransaction(currentUserId, recurringTransactionId);
+        if (request.getStatus() != recurringTransaction.getStatus()) {
+            throw new InvalidRecurringTransactionStatusTransitionException(
+                    recurringTransactionId,
+                    recurringTransaction.getStatus(),
+                    request.getStatus());
+        }
         recurringTransactionMapper.updateEntity(recurringTransaction, request);
 
         RecurringTransaction saved = recurringTransactionRepository.save(recurringTransaction);

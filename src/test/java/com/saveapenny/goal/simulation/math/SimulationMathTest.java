@@ -80,6 +80,12 @@ class SimulationMathTest {
     }
 
     @Test
+    void pow_withIntExponent_preservesDecimalPrecision() {
+        BigDecimal result = SimulationMath.pow(new BigDecimal("1.01"), 12);
+        assertEquals(0, result.compareTo(new BigDecimal("1.126825030131970")));
+    }
+
+    @Test
     void pow_withZeroExponent() {
         assertEquals(BigDecimal.ONE, SimulationMath.pow(new BigDecimal("100"), 0));
     }

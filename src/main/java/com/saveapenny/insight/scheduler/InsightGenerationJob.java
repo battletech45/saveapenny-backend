@@ -2,12 +2,12 @@ package com.saveapenny.insight.scheduler;
 
 import com.saveapenny.insight.config.InsightProperties;
 import com.saveapenny.insight.service.impl.InsightGenerationPipeline;
-import com.saveapenny.user.entity.User;
 import com.saveapenny.user.repository.UserRepository;
-import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -36,17 +36,22 @@ public class InsightGenerationJob {
             return;
         }
 
-        List<User> allUsers = userRepository.findAll();
-        log.info("Starting insight generation for {} users", allUsers.size());
-
-        for (User user : allUsers) {
-            try {
-                UUID userId = user.getId();
-                int count = insightGenerationPipeline.execute(userId);
-                log.debug("Generated {} insights for user {}", count, userId);
-            } catch (RuntimeException ex) {
-                log.warn("Failed to generate insights for user {}", user.getId(), ex);
+        int pageNumber = 0;
+        Page<UUID> page;
+        do {
+            page = userRepository.findAllUserIds(PageRequest.of(pageNumber, 100));
+            if (pageNumber == 0) {
+                log.info("Starting insight generation for {} users", page.getTotalElements());
             }
-        }
+            for (UUID userId : page.getContent()) {
+                try {
+                    int count = insightGenerationPipeline.execute(userId);
+                    log.debug("Generated {} insights for user {}", count, userId);
+                } catch (RuntimeException ex) {
+                    log.warn("Failed to generate insights for user {}", userId, ex);
+                }
+            }
+            pageNumber++;
+        } while (page.hasNext());
     }
 }

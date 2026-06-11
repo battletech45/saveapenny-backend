@@ -11,6 +11,7 @@ import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedExc
 import com.saveapenny.category.mapper.CategoryMapper;
 import com.saveapenny.category.repository.CategoryRepository;
 import com.saveapenny.category.service.CategoryService;
+import com.saveapenny.transaction.repository.TransactionRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -24,10 +25,15 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+    private final TransactionRepository transactionRepository;
 
-    public CategoryServiceImpl(CategoryRepository categoryRepository, CategoryMapper categoryMapper) {
+    public CategoryServiceImpl(
+            CategoryRepository categoryRepository,
+            CategoryMapper categoryMapper,
+            TransactionRepository transactionRepository) {
         this.categoryRepository = categoryRepository;
         this.categoryMapper = categoryMapper;
+        this.transactionRepository = transactionRepository;
     }
 
     @Override
@@ -73,6 +79,10 @@ public class CategoryServiceImpl implements CategoryService {
 
         if (!category.getUserId().equals(currentUserId)) {
             throw new CategoryNotFoundException(categoryId);
+        }
+        if (category.getType() != request.getType()
+                && transactionRepository.existsByUserIdAndCategoryId(currentUserId, categoryId)) {
+            throw new SystemCategoryModificationNotAllowedException(categoryId);
         }
 
         String normalizedName = normalizeName(request.getName());

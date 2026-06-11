@@ -183,7 +183,7 @@ public class BudgetServiceImpl implements BudgetService {
     private String resolveCategoryName(Map<UUID, String> categoryNames, UUID categoryId) {
         String categoryName = categoryNames.get(categoryId);
         if (categoryName == null) {
-            throw new CategoryNotFoundException(categoryId);
+            return "Unknown category";
         }
         return categoryName;
     }
@@ -228,12 +228,12 @@ public class BudgetServiceImpl implements BudgetService {
     }
 
     private BigDecimal loadSpentAmount(UUID currentUserId, Budget budget) {
-        return transactionRepository.sumAmountByUserIdAndCategoryIdAndTypeAndTransactionDateBetween(
+        return nullSafeAmount(transactionRepository.sumAmountByUserIdAndCategoryIdAndTypeAndTransactionDateBetween(
                 currentUserId,
                 budget.getCategoryId(),
                 TransactionType.EXPENSE,
                 budget.getStartDate(),
-                budget.getEndDate());
+                budget.getEndDate()));
     }
 
     private BudgetStatusResponse toStatusResponse(Budget budget, String categoryName, BigDecimal spentAmount) {

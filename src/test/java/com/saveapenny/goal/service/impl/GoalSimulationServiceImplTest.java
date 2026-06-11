@@ -404,4 +404,25 @@ class GoalSimulationServiceImplTest {
         assertNotNull(response);
         assertNotNull(response.getDeltaVsBaseline());
     }
+
+    @Test
+    void simulateDraft_withInvalidDate_throwsValidationException() {
+        DraftGoalSimulationRequest request = DraftGoalSimulationRequest.builder()
+                .type(GoalType.DEBT_PAYOFF)
+                .title("Bad Date")
+                .targetAmount(new BigDecimal("10000"))
+                .currency("USD")
+                .targetDate(LocalDate.of(2027, 12, 31))
+                .inputs(realObjectMapper.createObjectNode()
+                        .set("values", realObjectMapper.createObjectNode()
+                                .put("targetPayoffDate", "2024-13-01")
+                                .put("currentBalance", 1000)
+                                .put("apr", 5)
+                                .put("monthlyPayment", 100)))
+                .build();
+
+        when(goalContextProvider.getContext(userId)).thenReturn(context);
+
+        assertThrows(GoalSimulationValidationException.class, () -> goalSimulationService.simulateDraft(userId, request));
+    }
 }

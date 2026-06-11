@@ -1,6 +1,7 @@
 package com.saveapenny.automation.service.impl;
 
 import com.saveapenny.automation.service.AutomationDistributedLockService;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -43,6 +44,14 @@ public class AutomationDistributedLockServiceImpl implements AutomationDistribut
     }
 
     private long lockKey(String lockName) {
-        return lockName == null ? 0L : lockName.hashCode();
+        if (lockName == null) {
+            return 0L;
+        }
+        long hash = 0xcbf29ce484222325L;
+        for (byte value : lockName.getBytes(StandardCharsets.UTF_8)) {
+            hash ^= value;
+            hash *= 0x100000001b3L;
+        }
+        return hash;
     }
 }

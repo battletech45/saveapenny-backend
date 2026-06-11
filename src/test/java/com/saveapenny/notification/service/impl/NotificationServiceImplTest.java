@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,7 @@ import com.saveapenny.notification.exception.NotificationNotFoundException;
 import com.saveapenny.notification.mapper.NotificationMapper;
 import com.saveapenny.notification.repository.NotificationRepository;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,13 +131,16 @@ class NotificationServiceImplTest {
     void markAllAsRead_setsAllUnreadToTrue() {
         Notification unread1 = Notification.builder().id(UUID.randomUUID()).userId(userId).read(false).build();
         Notification unread2 = Notification.builder().id(UUID.randomUUID()).userId(userId).read(false).build();
-        when(notificationRepository.findAllByUserIdAndRead(userId, false, org.springframework.data.domain.Pageable.unpaged()))
-                .thenReturn(new PageImpl<>(java.util.List.of(unread1, unread2)));
+        when(notificationRepository.findAllByUserIdAndRead(userId, false, PageRequest.of(0, 500)))
+                .thenReturn(new PageImpl<>(List.of(unread1, unread2)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         notificationService.markAllAsRead(userId);
 
         assertEquals(true, unread1.getRead());
         assertEquals(true, unread2.getRead());
+        verify(notificationRepository).saveAll(List.of(unread1, unread2));
+        verify(notificationRepository, times(2)).findAllByUserIdAndRead(userId, false, PageRequest.of(0, 500));
     }
 
     @Test

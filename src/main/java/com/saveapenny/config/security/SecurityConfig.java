@@ -47,8 +47,8 @@ public class SecurityConfig {
                                 writeUnauthorizedResponse(response, objectMapper, "Unauthorized."))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeUnauthorizedResponse(response, objectMapper, accessDeniedException.getMessage())))
-                .addFilterBefore(rateLimitingFilter, AnonymousAuthenticationFilter.class)
-                .addFilterBefore(headerUserAuthenticationFilter, AnonymousAuthenticationFilter.class);
+                .addFilterBefore(headerUserAuthenticationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterAfter(rateLimitingFilter, HeaderUserAuthenticationFilter.class);
 
         return http.build();
     }

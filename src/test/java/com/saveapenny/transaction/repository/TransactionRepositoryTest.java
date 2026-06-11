@@ -1,6 +1,7 @@
 package com.saveapenny.transaction.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.saveapenny.transaction.entity.Transaction;
@@ -160,5 +161,18 @@ class TransactionRepositoryTest {
         assertEquals(categoryId, totals.getFirst().getCategoryId());
         assertEquals(LocalDate.of(2026, 5, 15), totals.getFirst().getTransactionDate());
         assertEquals(0, new BigDecimal("150.0000").compareTo(totals.getFirst().getTotalAmount()));
+    }
+
+    @Test
+    void save_initializesAndIncrementsVersion() {
+        assertNotNull(expense.getVersion());
+        assertEquals(0L, expense.getVersion());
+
+        expense.setDescription("Updated groceries");
+        transactionRepository.saveAndFlush(expense);
+        entityManager.clear();
+        Transaction updated = transactionRepository.findById(expense.getId()).orElseThrow();
+
+        assertEquals(1L, updated.getVersion());
     }
 }

@@ -10,9 +10,12 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 public class NetWorthSnapshotScheduler {
@@ -22,43 +25,58 @@ public class NetWorthSnapshotScheduler {
     private final UserRepository userRepository;
     private final ReportAccountRepository reportAccountRepository;
     private final NetWorthSnapshotRepository netWorthSnapshotRepository;
+    private final TransactionTemplate requiresNewTransactionTemplate;
 
     public NetWorthSnapshotScheduler(
             UserRepository userRepository,
             ReportAccountRepository reportAccountRepository,
-            NetWorthSnapshotRepository netWorthSnapshotRepository) {
+            NetWorthSnapshotRepository netWorthSnapshotRepository,
+            PlatformTransactionManager transactionManager) {
         this.userRepository = userRepository;
         this.reportAccountRepository = reportAccountRepository;
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
+        this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.requiresNewTransactionTemplate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Scheduled(cron = "${report.net-worth.snapshot-cron:0 0 2 * * *}")
-    @Transactional
     public void computeDailySnapshots() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        var userIds = userRepository.findAllUserIds();
-
-        for (UUID userId : userIds) {
-            if (netWorthSnapshotRepository.findByUserIdAndSnapshotDate(userId, yesterday).isPresent()) {
-                continue;
+        int pageNumber = 0;
+        Page<UUID> page;
+        do {
+            page = userRepository.findAllUserIds(PageRequest.of(pageNumber, 100));
+            for (UUID userId : page.getContent()) {
+                try {
+                    requiresNewTransactionTemplate.executeWithoutResult(status -> computeSnapshotForUser(userId, yesterday));
+                } catch (RuntimeException ex) {
+                    log.warn("Failed to compute net worth snapshot for user {} on {}: {}", userId, yesterday, ex.getMessage());
+                }
             }
+            pageNumber++;
+        } while (page.hasNext());
+    }
 
-            try {
-                BigDecimal totalAssets = reportAccountRepository.sumAssetsByUserId(userId, AccountType.CREDIT);
-                BigDecimal totalLiabilities = reportAccountRepository.sumLiabilitiesByUserId(userId, AccountType.CREDIT);
-                BigDecimal netWorth = totalAssets.subtract(totalLiabilities);
-
-                NetWorthSnapshot snapshot = NetWorthSnapshot.builder()
-                        .userId(userId)
-                        .snapshotDate(yesterday)
-                        .totalAssets(totalAssets)
-                        .totalLiabilities(totalLiabilities)
-                        .netWorth(netWorth)
-                        .build();
-                netWorthSnapshotRepository.save(snapshot);
-            } catch (Exception ex) {
-                log.warn("Failed to compute net worth snapshot for user {} on {}: {}", userId, yesterday, ex.getMessage());
-            }
+    private void computeSnapshotForUser(UUID userId, LocalDate snapshotDate) {
+        if (netWorthSnapshotRepository.findByUserIdAndSnapshotDate(userId, snapshotDate).isPresent()) {
+            return;
         }
+
+        BigDecimal totalAssets = nullSafeAmount(reportAccountRepository.sumAssetsByUserId(userId, AccountType.CREDIT));
+        BigDecimal totalLiabilities = nullSafeAmount(reportAccountRepository.sumLiabilitiesByUserId(userId, AccountType.CREDIT));
+        BigDecimal netWorth = totalAssets.subtract(totalLiabilities);
+
+        NetWorthSnapshot snapshot = NetWorthSnapshot.builder()
+                .userId(userId)
+                .snapshotDate(snapshotDate)
+                .totalAssets(totalAssets)
+                .totalLiabilities(totalLiabilities)
+                .netWorth(netWorth)
+                .build();
+        netWorthSnapshotRepository.save(snapshot);
+    }
+
+    private BigDecimal nullSafeAmount(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
 }

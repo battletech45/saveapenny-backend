@@ -455,11 +455,11 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handleAccessDenied_returnsUnauthorized() {
+    void handleAccessDenied_returnsForbidden() {
         ResponseEntity<ApiResponse<Void>> response =
                 handler.handleAccessDenied(new AccessDeniedException("access denied"));
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertEquals("ACCESS_DENIED", response.getBody().getError().getCode());
     }
 

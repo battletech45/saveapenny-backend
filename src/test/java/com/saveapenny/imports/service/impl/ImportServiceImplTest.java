@@ -110,7 +110,7 @@ class ImportServiceImplTest {
                 .status(ImportStatus.RUNNING)
                 .build();
 
-        when(importRepository.findByIdAndUserId(importId, userId)).thenReturn(Optional.of(importEntity));
+        when(importRepository.findByIdAndUserIdForUpdate(importId, userId)).thenReturn(Optional.of(importEntity));
         when(importRepository.save(any(Import.class))).thenReturn(importEntity);
         when(importMapper.toStatusResponse(importEntity)).thenReturn(mapped);
 
@@ -123,7 +123,7 @@ class ImportServiceImplTest {
     @Test
     void confirm_throws_whenAlreadyRunning() {
         Import importEntity = Import.builder().id(importId).userId(userId).status(ImportStatus.RUNNING).build();
-        when(importRepository.findByIdAndUserId(importId, userId)).thenReturn(Optional.of(importEntity));
+        when(importRepository.findByIdAndUserIdForUpdate(importId, userId)).thenReturn(Optional.of(importEntity));
 
         assertThrows(ImportAlreadyRunningException.class, () -> importService.confirm(userId, importId));
         verify(importAsyncJobService, never()).processImportAsync(any(UUID.class));

@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -55,6 +56,10 @@ public class Account {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -77,6 +82,10 @@ public class Account {
 
         if (active == null) {
             active = true;
+        }
+
+        if (version == null) {
+            version = 0L;
         }
 
         OffsetDateTime now = OffsetDateTime.now();

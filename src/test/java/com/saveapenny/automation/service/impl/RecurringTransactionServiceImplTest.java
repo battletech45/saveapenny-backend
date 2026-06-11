@@ -265,4 +265,25 @@ class RecurringTransactionServiceImplTest {
         assertEquals(recurringId, result.getId());
         verify(recurringTransactionMapper).updateEntity(recurringTransaction, request);
     }
+
+    @Test
+    void update_throws_whenStatusTransitionRequestedDirectly() {
+        UpdateRecurringTransactionRequest request = UpdateRecurringTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.INCOME)
+                .amount(new BigDecimal("50.0000"))
+                .frequency(RecurringFrequency.DAILY)
+                .nextRunDate(LocalDate.now().plusDays(1))
+                .status(RecurringStatus.PAUSED)
+                .build();
+        RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).userId(userId).status(RecurringStatus.ACTIVE).build();
+
+        when(accountRepository.existsByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(true);
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).userId(userId).build()));
+        when(recurringTransactionRepository.findById(recurringId)).thenReturn(Optional.of(recurringTransaction));
+
+        assertThrows(com.saveapenny.automation.exception.InvalidRecurringTransactionStatusTransitionException.class,
+                () -> recurringTransactionService.update(userId, recurringId, request));
+    }
 }

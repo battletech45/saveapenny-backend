@@ -1,11 +1,15 @@
 package com.saveapenny.config.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.auth.service.JwtService;
+import com.saveapenny.shared.api.ApiError;
+import com.saveapenny.shared.api.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Collections;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -20,9 +24,11 @@ public class HeaderUserAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
+    private final ObjectMapper objectMapper;
 
-    public HeaderUserAuthenticationFilter(JwtService jwtService) {
+    public HeaderUserAuthenticationFilter(JwtService jwtService, ObjectMapper objectMapper) {
         this.jwtService = jwtService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -35,7 +41,7 @@ public class HeaderUserAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String token = authHeader.substring(BEARER_PREFIX.length()).trim();
                 if (!jwtService.isAccessTokenValid(token)) {
-                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    writeUnauthorizedResponse(response);
                     return;
                 }
 
@@ -45,11 +51,22 @@ public class HeaderUserAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (RuntimeException ex) {
-                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                writeUnauthorizedResponse(response);
                 return;
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeUnauthorizedResponse(HttpServletResponse response) throws IOException {
+        ApiError error = ApiError.builder()
+                .code("ACCESS_DENIED")
+                .message("Invalid or expired access token.")
+                .details(List.of())
+                .build();
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType("application/json");
+        objectMapper.writeValue(response.getOutputStream(), ApiResponse.failure(error));
     }
 }

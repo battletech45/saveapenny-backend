@@ -72,7 +72,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public AccountResponse update(UUID currentUserId, UUID accountId, UpdateAccountRequest request) {
-        Account account = findOwnedActiveAccount(currentUserId, accountId);
+        Account account = findOwnedActiveAccountForMutation(currentUserId, accountId);
 
         String normalizedName = normalizeName(request.getName());
         if (accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(currentUserId, normalizedName, accountId)) {
@@ -80,11 +80,12 @@ public class AccountServiceImpl implements AccountService {
         }
 
         String normalizedCurrency = normalizeCurrency(request.getCurrency());
-        if (hasAccountBeenUsed(account)
+        boolean accountHasBeenUsed = hasAccountBeenUsed(account);
+        if (accountHasBeenUsed
                 && account.getType() != request.getType()) {
             throw new AccountMutationNotAllowedException(accountId, "type");
         }
-        if (hasAccountBeenUsed(account)
+        if (accountHasBeenUsed
                 && !account.getCurrency().equals(normalizedCurrency)) {
             throw new AccountMutationNotAllowedException(accountId, "currency");
         }
@@ -99,13 +100,18 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void delete(UUID currentUserId, UUID accountId) {
-        Account account = findOwnedActiveAccount(currentUserId, accountId);
+        Account account = findOwnedActiveAccountForMutation(currentUserId, accountId);
         account.setActive(false);
         accountRepository.save(account);
     }
 
     private Account findOwnedActiveAccount(UUID currentUserId, UUID accountId) {
         return accountRepository.findByIdAndUserIdAndActiveTrue(accountId, currentUserId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    private Account findOwnedActiveAccountForMutation(UUID currentUserId, UUID accountId) {
+        return accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, currentUserId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 

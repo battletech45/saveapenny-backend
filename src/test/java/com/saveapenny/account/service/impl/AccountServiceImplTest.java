@@ -151,7 +151,7 @@ class AccountServiceImplTest {
                 .build();
         AccountResponse response = AccountResponse.builder().id(accountId).name("Main Wallet").currency("USD").build();
 
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, "Main Wallet", accountId))
                 .thenReturn(false);
         when(accountRepository.save(account)).thenReturn(account);
@@ -162,6 +162,7 @@ class AccountServiceImplTest {
         assertEquals("Main Wallet", result.getName());
         assertEquals("Main Wallet", account.getName());
         assertEquals("USD", account.getCurrency());
+        verify(accountRepository).findByIdAndUserIdAndActiveTrueWithLock(accountId, userId);
     }
 
     @Test
@@ -172,7 +173,7 @@ class AccountServiceImplTest {
                 .currency("USD")
                 .build();
 
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, "Wallet", accountId)).thenReturn(false);
 
         assertThrows(AccountMutationNotAllowedException.class, () -> accountService.update(userId, accountId, request));
@@ -186,7 +187,7 @@ class AccountServiceImplTest {
                 .currency("EUR")
                 .build();
 
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(userId, "Wallet", accountId)).thenReturn(false);
 
         assertThrows(AccountMutationNotAllowedException.class, () -> accountService.update(userId, accountId, request));
@@ -208,11 +209,12 @@ class AccountServiceImplTest {
 
     @Test
     void delete_softDeletesAccount() {
-        when(accountRepository.findByIdAndUserIdAndActiveTrue(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
 
         accountService.delete(userId, accountId);
 
         assertFalse(account.getActive());
+        verify(accountRepository).findByIdAndUserIdAndActiveTrueWithLock(accountId, userId);
         verify(accountRepository).save(account);
     }
 }

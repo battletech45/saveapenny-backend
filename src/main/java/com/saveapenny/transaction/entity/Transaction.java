@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -62,6 +63,10 @@ public class Transaction {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @PrePersist
     void prePersist() {
         if (id == null) {
@@ -73,6 +78,9 @@ public class Transaction {
         }
         if (updatedAt == null) {
             updatedAt = now;
+        }
+        if (version == null) {
+            version = 0L;
         }
     }
 

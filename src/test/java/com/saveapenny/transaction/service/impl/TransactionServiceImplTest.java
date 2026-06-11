@@ -3,6 +3,7 @@ package com.saveapenny.transaction.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -44,6 +45,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
+import org.mockito.InOrder;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceImplTest {
@@ -99,7 +101,7 @@ class TransactionServiceImplTest {
         TransactionResponse response = TransactionResponse.builder().id(saved.getId()).build();
 
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
         when(transactionMapper.toEntity(request)).thenReturn(mapped);
         when(accountRepository.save(account)).thenReturn(account);
         when(transactionRepository.save(mapped)).thenReturn(saved);
@@ -127,7 +129,7 @@ class TransactionServiceImplTest {
         Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
 
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
 
         assertThrows(InvalidTransactionCurrencyException.class, () -> transactionService.create(userId, request));
     }
@@ -175,7 +177,7 @@ class TransactionServiceImplTest {
 
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(toId, userId)).thenReturn(Optional.of(toAccount));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
         when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTxn);
         when(transferRepository.save(any(Transfer.class))).thenReturn(savedTransfer);
         when(transactionMapper.toTransferResponse(savedTxn, savedTransfer)).thenReturn(response);
@@ -201,7 +203,7 @@ class TransactionServiceImplTest {
         Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
 
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
 
         assertThrows(InsufficientBalanceException.class, () -> transactionService.create(userId, request));
     }
@@ -264,7 +266,7 @@ class TransactionServiceImplTest {
         TransactionResponse response = TransactionResponse.builder().id(saved.getId()).build();
 
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
         when(transactionMapper.toEntity(request)).thenReturn(mapped);
         when(accountRepository.save(account)).thenReturn(account);
         when(transactionRepository.save(mapped)).thenReturn(saved);
@@ -298,7 +300,7 @@ class TransactionServiceImplTest {
 
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(toId, userId)).thenReturn(Optional.of(toAccount));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).userId(userId).build()));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).userId(userId).build()));
 
         assertThrows(InvalidTransferException.class, () -> transactionService.createTransfer(userId, request));
     }
@@ -352,7 +354,7 @@ class TransactionServiceImplTest {
 
         when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(existing));
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
         when(transactionRepository.save(existing)).thenReturn(existing);
         when(transactionMapper.toResponse(existing)).thenReturn(response);
 
@@ -361,6 +363,45 @@ class TransactionServiceImplTest {
         assertNotNull(result);
         assertEquals(new BigDecimal("1300.0000"), account.getBalance());
         verify(transactionMapper).updateEntity(existing, request);
+    }
+
+    @Test
+    void update_locksAccountsInDeterministicOrder_whenSwappingAccounts() {
+        UUID txId = UUID.randomUUID();
+        UUID lowerId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID higherId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        Account lowerAccount = Account.builder().id(lowerId).userId(userId).currency("USD").balance(new BigDecimal("100.0000")).active(true).build();
+        Account higherAccount = Account.builder().id(higherId).userId(userId).currency("USD").balance(new BigDecimal("100.0000")).active(true).build();
+        Transaction existing = Transaction.builder()
+                .id(txId)
+                .userId(userId)
+                .accountId(higherId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("10.0000"))
+                .currency("USD")
+                .build();
+        UpdateTransactionRequest request = UpdateTransactionRequest.builder()
+                .accountId(lowerId)
+                .categoryId(categoryId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("10.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
+
+        when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(existing));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(lowerId, userId)).thenReturn(Optional.of(lowerAccount));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(higherId, userId)).thenReturn(Optional.of(higherAccount));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
+        when(transactionRepository.save(existing)).thenReturn(existing);
+        when(transactionMapper.toResponse(existing)).thenReturn(TransactionResponse.builder().id(txId).build());
+
+        transactionService.update(userId, txId, request);
+
+        InOrder inOrder = inOrder(accountRepository);
+        inOrder.verify(accountRepository).findByIdAndUserIdAndActiveTrueWithLock(lowerId, userId);
+        inOrder.verify(accountRepository).findByIdAndUserIdAndActiveTrueWithLock(higherId, userId);
     }
 
     @Test
@@ -469,7 +510,7 @@ class TransactionServiceImplTest {
 
         when(transactionRepository.findByIdAndUserId(txId, userId)).thenReturn(Optional.of(existing));
         when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
 
         assertThrows(InvalidTransactionCurrencyException.class, () -> transactionService.update(userId, txId, request));
     }

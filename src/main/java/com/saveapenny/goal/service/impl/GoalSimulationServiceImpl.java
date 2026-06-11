@@ -25,9 +25,10 @@ import com.saveapenny.goal.simulation.dto.GoalWhatIfResponse;
 import com.saveapenny.goal.simulation.dto.ParsedGoalDraft;
 import com.saveapenny.goal.simulation.dto.WhatIfRequest;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.math.RoundingMode;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -304,7 +305,14 @@ public class GoalSimulationServiceImpl implements GoalSimulationService {
 
     private LocalDate date(JsonNode values, String field) {
         JsonNode node = values.get(field);
-        return node != null && node.isTextual() ? LocalDate.parse(node.textValue()) : null;
+        if (node == null || !node.isTextual()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(node.textValue());
+        } catch (DateTimeParseException ex) {
+            throw new GoalSimulationValidationException("Field '%s' must be a valid ISO date.".formatted(field));
+        }
     }
 
     private <E extends Enum<E>> E enumValue(JsonNode values, String field, Class<E> enumType) {

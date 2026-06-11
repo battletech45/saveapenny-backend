@@ -2,12 +2,16 @@ package com.saveapenny.config.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.auth.service.JwtService;
 import jakarta.servlet.FilterChain;
+import java.io.ByteArrayOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
@@ -18,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.DelegatingServletOutputStream;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,6 +30,9 @@ class HeaderUserAuthenticationFilterTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private HeaderUserAuthenticationFilter filter;
@@ -41,6 +49,11 @@ class HeaderUserAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
+        try {
+            lenient().when(response.getOutputStream()).thenReturn(new DelegatingServletOutputStream(new ByteArrayOutputStream()));
+        } catch (java.io.IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @AfterEach
@@ -74,6 +87,7 @@ class HeaderUserAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         verify(response).setStatus(401);
+        verify(objectMapper).writeValue(any(java.io.OutputStream.class), any());
         verifyNoInteractions(filterChain);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
@@ -108,6 +122,7 @@ class HeaderUserAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         verify(response).setStatus(401);
+        verify(objectMapper).writeValue(any(java.io.OutputStream.class), any());
         verifyNoInteractions(filterChain);
     }
 
@@ -133,6 +148,7 @@ class HeaderUserAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         verify(response).setStatus(401);
+        verify(objectMapper).writeValue(any(java.io.OutputStream.class), any());
         verifyNoInteractions(filterChain);
     }
 }

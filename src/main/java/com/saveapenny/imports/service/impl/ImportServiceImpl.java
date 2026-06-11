@@ -93,7 +93,8 @@ public class ImportServiceImpl implements ImportService {
 
     @Override
     public ImportStatusResponse confirm(UUID currentUserId, UUID importId) {
-        Import importEntity = findOwnedImport(currentUserId, importId);
+        Import importEntity = importRepository.findByIdAndUserIdForUpdate(importId, currentUserId)
+                .orElseThrow(() -> new ImportNotFoundException(importId));
         if (importEntity.getStatus() == ImportStatus.RUNNING) {
             throw new ImportAlreadyRunningException(importId);
         }

@@ -451,7 +451,7 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
@@ -461,7 +461,7 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(RefreshTokenExpiredException.class)
@@ -471,7 +471,7 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(ImportNotFoundException.class)
@@ -627,7 +627,7 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.failure(error));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.failure(error));
     }
 
     private String toMessage(FieldError fieldError) {

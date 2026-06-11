@@ -52,12 +52,20 @@ public class GoalContextProviderImpl implements GoalContextProvider {
         BigDecimal totalIncome = incomes.stream().map(Transaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalExpense = expenses.stream().map(Transaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         Set<YearMonth> incomeMonths = incomes.stream().map(item -> YearMonth.from(item.getTransactionDate())).collect(Collectors.toSet());
+        Set<YearMonth> expenseMonths = expenses.stream().map(item -> YearMonth.from(item.getTransactionDate())).collect(Collectors.toSet());
 
         return GoalContextSnapshot.builder()
                 .primaryAccountCurrency(accounts.isEmpty() ? null : accounts.getFirst().getCurrency())
-                .averageMonthlyNetIncome(totalIncome.divide(new BigDecimal("3"), java.math.MathContext.DECIMAL64))
-                .averageMonthlyExpense(totalExpense.divide(new BigDecimal("3"), java.math.MathContext.DECIMAL64))
+                .averageMonthlyNetIncome(averageForObservedMonths(totalIncome, incomeMonths.size()))
+                .averageMonthlyExpense(averageForObservedMonths(totalExpense, expenseMonths.size()))
                 .missingIncomeHistory(incomeMonths.size() < 3)
                 .build();
+    }
+
+    private BigDecimal averageForObservedMonths(BigDecimal totalAmount, int observedMonths) {
+        if (observedMonths <= 0 || totalAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return totalAmount.divide(BigDecimal.valueOf(observedMonths), java.math.MathContext.DECIMAL64);
     }
 }

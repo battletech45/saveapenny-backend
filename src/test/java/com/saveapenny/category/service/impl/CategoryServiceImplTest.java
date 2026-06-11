@@ -17,6 +17,7 @@ import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedException;
 import com.saveapenny.category.mapper.CategoryMapper;
 import com.saveapenny.category.repository.CategoryRepository;
+import com.saveapenny.transaction.repository.TransactionRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,8 @@ class CategoryServiceImplTest {
 
     @Mock
     private CategoryMapper categoryMapper;
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
     private CategoryServiceImpl categoryService;
@@ -136,6 +139,20 @@ class CategoryServiceImplTest {
         assertEquals("Groceries", result.getName());
         assertEquals("#00FF00", category.getColor());
         verify(categoryMapper).updateEntity(category, request);
+    }
+
+    @Test
+    void update_throws_whenChangingTypeOnUsedCategory() {
+        UpdateCategoryRequest request = UpdateCategoryRequest.builder()
+                .name("Food")
+                .type(CategoryType.INCOME)
+                .build();
+
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(transactionRepository.existsByUserIdAndCategoryId(userId, categoryId)).thenReturn(true);
+
+        assertThrows(SystemCategoryModificationNotAllowedException.class,
+                () -> categoryService.update(userId, categoryId, request));
     }
 
     @Test

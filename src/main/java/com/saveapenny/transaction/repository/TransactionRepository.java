@@ -34,6 +34,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
 
     boolean existsByUserIdAndAccountId(UUID userId, UUID accountId);
 
+    boolean existsByUserIdAndCategoryId(UUID userId, UUID categoryId);
+
     List<Transaction> findAllByUserIdAndTypeAndTransactionDateBetween(
             UUID userId,
             TransactionType type,

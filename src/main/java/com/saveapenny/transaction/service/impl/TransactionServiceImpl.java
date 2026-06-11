@@ -197,16 +197,17 @@ public class TransactionServiceImpl implements TransactionService {
             throw new InvalidTransferException("Use transfer endpoint for TRANSFER type transactions.");
         }
 
-        Account oldAccount = findOwnedActiveAccount(currentUserId, existing.getAccountId());
-        Account newAccount = findOwnedActiveAccount(currentUserId, request.getAccountId());
+        LockedAccounts lockedAccounts = lockAccountsForUpdate(currentUserId, existing.getAccountId(), request.getAccountId());
+        Account oldAccount = lockedAccounts.oldAccount();
+        Account newAccount = lockedAccounts.newAccount();
         ensureCategoryVisible(currentUserId, request.getCategoryId());
         String normalizedCurrency = normalizeCurrency(request.getCurrency());
         ensureTransactionCurrencyMatchesAccount(newAccount, normalizedCurrency);
 
         applyTransactionImpact(oldAccount, existing.getType(), existing.getAmount(), false);
-        accountRepository.save(oldAccount);
-
         applyTransactionImpact(newAccount, request.getType(), request.getAmount(), true);
+
+        accountRepository.save(oldAccount);
         accountRepository.save(newAccount);
 
         transactionMapper.updateEntity(existing, request);
@@ -254,8 +255,27 @@ public class TransactionServiceImpl implements TransactionService {
                 .orElseThrow(() -> new InvalidTransferException("Account not found or inactive: " + accountId));
     }
 
+    private LockedAccounts lockAccountsForUpdate(UUID currentUserId, UUID oldAccountId, UUID newAccountId) {
+        if (oldAccountId.equals(newAccountId)) {
+            Account account = findOwnedActiveAccount(currentUserId, oldAccountId);
+            return new LockedAccounts(account, account);
+        }
+
+        UUID firstId = oldAccountId.compareTo(newAccountId) <= 0 ? oldAccountId : newAccountId;
+        UUID secondId = oldAccountId.compareTo(newAccountId) <= 0 ? newAccountId : oldAccountId;
+
+        Account first = findOwnedActiveAccount(currentUserId, firstId);
+        Account second = findOwnedActiveAccount(currentUserId, secondId);
+
+        return oldAccountId.equals(firstId)
+                ? new LockedAccounts(first, second)
+                : new LockedAccounts(second, first);
+    }
+
+    private record LockedAccounts(Account oldAccount, Account newAccount) {}
+
     private void ensureCategoryVisible(UUID currentUserId, UUID categoryId) {
-        Category category = categoryRepository.findById(categoryId)
+        Category category = categoryRepository.findByIdForUpdate(categoryId)
                 .orElseThrow(() -> new InvalidTransferException("Category not found: " + categoryId));
         if (category.getUserId() != null && !category.getUserId().equals(currentUserId)) {
             throw new InvalidTransferException("Category is not visible for current user: " + categoryId);

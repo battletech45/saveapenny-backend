@@ -11,6 +11,7 @@ import com.saveapenny.notification.repository.NotificationRepository;
 import com.saveapenny.notification.service.NotificationService;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,8 +79,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void markAllAsRead(UUID currentUserId) {
-        notificationRepository.findAllByUserIdAndRead(currentUserId, false, Pageable.unpaged())
-                .forEach(notification -> notification.setRead(true));
+        Page<Notification> unreadPage;
+        do {
+            unreadPage = notificationRepository.findAllByUserIdAndRead(currentUserId, false, PageRequest.of(0, 500));
+            unreadPage.forEach(notification -> notification.setRead(true));
+            if (!unreadPage.isEmpty()) {
+                notificationRepository.saveAll(unreadPage.getContent());
+            }
+        } while (!unreadPage.isEmpty());
     }
 
     private Notification findOwnedNotification(UUID currentUserId, UUID notificationId) {

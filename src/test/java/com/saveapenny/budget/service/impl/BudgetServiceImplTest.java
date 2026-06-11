@@ -185,6 +185,20 @@ class BudgetServiceImplTest {
     }
 
     @Test
+    void getStatus_handlesNullSpentAmountAsZero() {
+        when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
+        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).name("Food").userId(userId).build()));
+        when(transactionRepository.sumAmountByUserIdAndCategoryIdAndTypeAndTransactionDateBetween(
+                userId, categoryId, TransactionType.EXPENSE, budget.getStartDate(), budget.getEndDate()))
+                .thenReturn(null);
+
+        BudgetStatusResponse result = budgetService.getStatus(userId, budgetId);
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(result.getSpentAmount()));
+        assertEquals("ON_TRACK", result.getStatus());
+    }
+
+    @Test
     void getStatus_returnsExceeded_whenUsageAboveHundred() {
         when(budgetRepository.findByIdAndUserId(budgetId, userId)).thenReturn(Optional.of(budget));
         when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(Category.builder().id(categoryId).name("Food").userId(userId).build()));
@@ -257,6 +271,20 @@ class BudgetServiceImplTest {
         assertEquals(new BigDecimal("40.00"), result.getContent().get(1).getSpentAmount());
         verify(transactionRepository, never()).sumAmountByUserIdAndCategoryIdAndTypeAndTransactionDateBetween(
                 any(UUID.class), any(UUID.class), any(TransactionType.class), any(LocalDate.class), any(LocalDate.class));
+    }
+
+    @Test
+    void getStatuses_usesUnknownCategoryWhenReferenceMissing() {
+        when(budgetRepository.findAllByUserIdAndPeriod(userId, BudgetPeriod.MONTHLY, PageRequest.of(0, 20)))
+                .thenReturn(new PageImpl<>(List.of(budget)));
+        when(categoryRepository.findAllById(any())).thenReturn(List.of());
+        when(transactionRepository.sumDailyAmountByUserIdAndCategoryIdsAndTypeAndTransactionDateBetween(
+                any(UUID.class), any(List.class), any(TransactionType.class), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(List.of());
+
+        var result = budgetService.getStatuses(userId, BudgetPeriod.MONTHLY, PageRequest.of(0, 20));
+
+        assertEquals("Unknown category", result.getContent().get(0).getCategory());
     }
 
     @Test

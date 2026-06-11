@@ -112,7 +112,7 @@ class GoalContextProviderImplTest {
         assertNotNull(snapshot);
         assertEquals("USD", snapshot.getPrimaryAccountCurrency());
         assertEquals(0, new BigDecimal("3000").compareTo(snapshot.getAverageMonthlyNetIncome()));
-        assertEquals(0, new BigDecimal("1000").compareTo(snapshot.getAverageMonthlyExpense()));
+        assertEquals(0, new BigDecimal("1500").compareTo(snapshot.getAverageMonthlyExpense()));
         assertFalse(snapshot.isMissingIncomeHistory());
     }
 
@@ -137,6 +137,7 @@ class GoalContextProviderImplTest {
         GoalContextSnapshot snapshot = goalContextProvider.getContext(userId);
 
         assertNull(snapshot.getPrimaryAccountCurrency());
+        assertEquals(0, new BigDecimal("3000").compareTo(snapshot.getAverageMonthlyNetIncome()));
         assertTrue(snapshot.isMissingIncomeHistory());
     }
 
