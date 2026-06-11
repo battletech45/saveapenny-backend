@@ -58,8 +58,14 @@ class RecurringTransactionFlowIntegrationTest {
     @Autowired
     private TransactionRepository transactionRepository;
 
-    private static final String TODAY = "2026-06-10";
-    private static final String TOMORROW = "2026-06-11";
+    private String today;
+    private String tomorrow;
+
+    @BeforeEach
+    void setUpDates() {
+        today = LocalDate.now().toString();
+        tomorrow = LocalDate.now().plusDays(1).toString();
+    }
 
     @BeforeEach
     void setUpRole() {
@@ -83,7 +89,7 @@ class RecurringTransactionFlowIntegrationTest {
                   "frequency":"DAILY",
                   "nextRunDate":"%s"
                 }
-                """.formatted(accountId, categoryId, TODAY);
+                """.formatted(accountId, categoryId, today);
 
         String recurringId = extractId(mockMvc.perform(post("/api/v1/automations/recurring-transactions")
                         .header("Authorization", "Bearer " + token)
@@ -91,7 +97,7 @@ class RecurringTransactionFlowIntegrationTest {
                         .content(createBody))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.nextRunDate").value(TODAY))
+                .andExpect(jsonPath("$.data.nextRunDate").value(today))
                 .andReturn());
 
         mockMvc.perform(get("/api/v1/automations/recurring-transactions/{id}", recurringId)
@@ -107,14 +113,14 @@ class RecurringTransactionFlowIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content.length()").value(1));
 
-        executionService.processDueRecurringTransactions(LocalDate.parse(TODAY));
+        executionService.processDueRecurringTransactions(LocalDate.parse(today));
 
         assertThat(transactionRepository.count()).isPositive();
 
         mockMvc.perform(get("/api/v1/automations/recurring-transactions/{id}", recurringId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.nextRunDate").value(TOMORROW));
+                .andExpect(jsonPath("$.data.nextRunDate").value(tomorrow));
 
         String updateBody = """
                 {
@@ -126,7 +132,7 @@ class RecurringTransactionFlowIntegrationTest {
                   "nextRunDate":"%s",
                   "status":"ACTIVE"
                 }
-                """.formatted(accountId, categoryId, TOMORROW);
+                """.formatted(accountId, categoryId, tomorrow);
 
         mockMvc.perform(put("/api/v1/automations/recurring-transactions/{id}", recurringId)
                         .header("Authorization", "Bearer " + token)
