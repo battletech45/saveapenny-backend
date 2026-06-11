@@ -61,37 +61,53 @@ class GoalProgressCalculatorImplTest {
     void calculate_returnsOnTrack_whenProjectedAmountIsAtOrBelowCurrentAmount() throws Exception {
         UUID goalId = UUID.randomUUID();
         when(goalService.getById(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(goalId)))
-                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("900.00")), LocalDate.now().plusMonths(6), new BigDecimal("1000.00")));
+                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("21000.00")), LocalDate.now().plusMonths(6), new BigDecimal("1000.00")));
 
         GoalProgressReport report = new GoalProgressCalculatorImpl(goalService, properties())
                 .calculate(UUID.randomUUID(), goalId, LocalDate.now());
 
         assertEquals(GoalProgressReport.ProgressStatus.ON_TRACK, report.status());
+        assertEquals(0, report.gap().compareTo(new BigDecimal("-1000.00")));
     }
 
     @Test
     void calculate_returnsAtRisk_whenDeficitRatioFallsInMiddleBand() throws Exception {
         UUID goalId = UUID.randomUUID();
         when(goalService.getById(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(goalId)))
-                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("1080.00")), LocalDate.now().plusMonths(6), new BigDecimal("1000.00")));
+                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("18600.00")), LocalDate.now().plusMonths(6), new BigDecimal("1000.00")));
 
         GoalProgressReport report = new GoalProgressCalculatorImpl(goalService, properties())
                 .calculate(UUID.randomUUID(), goalId, LocalDate.now());
 
         assertEquals(GoalProgressReport.ProgressStatus.AT_RISK, report.status());
+        assertEquals(0, report.gap().compareTo(new BigDecimal("1400.00")));
     }
 
     @Test
     void calculate_returnsOffTrack_whenDeficitRatioExceedsThreshold() throws Exception {
         UUID goalId = UUID.randomUUID();
         when(goalService.getById(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(goalId)))
-                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("1500.00")), LocalDate.now().plusMonths(6), new BigDecimal("1000.00")));
+                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("17000.00")), LocalDate.now().plusMonths(6), new BigDecimal("1000.00")));
 
         GoalProgressReport report = new GoalProgressCalculatorImpl(goalService, properties())
                 .calculate(UUID.randomUUID(), goalId, LocalDate.now());
 
         assertEquals(GoalProgressReport.ProgressStatus.OFF_TRACK, report.status());
         assertEquals(1, report.offTrackForMonthsCount());
+        assertEquals(0, report.gap().compareTo(new BigDecimal("3000.00")));
+    }
+
+    @Test
+    void calculate_returnsOffTrack_whenProjectionDoesNotGrowButTargetIsFarAway() throws Exception {
+        UUID goalId = UUID.randomUUID();
+        when(goalService.getById(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(goalId)))
+                .thenReturn(goalDetail(goalId, runWithProjectedAmount(new BigDecimal("100.00")), LocalDate.now().plusMonths(6), new BigDecimal("100.00")));
+
+        GoalProgressReport report = new GoalProgressCalculatorImpl(goalService, properties())
+                .calculate(UUID.randomUUID(), goalId, LocalDate.now());
+
+        assertEquals(GoalProgressReport.ProgressStatus.OFF_TRACK, report.status());
+        assertEquals(0, report.gap().compareTo(new BigDecimal("19900.00")));
     }
 
     @Test

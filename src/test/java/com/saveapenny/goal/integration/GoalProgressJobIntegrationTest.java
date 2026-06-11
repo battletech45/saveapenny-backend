@@ -69,7 +69,7 @@ class GoalProgressJobIntegrationTest {
     @Test
     void evaluateAllActiveGoals_createsSingleNotificationOnSecondOffTrackRun() throws Exception {
         UUID offTrackGoalId = createGoal("Off Track Goal", new BigDecimal("1000.00"), new BigDecimal("5000.00"));
-        UUID onTrackGoalId = createGoal("On Track Goal", new BigDecimal("1000.00"), new BigDecimal("900.00"));
+        UUID onTrackGoalId = createGoal("On Track Goal", new BigDecimal("1000.00"), new BigDecimal("21000.00"));
 
         assertEquals(0, notificationRepository.findAllByUserIdAndTypeAndReadFalse(userId, NotificationType.GOAL_OFF_TRACK).size());
 

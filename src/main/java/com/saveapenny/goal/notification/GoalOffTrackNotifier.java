@@ -63,8 +63,8 @@ public class GoalOffTrackNotifier {
 
     private String buildMessage(GoalDetailResponse goal, GoalProgressReport report) {
         BigDecimal ratio = BigDecimal.ZERO;
-        if (report.projectedAmountAtTarget() != null && report.projectedAmountAtTarget().compareTo(BigDecimal.ZERO) != 0 && report.gap() != null) {
-            ratio = report.gap().divide(report.projectedAmountAtTarget().abs(), java.math.MathContext.DECIMAL64)
+        if (goal.getTargetAmount() != null && goal.getTargetAmount().compareTo(BigDecimal.ZERO) != 0 && report.gap() != null) {
+            ratio = report.gap().divide(goal.getTargetAmount().abs(), java.math.MathContext.DECIMAL64)
                     .multiply(new BigDecimal("100"))
                     .setScale(2, RoundingMode.HALF_UP);
         }
@@ -72,7 +72,7 @@ public class GoalOffTrackNotifier {
                 + ": target=" + formatMoney(goal.getTargetAmount())
                 + ", projected=" + formatMoney(report.projectedAmountAtTarget())
                 + ", current=" + formatMoney(report.currentAmount())
-                + ". You are " + ratio + "% behind the projection after " + report.offTrackForMonthsCount() + " months. "
+                + ". You are " + ratio + "% short of the target at the projected date after " + report.offTrackForMonthsCount() + " months. "
                 + FOOTER;
     }
 

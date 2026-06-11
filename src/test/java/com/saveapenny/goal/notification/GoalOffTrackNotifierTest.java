@@ -2,6 +2,7 @@ package com.saveapenny.goal.notification;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,6 +12,7 @@ import com.saveapenny.goal.config.GoalProgressProperties;
 import com.saveapenny.goal.dto.GoalDetailResponse;
 import com.saveapenny.goal.service.GoalProgressReport;
 import com.saveapenny.goal.service.GoalService;
+import com.saveapenny.notification.dto.CreateNotificationRequest;
 import com.saveapenny.notification.dto.NotificationResponse;
 import com.saveapenny.notification.entity.Notification;
 import com.saveapenny.notification.entity.NotificationType;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -35,6 +38,9 @@ class GoalOffTrackNotifierTest {
     private NotificationService notificationService;
     @Mock
     private GoalService goalService;
+
+    @org.mockito.Captor
+    private ArgumentCaptor<CreateNotificationRequest> requestCaptor;
 
     @Test
     void notifyIfTransitionedToOffTrack_skipsWhenUnreadNotificationExists() {
@@ -62,6 +68,22 @@ class GoalOffTrackNotifierTest {
 
         assertTrue(response.isPresent());
         verify(notificationService).create(any(), any());
+    }
+
+    @Test
+    void notifyIfTransitionedToOffTrack_buildsTargetBasedMessage() {
+        UUID userId = UUID.randomUUID();
+        UUID goalId = UUID.randomUUID();
+        when(goalService.getById(userId, goalId)).thenReturn(goal(goalId));
+        when(notificationRepository.findAllByUserIdAndTypeAndReadFalse(userId, NotificationType.GOAL_OFF_TRACK)).thenReturn(List.of());
+        when(notificationService.create(any(), any())).thenReturn(NotificationResponse.builder().id(UUID.randomUUID()).build());
+
+        notifier().notifyIfTransitionedToOffTrack(userId, goalId, offTrackReport(goalId, 2));
+
+        verify(notificationService).create(any(), requestCaptor.capture());
+        assertEquals(
+                "House Fund: target=20000, projected=17000, current=1000. You are 15.00% short of the target at the projected date after 2 months. This is informational, not a recommendation.",
+                requestCaptor.getValue().getMessage());
     }
 
     @Test
@@ -116,8 +138,8 @@ class GoalOffTrackNotifierTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 new BigDecimal("1000.00"),
-                new BigDecimal("1500.00"),
-                new BigDecimal("500.00"),
+                new BigDecimal("17000.00"),
+                new BigDecimal("3000.00"),
                 6,
                 GoalProgressReport.ProgressStatus.OFF_TRACK,
                 streak,

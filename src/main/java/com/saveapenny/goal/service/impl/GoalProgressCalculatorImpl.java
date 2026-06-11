@@ -59,7 +59,7 @@ public class GoalProgressCalculatorImpl implements GoalProgressCalculator {
         }
 
         BigDecimal projectedAmountAtTarget = extractProjectedAmount(baselineRun.getOutputSummary());
-        BigDecimal gap = projectedAmountAtTarget == null ? null : projectedAmountAtTarget.subtract(currentAmount);
+        BigDecimal gap = projectedAmountAtTarget == null ? null : goal.getTargetAmount().subtract(projectedAmountAtTarget);
         GoalProgressReport.ProgressStatus status = classify(currentAmount, goal.getTargetAmount(), projectedAmountAtTarget);
         int offTrackCount = status == GoalProgressReport.ProgressStatus.OFF_TRACK ? 1 : 0;
         return report(goalId, baseline, baselineRun, currentAmount, projectedAmountAtTarget, gap,
@@ -106,14 +106,14 @@ public class GoalProgressCalculatorImpl implements GoalProgressCalculator {
         if (targetAmount != null && targetAmount.signum() > 0 && currentAmount.compareTo(targetAmount) >= 0) {
             return GoalProgressReport.ProgressStatus.ACHIEVED;
         }
-        if (projectedAmountAtTarget == null) {
+        if (targetAmount == null || targetAmount.signum() <= 0 || projectedAmountAtTarget == null) {
             return GoalProgressReport.ProgressStatus.NO_PROJECTION;
         }
-        BigDecimal deficit = projectedAmountAtTarget.subtract(currentAmount);
+        BigDecimal deficit = targetAmount.subtract(projectedAmountAtTarget);
         if (deficit.compareTo(BigDecimal.ZERO) <= 0) {
             return GoalProgressReport.ProgressStatus.ON_TRACK;
         }
-        BigDecimal denominator = projectedAmountAtTarget.abs().compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ONE : projectedAmountAtTarget.abs();
+        BigDecimal denominator = targetAmount.abs().compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ONE : targetAmount.abs();
         BigDecimal ratio = deficit.divide(denominator, MathContext.DECIMAL64);
         if (ratio.compareTo(properties.offTrackRatio()) >= 0) {
             return GoalProgressReport.ProgressStatus.OFF_TRACK;
