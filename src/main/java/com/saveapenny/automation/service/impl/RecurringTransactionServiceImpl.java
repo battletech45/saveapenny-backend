@@ -145,13 +145,11 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     @Override
     @Transactional(readOnly = true)
     public List<UpcomingRunResponse> getUpcoming(UUID currentUserId, int limit) {
-        List<RecurringTransaction> activeItems = new ArrayList<>(recurringTransactionRepository
-                .findAllByUserIdAndStatusAndNextRunDateLessThanEqual(currentUserId, RecurringStatus.ACTIVE, LocalDate.now()));
-        activeItems.addAll(recurringTransactionRepository
+        List<RecurringTransaction> activeItems = recurringTransactionRepository
                 .findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
                         currentUserId,
                         RecurringStatus.ACTIVE,
-                        LocalDate.now().plusMonths(6)));
+                        LocalDate.now().plusMonths(6));
 
         List<UpcomingRunResponse> result = new ArrayList<>();
         for (RecurringTransaction item : activeItems) {

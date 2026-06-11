@@ -206,9 +206,6 @@ class RecurringTransactionServiceImplTest {
                 .build();
 
         when(recurringTransactionRepository.findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
-                        userId, RecurringStatus.ACTIVE, today))
-                .thenReturn(List.of(todayItem));
-        when(recurringTransactionRepository.findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
                         userId, RecurringStatus.ACTIVE, today.plusMonths(6)))
                 .thenReturn(List.of(todayItem, futureItem));
 
@@ -218,6 +215,30 @@ class RecurringTransactionServiceImplTest {
         assertThat(result)
                 .extracting(UpcomingRunResponse::getRecurringTransactionId)
                 .allMatch(id -> id.equals(recurringId) || id.equals(futureRecurringId));
+    }
+
+    @Test
+    void getUpcoming_doesNotDuplicateEntriesForPastDueRecurringTransactions() {
+        LocalDate today = LocalDate.now();
+        RecurringTransaction dailyItem = RecurringTransaction.builder()
+                .id(recurringId)
+                .userId(userId)
+                .name("Daily")
+                .amount(new BigDecimal("10.0000"))
+                .frequency(RecurringFrequency.DAILY)
+                .nextRunDate(today)
+                .status(RecurringStatus.ACTIVE)
+                .build();
+
+        when(recurringTransactionRepository.findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
+                        userId, RecurringStatus.ACTIVE, today.plusMonths(6)))
+                .thenReturn(List.of(dailyItem));
+
+        List<UpcomingRunResponse> result = recurringTransactionService.getUpcoming(userId, 3);
+
+        assertThat(result)
+                .extracting(UpcomingRunResponse::getScheduledDate)
+                .containsExactly(today, today.plusDays(1), today.plusDays(2));
     }
 
     @Test

@@ -163,8 +163,15 @@ class RecurringTransactionFlowIntegrationTest {
                 .andExpect(jsonPath("$.data.content[0].scheduledDate").value(today))
                 .andExpect(jsonPath("$.data.content[0].status").value("SUCCESS"));
 
-        assertThat(executionHistoryRepository.findAll()).hasSize(1);
-        assertThat(executionHistoryRepository.findAll().getFirst().getScheduledDate()).isEqualTo(LocalDate.parse(today));
+        assertThat(executionHistoryRepository.findAll().stream()
+                .filter(item -> item.getRecurringTransactionId().toString().equals(recurringId))
+                .toList())
+                .hasSize(1);
+        assertThat(executionHistoryRepository.findAll().stream()
+                .filter(item -> item.getRecurringTransactionId().toString().equals(recurringId))
+                .findFirst()
+                .orElseThrow()
+                .getScheduledDate()).isEqualTo(LocalDate.parse(today));
 
         mockMvc.perform(get("/api/v1/automations/recurring-transactions/upcoming")
                         .header("Authorization", "Bearer " + token))
@@ -201,6 +208,24 @@ class RecurringTransactionFlowIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(10))
                 .andExpect(jsonPath("$.data[0].recurringTransactionId").value(firstRecurringId));
+    }
+
+    @Test
+    void upcoming_doesNotReturnDuplicateEntriesForSingleRecurringTransaction() throws Exception {
+        String token = registerAndGetToken("recurring.upcoming.dupes@example.com", "Recurring Upcoming Dupes");
+        String accountId = createAccount(token, "Dupes Cash", "CASH", "USD", "1000.0000");
+        String categoryId = createCategory(token, "Dupes Income", "INCOME", "#ff00ff", "wallet");
+        String recurringId = createRecurringTransaction(token, accountId, categoryId, today);
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/upcoming?limit=3")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0].recurringTransactionId").value(recurringId))
+                .andExpect(jsonPath("$.data[0].scheduledDate").value(today))
+                .andExpect(jsonPath("$.data[1].scheduledDate").value(tomorrow))
+                .andExpect(jsonPath("$.data[2].scheduledDate").value(LocalDate.parse(today).plusDays(2).toString()));
     }
 
     private String registerAndGetToken(String email, String fullName) throws Exception {
