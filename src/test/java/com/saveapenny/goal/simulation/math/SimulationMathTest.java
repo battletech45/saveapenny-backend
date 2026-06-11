@@ -127,10 +127,17 @@ class SimulationMathTest {
     }
 
     @Test
-    void requiredContribution_returnsZero_whenMonthsZero() {
+    void requiredContribution_returnsImmediateShortfall_whenMonthsZero() {
         BigDecimal result = SimulationMath.requiredContribution(
                 new BigDecimal("5000"), new BigDecimal("1000"), new BigDecimal("10"), 0);
-        assertEquals(BigDecimal.ZERO, result);
+        assertEquals(new BigDecimal("4000"), result);
+    }
+
+    @Test
+    void requiredContribution_returnsImmediateSurplus_whenMonthsPastAndAlreadyFunded() {
+        BigDecimal result = SimulationMath.requiredContribution(
+                new BigDecimal("5000"), new BigDecimal("6000"), new BigDecimal("10"), -3);
+        assertEquals(new BigDecimal("-1000"), result);
     }
 
     @Test

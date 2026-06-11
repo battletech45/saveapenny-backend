@@ -51,6 +51,21 @@ class SavingsGoalStrategyTest {
         assertTrue(result.getSeries().size() > 30);
     }
 
+    @Test
+    void simulate_returnsInfeasible_whenTargetDateHasPassedAndGoalIsUnderfunded() {
+        SimulationResult result = strategy.simulate(baseInput()
+                .targetDate(LocalDate.of(2026, 6, 1))
+                .startBalance(new BigDecimal("1000"))
+                .targetAmount(new BigDecimal("5000"))
+                .monthlyContribution(BigDecimal.ZERO)
+                .averageMonthlyNetIncome(new BigDecimal("1000"))
+                .build());
+
+        assertEquals(Feasibility.INFEASIBLE, result.getFeasibility());
+        assertEquals(new BigDecimal("4000.00"), result.getSummary().get("requiredMonthlyContribution"));
+        assertEquals(0, result.getHorizonMonths());
+    }
+
     private SimulationInput.SimulationInputBuilder baseInput() {
         return SimulationInput.builder()
                 .type(GoalType.SAVINGS)

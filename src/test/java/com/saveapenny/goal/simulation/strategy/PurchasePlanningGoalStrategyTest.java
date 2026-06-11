@@ -50,6 +50,21 @@ class PurchasePlanningGoalStrategyTest {
         assertEquals(Feasibility.INFEASIBLE, result.getFeasibility());
     }
 
+    @Test
+    void simulate_returnsInfeasible_whenPurchaseDeadlineHasPassedAndDownPaymentIsShort() {
+        SimulationResult result = strategy.simulate(baseInput()
+                .targetDate(LocalDate.of(2026, 6, 1))
+                .targetPrice(new BigDecimal("100000"))
+                .currentDownPayment(new BigDecimal("5000"))
+                .monthlySaving(BigDecimal.ZERO)
+                .averageMonthlyNetIncome(new BigDecimal("2000"))
+                .build());
+
+        assertEquals(Feasibility.INFEASIBLE, result.getFeasibility());
+        assertEquals(new BigDecimal("15000.00"), result.getSummary().get("requiredMonthlyContribution"));
+        assertEquals(0, result.getHorizonMonths());
+    }
+
     private SimulationInput.SimulationInputBuilder baseInput() {
         return SimulationInput.builder()
                 .type(GoalType.PURCHASE)

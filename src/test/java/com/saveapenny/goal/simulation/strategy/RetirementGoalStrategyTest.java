@@ -47,6 +47,20 @@ class RetirementGoalStrategyTest {
         assertEquals(Feasibility.INFEASIBLE, result.getFeasibility());
     }
 
+    @Test
+    void simulate_reportsImmediateShortfallContribution_whenAlreadyAtRetirementAge() {
+        SimulationResult result = strategy.simulate(baseInput()
+                .currentAge(65)
+                .targetRetirementAge(65)
+                .currentRetirementSavings(new BigDecimal("100000"))
+                .monthlyContribution(BigDecimal.ZERO)
+                .desiredMonthlyIncomeInRetirement(new BigDecimal("3000"))
+                .build());
+
+        assertEquals(new BigDecimal("800000.00"), result.getSummary().get("requiredMonthlyContribution"));
+        assertEquals(0, result.getHorizonMonths());
+    }
+
     private SimulationInput.SimulationInputBuilder baseInput() {
         return SimulationInput.builder()
                 .type(GoalType.RETIREMENT)

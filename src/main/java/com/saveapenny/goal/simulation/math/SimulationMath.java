@@ -77,7 +77,7 @@ public final class SimulationMath {
         BigDecimal target = defaulted(targetAmount);
         BigDecimal start = defaulted(startBalance);
         if (months <= 0) {
-            return ZERO;
+            return target.subtract(start, MATH_CONTEXT);
         }
 
         BigDecimal rate = percentToMonthlyRate(annualPercent);
