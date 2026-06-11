@@ -182,6 +182,27 @@ class RecurringTransactionFlowIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("RECURRING_TRANSACTION_NOT_FOUND"));
     }
 
+    @Test
+    void upcoming_returnsOnlyCurrentUsersRecurringTransactions() throws Exception {
+        String firstToken = registerAndGetToken("recurring.upcoming.one@example.com", "Recurring Upcoming One");
+        String secondToken = registerAndGetToken("recurring.upcoming.two@example.com", "Recurring Upcoming Two");
+
+        String firstAccountId = createAccount(firstToken, "First Cash", "CASH", "USD", "1000.0000");
+        String firstCategoryId = createCategory(firstToken, "First Salary", "INCOME", "#00ff00", "dollar");
+        String secondAccountId = createAccount(secondToken, "Second Cash", "CASH", "USD", "1000.0000");
+        String secondCategoryId = createCategory(secondToken, "Second Salary", "INCOME", "#0000ff", "banknote");
+
+        String firstRecurringId = createRecurringTransaction(firstToken, firstAccountId, firstCategoryId, today);
+        createRecurringTransaction(secondToken, secondAccountId, secondCategoryId, today);
+
+        mockMvc.perform(get("/api/v1/automations/recurring-transactions/upcoming")
+                        .header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(10))
+                .andExpect(jsonPath("$.data[0].recurringTransactionId").value(firstRecurringId));
+    }
+
     private String registerAndGetToken(String email, String fullName) throws Exception {
         String registerBody = """
                 {
@@ -223,6 +244,26 @@ class RecurringTransactionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
+                .andExpect(status().isCreated())
+                .andReturn());
+    }
+
+    private String createRecurringTransaction(String token, String accountId, String categoryId, String nextRunDate) throws Exception {
+        String createBody = """
+                {
+                  "accountId":"%s",
+                  "categoryId":"%s",
+                  "type":"INCOME",
+                  "amount":50.0000,
+                  "frequency":"DAILY",
+                  "nextRunDate":"%s"
+                }
+                """.formatted(accountId, categoryId, nextRunDate);
+
+        return extractId(mockMvc.perform(post("/api/v1/automations/recurring-transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
                 .andExpect(status().isCreated())
                 .andReturn());
     }

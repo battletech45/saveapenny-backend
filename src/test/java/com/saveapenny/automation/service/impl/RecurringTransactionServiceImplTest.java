@@ -2,6 +2,7 @@ package com.saveapenny.automation.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
+import com.saveapenny.automation.dto.UpcomingRunResponse;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
 import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.entity.RecurringFrequency;
@@ -178,6 +180,44 @@ class RecurringTransactionServiceImplTest {
 
         assertEquals(1, result.size());
         assertEquals(recurringId, result.get(0).getId());
+    }
+
+    @Test
+    void getUpcoming_filtersByCurrentUser() {
+        LocalDate today = LocalDate.now();
+        UUID futureRecurringId = UUID.randomUUID();
+        RecurringTransaction todayItem = RecurringTransaction.builder()
+                .id(recurringId)
+                .userId(userId)
+                .name("Today")
+                .amount(new BigDecimal("10.0000"))
+                .frequency(RecurringFrequency.DAILY)
+                .nextRunDate(today)
+                .status(RecurringStatus.ACTIVE)
+                .build();
+        RecurringTransaction futureItem = RecurringTransaction.builder()
+                .id(futureRecurringId)
+                .userId(userId)
+                .name("Future")
+                .amount(new BigDecimal("20.0000"))
+                .frequency(RecurringFrequency.WEEKLY)
+                .nextRunDate(today.plusDays(3))
+                .status(RecurringStatus.ACTIVE)
+                .build();
+
+        when(recurringTransactionRepository.findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
+                        userId, RecurringStatus.ACTIVE, today))
+                .thenReturn(List.of(todayItem));
+        when(recurringTransactionRepository.findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
+                        userId, RecurringStatus.ACTIVE, today.plusMonths(6)))
+                .thenReturn(List.of(todayItem, futureItem));
+
+        List<UpcomingRunResponse> result = recurringTransactionService.getUpcoming(userId, 5);
+
+        assertThat(result).isNotEmpty();
+        assertThat(result)
+                .extracting(UpcomingRunResponse::getRecurringTransactionId)
+                .allMatch(id -> id.equals(recurringId) || id.equals(futureRecurringId));
     }
 
     @Test
