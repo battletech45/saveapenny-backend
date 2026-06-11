@@ -60,7 +60,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     public RefreshToken rotate(String rawToken) {
-        RefreshToken existingToken = validate(rawToken);
+        RefreshToken existingToken = refreshTokenRepository.findByTokenForUpdate(rawToken)
+                .orElseThrow(InvalidRefreshTokenException::new);
+        assertUsable(existingToken);
         existingToken.setRevoked(true);
         refreshTokenRepository.save(existingToken);
 
@@ -94,5 +96,15 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         byte[] bytes = new byte[TOKEN_RANDOM_BYTES];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private void assertUsable(RefreshToken refreshToken) {
+        if (Boolean.TRUE.equals(refreshToken.getRevoked())) {
+            throw new InvalidRefreshTokenException();
+        }
+
+        if (refreshToken.getExpiryDate().isBefore(OffsetDateTime.now())) {
+            throw new RefreshTokenExpiredException();
+        }
     }
 }

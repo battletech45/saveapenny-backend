@@ -54,6 +54,13 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
+    void findByTokenForUpdate_returnsToken() {
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenForUpdate("test-refresh-token-value");
+        assertTrue(found.isPresent());
+        assertEquals(token.getId(), found.get().getId());
+    }
+
+    @Test
     void findByToken_returnsEmpty_whenNotFound() {
         assertTrue(refreshTokenRepository.findByToken("nonexistent").isEmpty());
     }

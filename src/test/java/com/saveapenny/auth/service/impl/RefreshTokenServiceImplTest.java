@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -107,7 +108,7 @@ class RefreshTokenServiceImplTest {
                 .revoked(false)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
-        when(refreshTokenRepository.findByToken("old-token")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RefreshToken rotated = refreshTokenService.rotate("old-token");
@@ -116,6 +117,25 @@ class RefreshTokenServiceImplTest {
         assertEquals(user.getId(), rotated.getUserId());
         assertFalse(rotated.getRevoked());
         assertFalse("old-token".equals(rotated.getToken()));
+        verify(refreshTokenRepository).findByTokenForUpdate("old-token");
+        verify(refreshTokenRepository, never()).findByToken("old-token");
+    }
+
+    @Test
+    void rotate_throwsWhenTokenWasAlreadyRotated() {
+        RefreshToken existing = RefreshToken.builder()
+                .userId(user.getId())
+                .token("old-token")
+                .revoked(false)
+                .expiryDate(OffsetDateTime.now().plusMinutes(5))
+                .build();
+        when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        refreshTokenService.rotate("old-token");
+
+        assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenService.rotate("old-token"));
+        verify(refreshTokenRepository, times(2)).findByTokenForUpdate("old-token");
     }
 
     @Test
