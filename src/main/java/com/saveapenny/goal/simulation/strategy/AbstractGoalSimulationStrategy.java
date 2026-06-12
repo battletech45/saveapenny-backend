@@ -9,6 +9,7 @@ import com.saveapenny.goal.simulation.SimulationResult;
 import com.saveapenny.goal.simulation.SimulationWarning;
 import com.saveapenny.goal.simulation.math.SimulationMath;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,6 +17,14 @@ import java.util.List;
 import java.util.Map;
 
 abstract class AbstractGoalSimulationStrategy implements GoalSimulationStrategy {
+
+    protected Clock clock = Clock.systemDefaultZone();
+
+    protected AbstractGoalSimulationStrategy() {}
+
+    protected AbstractGoalSimulationStrategy(Clock clock) {
+        this.clock = clock;
+    }
 
     protected SimulationResult newResult(GoalType type, SimulationInput input, int horizonMonths) {
         return SimulationResult.builder()
@@ -32,7 +41,7 @@ abstract class AbstractGoalSimulationStrategy implements GoalSimulationStrategy 
     }
 
     protected LocalDate resolveAsOfDate(SimulationInput input) {
-        return input.getAsOfDate() == null ? LocalDate.now() : input.getAsOfDate();
+        return input.getAsOfDate() == null ? LocalDate.now(clock) : input.getAsOfDate();
     }
 
     protected int horizonMonths(LocalDate asOfDate, LocalDate targetDate) {

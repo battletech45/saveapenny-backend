@@ -9,7 +9,9 @@ import com.saveapenny.goal.service.GoalProgressCalculator;
 import com.saveapenny.goal.service.GoalProgressReport;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -50,11 +52,13 @@ public class GoalProgressJob {
             return;
         }
         LocalDate asOf = LocalDate.now(assistantClock);
+        Set<UUID> processedGoalIds = new HashSet<>();
         int pageNumber = 0;
         Page<GoalEntity> page;
         do {
             page = goalRepository.findAllByStatusAndDeletedAtIsNull(GoalStatus.ACTIVE, PageRequest.of(pageNumber, 100));
             for (GoalEntity goal : page.getContent()) {
+                processedGoalIds.add(goal.getId());
                 try {
                     GoalProgressReport report = goalProgressCalculator.calculate(goal.getUserId(), goal.getId(), asOf);
                     report = applyStreak(goal.getId(), report);
@@ -65,6 +69,7 @@ public class GoalProgressJob {
             }
             pageNumber++;
         } while (page.hasNext());
+        offTrackStreaks.keySet().removeIf(id -> !processedGoalIds.contains(id));
     }
 
     private GoalProgressReport applyStreak(UUID goalId, GoalProgressReport report) {
