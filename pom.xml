@@ -21,7 +21,7 @@
         <java.version>24</java.version>
         <lombok.version>1.18.38</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <jjwt.version>0.12.6</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <spring-ai.version>1.0.0</spring-ai.version>
     </properties>
 
