@@ -42,20 +42,15 @@ public class RateLimiter {
         private void refill() {
             long now = System.currentTimeMillis();
             long elapsed = now - lastRefill;
-            if (elapsed < 1_000) {
+            if (elapsed < 60_000) {
                 return;
             }
             synchronized (this) {
-                long elapsedSync = now - lastRefill;
-                if (elapsedSync < 1_000) {
+                if (now - lastRefill < 60_000) {
                     return;
                 }
-                int refillCount = (int) (elapsedSync / 60_000);
-                if (refillCount > 0) {
-                    int newTokens = Math.min(maxTokens, tokens.get() + refillCount * maxTokens);
-                    tokens.set(newTokens);
-                    lastRefill = now;
-                }
+                tokens.set(maxTokens);
+                lastRefill = now;
             }
         }
     }

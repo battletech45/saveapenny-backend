@@ -67,7 +67,6 @@ class HeaderUserAuthenticationFilterTest {
         String token = "valid-jwt-token";
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
-        when(jwtService.isAccessTokenValid(token)).thenReturn(true);
         when(jwtService.extractUserId(token)).thenReturn(userId);
 
         filter.doFilterInternal(request, response, filterChain);
@@ -82,7 +81,7 @@ class HeaderUserAuthenticationFilterTest {
         String token = "invalid-jwt-token";
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
-        when(jwtService.isAccessTokenValid(token)).thenReturn(false);
+        when(jwtService.extractUserId(token)).thenThrow(new RuntimeException("Invalid token"));
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -117,7 +116,7 @@ class HeaderUserAuthenticationFilterTest {
         String token = "malformed-jwt";
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
-        when(jwtService.isAccessTokenValid(token)).thenThrow(new RuntimeException("JWT parse error"));
+        when(jwtService.extractUserId(token)).thenThrow(new RuntimeException("JWT parse error"));
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -143,7 +142,7 @@ class HeaderUserAuthenticationFilterTest {
     @Test
     void returns401_whenEmptyBearerToken() throws Exception {
         when(request.getHeader("Authorization")).thenReturn("Bearer ");
-        when(jwtService.isAccessTokenValid("")).thenReturn(false);
+        when(jwtService.extractUserId("")).thenThrow(new RuntimeException("Empty token"));
 
         filter.doFilterInternal(request, response, filterChain);
 

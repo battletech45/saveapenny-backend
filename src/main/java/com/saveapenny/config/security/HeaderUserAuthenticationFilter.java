@@ -40,12 +40,12 @@ public class HeaderUserAuthenticationFilter extends OncePerRequestFilter {
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 String token = authHeader.substring(BEARER_PREFIX.length()).trim();
-                if (!jwtService.isAccessTokenValid(token)) {
+                UUID userId = jwtService.extractUserId(token);
+                if (userId == null) {
                     writeUnauthorizedResponse(response);
                     return;
                 }
 
-                UUID userId = jwtService.extractUserId(token);
                 CurrentUserPrincipal principal = new CurrentUserPrincipal(userId);
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList());
