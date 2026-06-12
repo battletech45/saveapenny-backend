@@ -68,8 +68,8 @@ public class UserServiceImpl implements UserService {
             throw new PasswordReuseNotAllowedException();
         }
 
+        refreshTokenService.revokeAllByUser(user);
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        refreshTokenService.revokeAllByUser(user);
     }
 }
