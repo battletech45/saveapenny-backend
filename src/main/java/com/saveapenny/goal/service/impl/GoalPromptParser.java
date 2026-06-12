@@ -71,7 +71,14 @@ public class GoalPromptParser {
             throw new GoalSimulationValidationException("Could not determine target amount from the prompt.");
         }
         String raw = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
-        return new BigDecimal(raw.replace(",", ""));
+        BigDecimal amount = new BigDecimal(raw.replace(",", ""));
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new GoalSimulationValidationException("Target amount must be positive.");
+        }
+        if (amount.compareTo(new BigDecimal("999999999")) > 0) {
+            throw new GoalSimulationValidationException("Target amount is unrealistically large.");
+        }
+        return amount;
     }
 
     private String extractCurrency(String prompt) {
