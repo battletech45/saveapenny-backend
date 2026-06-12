@@ -22,7 +22,7 @@
 - If adding new tests, include relevant test output.
 -->
 
-- [ ] `mvn clean verify` passes (860/860, 0 failures, 0 errors)
+- [ ] `mvn clean verify` passes
 - [ ] New tests added for changed code
 
 ## Risk & Rollback
