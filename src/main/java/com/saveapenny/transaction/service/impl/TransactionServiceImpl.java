@@ -74,7 +74,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setUserId(currentUserId);
         transaction.setCurrency(normalizedCurrency);
 
-        Account savedAccount = accountRepository.save(account);
+        accountRepository.save(account);
         Transaction savedTransaction = transactionRepository.save(transaction);
 
         return transactionMapper.toResponse(savedTransaction);
@@ -111,7 +111,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .type(TransactionType.TRANSFER)
                 .amount(request.getAmount())
                 .currency(normalizedCurrency)
-                .description(request.getDescription())
+                .description(request.getDescription() == null ? null : request.getDescription().trim())
                 .transactionDate(request.getTransactionDate())
                 .build();
         Transaction savedTransaction = transactionRepository.save(transferTransaction);
@@ -141,7 +141,11 @@ public class TransactionServiceImpl implements TransactionService {
             String keyword,
             Pageable pageable) {
         String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim() : null;
-        String keywordPattern = normalizedKeyword == null ? null : "%" + normalizedKeyword.toLowerCase(Locale.ROOT) + "%";
+        String escapedKeyword = normalizedKeyword == null ? null : normalizedKeyword.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\\\\\")
+                .replace("%", "\\\\%")
+                .replace("_", "\\\\_");
+        String keywordPattern = escapedKeyword == null ? null : "%" + escapedKeyword + "%";
         Specification<Transaction> specification = (root, query, criteriaBuilder) -> {
             var predicates = new ArrayList<Predicate>();
             predicates.add(criteriaBuilder.equal(root.get("userId"), currentUserId));
