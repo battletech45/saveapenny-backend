@@ -98,7 +98,11 @@ Additional insight properties in `application.yml`:
 | `insight.deduplication-window-days` | `7` | Suppress duplicate insights within N days |
 | `insight.stddev-threshold` | `3.0` | Anomaly detection sensitivity |
 | `insight.max-amount-ratio` | `0.5` | Max ratio for amount comparisons |
-| `insight.ai-enhanced` | `false` | Use AI for insight descriptions |
+| `insight.ai-enhanced` | `false` | Rewrite insight text with AI after rule-based generation |
+| `insight.provider` | `openrouter` | AI provider for insight enhancement (`openrouter` or `openai`) |
+| `insight.model` | `poolside/laguna-xs.2:free` | Model used for insight enhancement |
+| `insight.openrouter-api-key` | empty | Required when using OpenRouter for insight enhancement |
+| `insight.openrouter-base-url` | `https://openrouter.ai/api` | Base URL for OpenRouter insight requests |
 
 ## Goals
 

@@ -9,9 +9,18 @@ Financial insights are generated observations about user spending patterns, tren
 ```yaml
 insight:
   enabled: true
+  ai-enhanced: true
 ```
 
-Or via environment variable.
+Or via environment variables:
+
+```env
+INSIGHT_ENABLED=true
+INSIGHT_AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=<your-api-key>
+```
+
+For OpenAI, set `INSIGHT_AI_PROVIDER=openai` and provide `spring.ai.openai.api-key`.
 
 ## How Insights Work
 
@@ -21,6 +30,8 @@ A daily scheduled job analyzes transaction data for all users and generates insi
 - A severity level
 - A human-readable message
 - Supporting data
+
+When `insight.ai-enhanced=true`, the rule-based candidates are sent through an LLM rewrite step that polishes `title`, `summary`, and `detail` while preserving the underlying facts and severity.
 
 ## Examples
 
@@ -54,4 +65,12 @@ A daily scheduled job analyzes transaction data for all users and generates insi
 | `insight.deduplication-window-days` | 7 | Suppress duplicates within N days |
 | `insight.stddev-threshold` | 3.0 | Standard deviation threshold for anomaly detection |
 | `insight.max-amount-ratio` | 0.5 | Max ratio for amount-based comparisons |
-| `insight.ai-enhanced` | false | Use AI to generate insight descriptions |
+| `insight.ai-enhanced` | false | Rewrite generated insight text with AI |
+| `insight.provider` | `openrouter` | AI provider for insight enhancement (`openrouter` or `openai`) |
+| `insight.model` | `poolside/laguna-xs.2:free` | Model used for insight enhancement |
+| `insight.openrouter-api-key` | empty | Required when `insight.provider=openrouter` |
+| `insight.openrouter-base-url` | `https://openrouter.ai/api` | Base URL for OpenRouter requests |
+
+## Failure Behavior
+
+If AI enhancement is enabled but the client is not configured, the model call fails, or the response cannot be parsed, insight generation falls back to the original rule-based candidates. The scheduled generation job still completes.
