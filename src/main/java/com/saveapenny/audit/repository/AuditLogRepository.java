@@ -18,6 +18,16 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             OffsetDateTime to,
             Pageable pageable);
 
+    Page<AuditLog> findAllByUserIdAndCreatedAtGreaterThanEqual(
+            UUID userId,
+            OffsetDateTime from,
+            Pageable pageable);
+
+    Page<AuditLog> findAllByUserIdAndCreatedAtLessThanEqual(
+            UUID userId,
+            OffsetDateTime to,
+            Pageable pageable);
+
     Page<AuditLog> findAllByEntityTypeAndEntityId(
             AuditEntityType entityType,
             UUID entityId,

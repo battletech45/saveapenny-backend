@@ -46,11 +46,19 @@ public class AuditLogServiceImpl implements AuditLogService {
 
         OffsetDateTime from = filter.getFrom();
         OffsetDateTime to = filter.getTo();
-        if (from != null || to != null) {
-            if (from == null || to == null || from.isAfter(to)) {
+        if (from != null && to != null) {
+            if (from.isAfter(to)) {
                 throw new InvalidAuditDateRangeException(from, to);
             }
             return auditLogRepository.findAllByUserIdAndCreatedAtBetween(currentUserId, from, to, pageable)
+                    .map(auditLogMapper::toResponse);
+        }
+        if (from != null) {
+            return auditLogRepository.findAllByUserIdAndCreatedAtGreaterThanEqual(currentUserId, from, pageable)
+                    .map(auditLogMapper::toResponse);
+        }
+        if (to != null) {
+            return auditLogRepository.findAllByUserIdAndCreatedAtLessThanEqual(currentUserId, to, pageable)
                     .map(auditLogMapper::toResponse);
         }
 
