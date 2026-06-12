@@ -62,6 +62,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthTokenResponse register(RegisterRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
         String normalizedEmail = normalizeEmail(request.getEmail());
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new EmailAlreadyExistsException(normalizedEmail);
@@ -70,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
         User user = User.builder()
                 .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName())
+                .fullName(request.getFullName() == null ? null : request.getFullName().trim())
                 .active(true)
                 .build();
         User savedUser = userRepository.save(user);
