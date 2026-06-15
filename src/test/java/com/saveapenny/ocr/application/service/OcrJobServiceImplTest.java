@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +37,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +54,8 @@ class OcrJobServiceImplTest {
     private OcrAnalysisService ocrAnalysisService;
     @Mock
     private OcrJobAsyncProcessor ocrJobAsyncProcessor;
+    @Mock
+    private PlatformTransactionManager transactionManager;
 
     @Captor
     private ArgumentCaptor<OcrJob> jobCaptor;
@@ -61,7 +66,14 @@ class OcrJobServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new OcrJobServiceImpl(ocrProperties, ocrJobRepository, ocrJobMapper, ocrAnalysisService, ocrJobAsyncProcessor);
+        lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        service = new OcrJobServiceImpl(
+                ocrProperties,
+                ocrJobRepository,
+                ocrJobMapper,
+                ocrAnalysisService,
+                ocrJobAsyncProcessor,
+                transactionManager);
         userId = UUID.randomUUID();
         jobId = UUID.randomUUID();
     }

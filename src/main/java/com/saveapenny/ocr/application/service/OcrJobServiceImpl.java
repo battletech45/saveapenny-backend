@@ -23,11 +23,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-@Transactional
 public class OcrJobServiceImpl implements OcrJobService {
 
     private static final Set<String> ALLOWED_TYPES = Set.of("image/png", "image/jpeg", "application/pdf");
@@ -37,31 +38,37 @@ public class OcrJobServiceImpl implements OcrJobService {
     private final OcrJobMapper ocrJobMapper;
     private final OcrAnalysisService ocrAnalysisService;
     private final OcrJobAsyncProcessor ocrJobAsyncProcessor;
+    private final TransactionTemplate transactionTemplate;
 
     public OcrJobServiceImpl(
             OcrProperties ocrProperties,
             OcrJobRepository ocrJobRepository,
             OcrJobMapper ocrJobMapper,
             OcrAnalysisService ocrAnalysisService,
-            OcrJobAsyncProcessor ocrJobAsyncProcessor) {
+            OcrJobAsyncProcessor ocrJobAsyncProcessor,
+            PlatformTransactionManager transactionManager) {
         this.ocrProperties = ocrProperties;
         this.ocrJobRepository = ocrJobRepository;
         this.ocrJobMapper = ocrJobMapper;
         this.ocrAnalysisService = ocrAnalysisService;
         this.ocrJobAsyncProcessor = ocrJobAsyncProcessor;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     @Override
     public OcrSubmitResponse createJob(UUID currentUserId, MultipartFile file) {
         validateUpload(file);
 
-        OcrJob job = OcrJob.builder()
-                .userId(currentUserId)
-                .originalFileName(normalizeFileName(file.getOriginalFilename()))
-                .contentType(file.getContentType().toLowerCase(Locale.ROOT))
-                .status(OcrJobStatus.PENDING)
-                .build();
-        OcrJob saved = ocrJobRepository.saveAndFlush(job);
+        OcrJob saved = transactionTemplate.execute(status -> {
+            OcrJob job = OcrJob.builder()
+                    .userId(currentUserId)
+                    .originalFileName(normalizeFileName(file.getOriginalFilename()))
+                    .contentType(file.getContentType().toLowerCase(Locale.ROOT))
+                    .status(OcrJobStatus.PENDING)
+                    .build();
+            return ocrJobRepository.saveAndFlush(job);
+        });
+
         ocrJobAsyncProcessor.process(saved.getId(), snapshotUpload(file));
 
         return ocrJobMapper.toSubmitResponse(saved);
