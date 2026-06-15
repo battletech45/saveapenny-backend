@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.ocr.support.runtime.OcrRuntimeEnvironment;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeChecker;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeStatus;
 import com.saveapenny.user.entity.Role;
@@ -19,10 +20,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.math.BigDecimal;
-import java.util.List;
 import javax.imageio.ImageIO;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -61,9 +59,7 @@ import org.springframework.test.web.servlet.MvcResult;
 })
 class OcrImportRealMediaIntegrationTest {
 
-    private static final String TESSERACT_PREFIX = resolveTesseractPrefix();
-    private static final Path TESSDATA_PATH = TESSERACT_PREFIX == null ? null : Path.of(TESSERACT_PREFIX, "share", "tessdata");
-    private static final Path TESSERACT_LIB = TESSERACT_PREFIX == null ? null : Path.of(TESSERACT_PREFIX, "lib", "libtesseract.dylib");
+    private static final String TESSDATA_PATH = OcrRuntimeEnvironment.resolveTessdataPath(null);
 
     @Autowired
     private MockMvc mockMvc;
@@ -76,15 +72,14 @@ class OcrImportRealMediaIntegrationTest {
 
     @BeforeAll
     static void preloadNativeLibraryPath() {
-        Assumptions.assumeTrue(TESSERACT_LIB != null);
-        Assumptions.assumeTrue(Files.isRegularFile(TESSERACT_LIB));
-        System.setProperty("jna.library.path", TESSERACT_LIB.getParent().toString());
+        OcrRuntimeEnvironment.configureNativeLibraryPathIfMissing();
+        Assumptions.assumeTrue(OcrRuntimeEnvironment.canLoadNativeTesseract());
     }
 
     @DynamicPropertySource
     static void configureOcrProperties(DynamicPropertyRegistry registry) {
         if (TESSDATA_PATH != null) {
-            registry.add("ocr.tessdata-path", () -> TESSDATA_PATH.toString());
+            registry.add("ocr.tessdata-path", () -> TESSDATA_PATH);
         }
     }
 
@@ -101,7 +96,7 @@ class OcrImportRealMediaIntegrationTest {
         @Primary
         OcrRuntimeChecker ocrRuntimeChecker() {
             OcrRuntimeChecker checker = mock(OcrRuntimeChecker.class);
-            when(checker.check()).thenReturn(new OcrRuntimeStatus(true, true, true, "eng", TESSDATA_PATH == null ? "/tmp" : TESSDATA_PATH.toString(), null));
+            when(checker.check()).thenReturn(new OcrRuntimeStatus(true, true, true, "eng", TESSDATA_PATH == null ? "/tmp" : TESSDATA_PATH, null));
             return checker;
         }
     }
@@ -243,20 +238,4 @@ class OcrImportRealMediaIntegrationTest {
         return false;
     }
 
-    private static String resolveTesseractPrefix() {
-        try {
-            Process process = new ProcessBuilder("brew", "--prefix", "tesseract").start();
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                return null;
-            }
-            List<String> lines = new String(process.getInputStream().readAllBytes()).lines().toList();
-            if (lines.isEmpty() || lines.getFirst().isBlank()) {
-                return null;
-            }
-            return lines.getFirst().trim();
-        } catch (Exception ex) {
-            return null;
-        }
-    }
 }

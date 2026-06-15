@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.saveapenny.config.OcrProperties;
 import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
 import com.saveapenny.ocr.infrastructure.engine.tesseract.TesseractOcrService;
+import com.saveapenny.ocr.support.runtime.OcrRuntimeEnvironment;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -12,7 +13,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Assumptions;
@@ -30,25 +30,23 @@ import org.springframework.test.context.TestPropertySource;
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.flyway.enabled=false",
+        "ocr.enabled=true",
         "security.jwt.secret=0123456789012345678901234567890123456789012345678901234567890123"
 })
 class OcrGoldenImageRegressionTest {
 
-    private static final String TESSERACT_PREFIX = resolveTesseractPrefix();
-    private static final Path TESSDATA_PATH = TESSERACT_PREFIX == null ? null : Path.of(TESSERACT_PREFIX, "share", "tessdata");
-    private static final Path TESSERACT_LIB = TESSERACT_PREFIX == null ? null : Path.of(TESSERACT_PREFIX, "lib", "libtesseract.dylib");
+    private static final String TESSDATA_PATH = OcrRuntimeEnvironment.resolveTessdataPath(null);
 
     @BeforeAll
     static void preloadNativeLibraryPath() {
-        Assumptions.assumeTrue(TESSERACT_LIB != null);
-        Assumptions.assumeTrue(Files.isRegularFile(TESSERACT_LIB));
-        System.setProperty("jna.library.path", TESSERACT_LIB.getParent().toString());
+        OcrRuntimeEnvironment.configureNativeLibraryPathIfMissing();
+        Assumptions.assumeTrue(OcrRuntimeEnvironment.canLoadNativeTesseract());
     }
 
     @DynamicPropertySource
     static void configureOcrProperties(DynamicPropertyRegistry registry) {
         if (TESSDATA_PATH != null) {
-            registry.add("ocr.tessdata-path", () -> TESSDATA_PATH.toString());
+            registry.add("ocr.tessdata-path", () -> TESSDATA_PATH);
         }
     }
 
@@ -80,22 +78,5 @@ class OcrGoldenImageRegressionTest {
         String text = tesseractOcrService.extractText(file).toUpperCase();
         assertTrue(text.contains("SAVEAPENNY") || text.contains("RECEIPT"));
         assertTrue(text.contains("19.99") || text.contains("TOTAL"));
-    }
-
-    private static String resolveTesseractPrefix() {
-        try {
-            Process process = new ProcessBuilder("brew", "--prefix", "tesseract").start();
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                return null;
-            }
-            List<String> lines = new String(process.getInputStream().readAllBytes()).lines().toList();
-            if (lines.isEmpty() || lines.getFirst().isBlank()) {
-                return null;
-            }
-            return lines.getFirst().trim();
-        } catch (Exception ex) {
-            return null;
-        }
     }
 }

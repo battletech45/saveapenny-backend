@@ -14,14 +14,26 @@ ocr:
   tessdata-path: /path/to/tessdata
 ```
 
-Or set the environment variable equivalent.
+`ocr.tessdata-path` is optional. If it is left blank, the application will try to auto-detect common Tesseract locations on macOS, Linux, and Windows.
+
+You can also set the environment variable equivalent:
+
+```bash
+OCR_TESSDATA_PATH=/path/to/tessdata
+```
 
 ## Prerequisites
 
 - Tesseract OCR engine installed on the server
-- Tessdata language files available at the configured path
+- Tessdata language files available at the configured path or a standard platform path
 - Supported file formats: PNG, JPEG, PDF
 - Maximum file size: 10 MB
+
+Common detected paths include:
+
+- macOS Homebrew: `/opt/homebrew/share/tessdata`
+- Linux packages: `/usr/share/tesseract-ocr/5/tessdata`, `/usr/share/tessdata`
+- Windows installer: `C:\Program Files\Tesseract-OCR\tessdata`
 
 ## Workflow
 

@@ -7,14 +7,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.config.OcrProperties;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class OcrRuntimeCheckerTest {
+
+    @TempDir
+    Path tempDir;
 
     @Mock
     private OcrProperties ocrProperties;
@@ -55,27 +62,37 @@ class OcrRuntimeCheckerTest {
     }
 
     @Test
-    void check_whenEnabledAndTessdataValid_reportsStatusFields() {
+    void check_whenEnabledAndTessdataValid_reportsStatusFields() throws IOException {
+        Path tessdata = tempDir.resolve("tessdata");
+        Files.createDirectories(tessdata);
+        Files.writeString(tessdata.resolve("eng.traineddata"), "fixture");
+
         when(ocrProperties.enabled()).thenReturn(true);
-        when(ocrProperties.tessdataPath()).thenReturn(System.getProperty("java.io.tmpdir"));
+        when(ocrProperties.tessdataPath()).thenReturn(tessdata.toString());
         when(ocrProperties.language()).thenReturn("eng");
 
         OcrRuntimeStatus status = checker.check();
 
         assertTrue(status.enabled());
         assertTrue(status.tessdataPathValid());
-        assertEquals(System.getProperty("java.io.tmpdir"), status.tessdataPath());
+        assertEquals(tessdata.toString(), status.tessdataPath());
         assertEquals("eng", status.language());
     }
 
     @Test
-    void check_whenTessdataPathIsNull_returnsInvalid() {
+    void check_whenConfiguredPathPointsToParentDirectory_resolvesTessdataChild() throws IOException {
+        Path installDir = tempDir.resolve("tesseract-install");
+        Path tessdata = installDir.resolve("tessdata");
+        Files.createDirectories(tessdata);
+        Files.writeString(tessdata.resolve("eng.traineddata"), "fixture");
+
         when(ocrProperties.enabled()).thenReturn(true);
-        when(ocrProperties.tessdataPath()).thenReturn(null);
+        when(ocrProperties.tessdataPath()).thenReturn(installDir.toString());
         when(ocrProperties.language()).thenReturn("eng");
 
         OcrRuntimeStatus status = checker.check();
 
-        assertFalse(status.tessdataPathValid());
+        assertTrue(status.tessdataPathValid());
+        assertEquals(tessdata.toString(), status.tessdataPath());
     }
 }

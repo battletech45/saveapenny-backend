@@ -126,8 +126,8 @@ insight:
   openrouter-base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
 
 ocr:
-  enabled: false
-  tessdata-path: /opt/homebrew/share/tessdata
+  enabled: true
+  tessdata-path: ${OCR_TESSDATA_PATH:}
   language: eng
   psm: 3
   max-file-size-bytes: 10485760

@@ -1,9 +1,6 @@
 package com.saveapenny.ocr.support.runtime;
 
 import com.saveapenny.config.OcrProperties;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import net.sourceforge.tess4j.TessAPI;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,12 +14,12 @@ public class OcrRuntimeChecker {
 
     public OcrRuntimeStatus check() {
         if (!ocrProperties.enabled()) {
-            return new OcrRuntimeStatus(false, false, false, ocrProperties.language(), ocrProperties.tessdataPath(), "OCR is disabled");
+            return new OcrRuntimeStatus(false, false, false, ocrProperties.language(), resolveTessdataPath(), "OCR is disabled");
         }
 
-        String tessdataPath = ocrProperties.tessdataPath();
-        boolean tessdataPathValid = tessdataPath != null && Files.isDirectory(Path.of(tessdataPath));
-        boolean nativeLibraryLoaded = canLoadNativeTesseract();
+        String tessdataPath = resolveTessdataPath();
+        boolean tessdataPathValid = OcrRuntimeEnvironment.isTessdataAvailable(tessdataPath, ocrProperties.language());
+        boolean nativeLibraryLoaded = OcrRuntimeEnvironment.canLoadNativeTesseract();
 
         String message = null;
         if (!tessdataPathValid) {
@@ -40,12 +37,7 @@ public class OcrRuntimeChecker {
                 message);
     }
 
-    private boolean canLoadNativeTesseract() {
-        try {
-            String version = TessAPI.INSTANCE.TessVersion();
-            return version != null && !version.isBlank();
-        } catch (Throwable ex) {
-            return false;
-        }
+    private String resolveTessdataPath() {
+        return OcrRuntimeEnvironment.resolveTessdataPath(ocrProperties.tessdataPath());
     }
 }

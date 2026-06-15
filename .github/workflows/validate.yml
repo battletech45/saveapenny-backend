@@ -1,0 +1,52 @@
+name: Validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 24 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: "24"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Print Java version
+        run: java -version
+
+      - name: Print Maven version
+        run: mvn -version
+
+      - name: Build package without tests
+        run: mvn -B -DskipTests package
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## Validate"
+            echo
+            echo "- Ref: \`${{ github.ref }}\`"
+            echo "- Event: \`${{ github.event_name }}\`"
+            echo "- Java: Temurin 24"
+            echo "- Command: \`mvn -B -DskipTests package\`"
+          } >> "$GITHUB_STEP_SUMMARY"

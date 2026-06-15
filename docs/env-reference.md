@@ -69,12 +69,13 @@ See [Assistant](features/assistant.md) for feature details.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OCR_ENABLED` | `false` | Enable OCR receipt processing |
+| `OCR_TESSDATA_PATH` | auto-detected | Optional override for the Tesseract `tessdata` directory |
 
-OCR is configured in `application.yml` and does not use environment variables directly. Key settings:
+OCR is configured in `application.yml`. Spring environment binding also allows `OCR_TESSDATA_PATH` to override `ocr.tessdata-path`. Key settings:
 
 | Property | Default | Description |
 |----------|---------|-------------|
-| `ocr.tessdata-path` | `/opt/homebrew/share/tessdata` | Path to Tesseract language data |
+| `ocr.tessdata-path` | auto-detected | Path to Tesseract language data |
 | `ocr.language` | `eng` | Tesseract language pack |
 | `ocr.max-file-size-bytes` | `10485760` | Max upload size (10 MB) |
 | `ocr.job-timeout-millis` | `30000` | Per-job timeout (30s) |

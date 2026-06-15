@@ -4,6 +4,7 @@ import com.saveapenny.ocr.application.port.in.OcrService;
 import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
 import com.saveapenny.ocr.domain.exception.OcrProcessingException;
 import com.saveapenny.ocr.infrastructure.preprocessing.ImagePreprocessingService;
+import com.saveapenny.ocr.support.runtime.OcrRuntimeEnvironment;
 import com.saveapenny.config.OcrProperties;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -107,8 +108,15 @@ public class TesseractOcrService implements OcrService {
     }
 
     private Tesseract createTesseract() {
+        String tessdataPath = OcrRuntimeEnvironment.resolveTessdataPath(ocrProperties.tessdataPath());
+        if (!OcrRuntimeEnvironment.isTessdataAvailable(tessdataPath, ocrProperties.language())) {
+            throw new OcrProcessingException("Tesseract tessdata not found for language "
+                    + ocrProperties.language() + ": " + tessdataPath);
+        }
+
+        OcrRuntimeEnvironment.configureNativeLibraryPathIfMissing();
         Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath(ocrProperties.tessdataPath());
+        tesseract.setDatapath(tessdataPath);
         tesseract.setLanguage(ocrProperties.language());
         tesseract.setPageSegMode(ocrProperties.psm());
         return tesseract;
