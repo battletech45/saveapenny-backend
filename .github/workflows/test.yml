@@ -1,0 +1,121 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 24 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: "24"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Install OCR runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng
+
+      - name: Print Java version
+        run: java -version
+
+      - name: Print Maven version
+        run: mvn -version
+
+      - name: Print Tesseract version
+        run: tesseract --version
+
+      - name: Resolve OCR runtime paths
+        run: |
+          for path in /usr/share/tesseract-ocr/5/tessdata /usr/share/tesseract-ocr/4.00/tessdata /usr/share/tessdata /usr/local/share/tessdata; do
+            if [ -d "$path" ]; then
+              echo "OCR_TESSDATA_PATH=$path" >> "$GITHUB_ENV"
+              echo "Resolved OCR_TESSDATA_PATH=$path"
+              exit 0
+            fi
+          done
+          echo "Unable to locate tessdata on runner" >&2
+          exit 1
+
+      - name: Print OCR runtime paths
+        run: |
+          echo "tesseract=$(command -v tesseract)"
+          echo "OCR_TESSDATA_PATH=${OCR_TESSDATA_PATH}"
+          for path in /usr/share/tesseract-ocr /usr/share/tesseract-ocr/5/tessdata /usr/share/tessdata /usr/lib/x86_64-linux-gnu /usr/lib; do
+            if [ -e "$path" ]; then
+              ls -ld "$path"
+            fi
+          done
+
+      - name: Run tests
+        run: mvn -B clean verify
+
+      - name: Verify OCR tests executed in main job
+        run: |
+          reports=(
+            "target/surefire-reports/TEST-com.saveapenny.ocr.infrastructure.engine.tesseract.OcrGoldenImageRegressionTest.xml"
+            "target/surefire-reports/TEST-com.saveapenny.ocr.interfaces.http.integration.OcrImportRealMediaIntegrationTest.xml"
+          )
+          for report in "${reports[@]}"; do
+            if [ ! -f "$report" ]; then
+              echo "Missing OCR report: $report" >&2
+              exit 1
+            fi
+            if ! rg -q 'skipped="0"' "$report"; then
+              echo "OCR test was skipped: $report" >&2
+              exit 1
+            fi
+          done
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: |
+            **/target/surefire-reports/*
+          if-no-files-found: warn
+
+      - name: Upload failsafe reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failsafe-reports
+          path: |
+            **/target/failsafe-reports/*
+          if-no-files-found: warn
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## Test"
+            echo
+            echo "- Ref: \`${{ github.ref }}\`"
+            echo "- Event: \`${{ github.event_name }}\`"
+            echo "- Java: Temurin 24"
+            echo "- OCR runtime: tesseract-ocr, tesseract-ocr-eng"
+            echo "- OCR_TESSDATA_PATH: \`${OCR_TESSDATA_PATH}\`"
+            echo "- Command: \`mvn -B clean verify\`"
+            echo "- Artifacts: \`surefire-reports\`, \`failsafe-reports\`"
+            echo "- OCR verification: golden-image and real-media OCR reports must exist and not be skipped"
+          } >> "$GITHUB_STEP_SUMMARY"
