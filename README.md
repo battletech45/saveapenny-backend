@@ -82,21 +82,6 @@ export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/saveapenny
 mvn spring-boot:run
 ```
 
-## Dependency Vulnerability Scan
-
-Run the OWASP Dependency-Check scan with the dedicated Maven profile:
-
-```bash
-mvn verify -Pdependency-check
-```
-
-Notes:
-
-- The `dependency-check` profile binds the OWASP `check` goal to the `verify` phase.
-- The first run can take a while because the plugin downloads the NVD vulnerability database.
-- Reports are generated in `target/` as `dependency-check-report.html` and `dependency-check-report.json`.
-- Normal builds stay unchanged unless you explicitly enable the `dependency-check` profile.
-
 ## Configuration
 
 ### Required For The Application

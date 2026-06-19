@@ -14,7 +14,7 @@ SaveAPenny implements defense-in-depth security across authentication, authoriza
 | Security headers | HSTS, CSP, X-Frame-Options, etc. | Delegated to reverse proxy |
 | CORS | Configurable origin whitelist | Implemented |
 | TLS termination | Deferred to reverse proxy (nginx, Caddy, ingress) | Not in app |
-| Vulnerability scanning | Dependabot, CodeQL, OWASP Dependency-Check | CI-integrated |
+| Vulnerability scanning | Dependabot, CodeQL | CI-integrated |
 
 ## Authentication
 
@@ -89,7 +89,6 @@ The application does not handle TLS natively. Deploy behind a reverse proxy (ngi
 |------|----------|-------|
 | Dependabot | Weekly | Maven dependencies + GitHub Actions |
 | CodeQL | Weekly + on PR | Java code security analysis |
-| OWASP Dependency-Check | On demand (`mvn verify -Pdependency-check`) | Known CVEs in dependencies |
 
 ## Key Design Decisions
 
