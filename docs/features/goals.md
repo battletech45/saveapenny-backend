@@ -1,57 +1,59 @@
-# Goals Feature Guide
+# Goals
 
 ## Overview
 
-SaveAPenny includes goal management and financial simulation endpoints for planning future savings, debt payoff, purchases, retirement, and income targets.
-
-The goal system is designed for repeatable, user-scoped projections. Saved goals, scenarios, and simulation runs can be revisited later instead of relying only on one-time chat output.
+Goals provide financial planning and simulation for savings, debt payoff, purchases, retirement, and income targets. The goal system is designed for repeatable, user-scoped projections. Saved goals, scenarios, and simulation runs can be revisited over time instead of relying on one-time calculations.
 
 ## Supported Goal Types
 
-| Goal Type | Use Case |
-| --- | --- |
-| `SAVINGS` | Reach a target balance by a target date |
-| `DEBT_PAYOFF` | Estimate debt payoff timing and payment pressure |
-| `PURCHASE` | Save toward a purchase or down payment |
-| `RETIREMENT` | Project retirement readiness |
-| `INCOME_TARGET` | Estimate growth needed to hit a target income |
+| Goal Type | Use Case | Key Inputs |
+|-----------|----------|------------|
+| `SAVINGS` | Reach a target balance by a target date | Monthly contribution, expected return, start balance |
+| `DEBT_PAYOFF` | Estimate debt payoff timing | Monthly payment, interest rate, current balance |
+| `PURCHASE` | Save toward a purchase or down payment | Target amount, monthly savings, target date |
+| `RETIREMENT` | Project retirement readiness | Current savings, monthly contribution, expected return, retirement age |
+| `INCOME_TARGET` | Estimate growth needed to hit a target income | Current income, target income, time horizon |
 
 ## Main Endpoints
 
-Goal management:
+### Goal Management
 
-- `POST /api/v1/goals`
-- `GET /api/v1/goals`
-- `GET /api/v1/goals/{goalId}`
-- `PATCH /api/v1/goals/{goalId}`
-- `DELETE /api/v1/goals/{goalId}`
-- `PATCH /api/v1/goals/{goalId}/status`
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/goals` | Create a goal |
+| GET | `/api/v1/goals` | List goals |
+| GET | `/api/v1/goals/{goalId}` | Get goal details |
+| PATCH | `/api/v1/goals/{goalId}` | Update goal fields |
+| DELETE | `/api/v1/goals/{goalId}` | Delete a goal |
+| PATCH | `/api/v1/goals/{goalId}/status` | Update goal status |
 
-Scenarios and history:
+### Scenarios and History
 
-- `POST /api/v1/goals/{goalId}/scenarios`
-- `GET /api/v1/goals/{goalId}/scenarios`
-- `GET /api/v1/goals/{goalId}/runs`
-- `POST /api/v1/goals/{goalId}/scenarios/compare`
-- `POST /api/v1/goals/{goalId}/what-if`
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/goals/{goalId}/scenarios` | Create a scenario |
+| GET | `/api/v1/goals/{goalId}/scenarios` | List scenarios |
+| GET | `/api/v1/goals/{goalId}/runs` | List simulation run history |
+| POST | `/api/v1/goals/{goalId}/scenarios/compare` | Compare multiple scenarios |
+| POST | `/api/v1/goals/{goalId}/what-if` | What-if analysis |
 
-Simulation:
+### Simulation
 
-- `POST /api/v1/goals/simulate`
-- `POST /api/v1/goals/simulate/draft`
-- `POST /api/v1/goals/{goalId}/simulate`
-
-All goal endpoints require `Authorization: Bearer <accessToken>`.
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/goals/simulate` | Prompt-based simulation (natural language) |
+| POST | `/api/v1/goals/simulate/draft` | Draft simulation (before saving a goal) |
+| POST | `/api/v1/goals/{goalId}/simulate` | Re-run saved goal simulation |
 
 ## Typical User Flow
 
-1. create a goal
-2. run a simulation
-3. save alternate scenarios if needed
-4. compare scenarios
-5. monitor progress and run history over time
+1. Create a goal with target amount, date, and input assumptions
+2. Run a simulation to check feasibility
+3. Save alternate scenarios for comparison
+4. Compare scenarios to evaluate tradeoffs
+5. Monitor progress and run history over time
 
-## Create A Goal
+## Create a Goal
 
 Example savings goal:
 
@@ -66,53 +68,28 @@ Example savings goal:
     "monthlyContribution": 350,
     "expectedAnnualReturn": 0,
     "startBalance": 1500
-  }
+  },
+  "linkedAccountId": "<optional-account-uuid>"
 }
 ```
 
-Required top-level fields:
+Required fields: `type`, `title`, `targetAmount`, `currency`, `targetDate`, `inputs`.
 
-- `type`
-- `title`
-- `targetAmount`
-- `currency`
-- `targetDate`
-- `inputs`
+## Simulation Modes
 
-Optional field:
+### Draft Simulation
 
-- `linkedAccountId`
+Use when you want a projection before saving a goal:
 
-## Draft Simulation
+`POST /api/v1/goals/simulate/draft`
 
-Use draft simulation when you want a projection before saving a goal.
+Takes the same body as goal creation. Returns the projection without persisting a goal.
 
-Example request:
+### Prompt-Based Simulation
 
-```json
-{
-  "type": "SAVINGS",
-  "title": "Emergency Fund",
-  "targetAmount": 10000,
-  "currency": "USD",
-  "targetDate": "2027-12-31",
-  "inputs": {
-    "monthlyContribution": 350,
-    "expectedAnnualReturn": 0,
-    "startBalance": 1500
-  }
-}
-```
+Use natural language to describe the goal:
 
-Endpoint:
-
-- `POST /api/v1/goals/simulate/draft`
-
-## Prompt-Based Simulation
-
-Use prompt simulation when you want the backend to interpret a natural-language request.
-
-Example:
+`POST /api/v1/goals/simulate`
 
 ```json
 {
@@ -120,23 +97,24 @@ Example:
 }
 ```
 
-Endpoint:
+The backend parses the prompt and returns a simulation result.
 
-- `POST /api/v1/goals/simulate`
+### Existing Goal Simulation
 
-## Existing Goal Simulation
+Re-run the currently saved version of a goal:
 
-To rerun the currently saved version of a goal:
+`POST /api/v1/goals/{goalId}/simulate`
 
-- `POST /api/v1/goals/{goalId}/simulate`
-
-This is useful after updating transactions, balances, or scenario assumptions.
+Useful after updating transactions, balances, or scenario assumptions.
 
 ## Scenarios
 
-Scenarios let you compare alternate assumptions for the same goal.
+Scenarios let you compare alternate assumptions for the same goal. Common use cases:
 
-Example scenario request:
+- Compare two savings rates
+- Compare conservative vs. optimistic assumptions
+- Test alternate debt payoff strategies
+- Test different time horizons
 
 ```json
 {
@@ -150,59 +128,76 @@ Example scenario request:
 }
 ```
 
-Common use cases:
-
-- compare two savings rates
-- compare conservative vs optimistic assumptions
-- test alternate debt payments
-- test different time horizons
-
-## Feasibility Meanings
+## Feasibility
 
 | Value | Meaning |
-| --- | --- |
-| `ON_TRACK` | The target appears achievable under current assumptions |
-| `TIGHT` | The target may be achievable, but with limited margin |
-| `AT_RISK` | The target depends on aggressive assumptions or stronger cash flow |
-| `INFEASIBLE` | The current assumptions do not support the target |
+|-------|---------|
+| `ON_TRACK` | Target appears achievable under current assumptions |
+| `TIGHT` | Target may be achievable, but with limited margin |
+| `AT_RISK` | Target depends on aggressive assumptions or stronger cash flow |
+| `INFEASIBLE` | Current assumptions do not support the target |
 
 ## Goal Statuses
 
 | Status | Meaning |
-| --- | --- |
+|--------|---------|
 | `DRAFT` | Goal exists but is not yet actively tracked |
-| `ACTIVE` | Goal is active and can be monitored over time |
+| `ACTIVE` | Goal is active and monitored over time |
 | `ACHIEVED` | Goal target has been met |
 | `ABANDONED` | Goal is no longer being pursued |
 
-## Common Warnings
+## Warnings
 
-Simulations may include warnings such as:
+Simulations may include warnings:
 
-- `MULTI_CURRENCY`
-- `MISSING_INCOME_HISTORY`
-- `MISSING_LINKED_ACCOUNT`
-- `NEGATIVE_CASH_FLOW`
-- `LONG_HORIZON`
+| Warning | Meaning |
+|---------|---------|
+| `MULTI_CURRENCY` | Goal involves multiple currencies |
+| `MISSING_INCOME_HISTORY` | Insufficient income data for projections |
+| `MISSING_LINKED_ACCOUNT` | Linked account is not found or inactive |
+| `NEGATIVE_CASH_FLOW` | Projected spending exceeds income |
+| `LONG_HORIZON` | Projection horizon is very long (reduced confidence) |
 
-Warnings do not always block a result, but they indicate lower confidence or important context gaps.
+Warnings do not always block a result but indicate lower confidence or important context gaps.
 
 ## Important Limits
 
-- simulations are informational and not professional financial advice
-- multi-currency situations may return warnings instead of doing currency conversion
-- results depend on available historical data and the assumptions supplied
+- Simulations are informational and not professional financial advice
+- Multi-currency situations may return warnings instead of performing conversion
+- Results depend on available historical data and supplied assumptions
 
-## Recommended Usage Pattern
+## Error Codes
 
-1. create a realistic baseline goal
-2. run an initial simulation
-3. create one or two scenarios, not many low-value variants
-4. use comparisons to evaluate tradeoffs
-5. revisit the goal after major transaction or income changes
+| Code | HTTP | When |
+|------|------|------|
+| `GOAL_NOT_FOUND` | 404 | Goal not found or not owned by the caller |
+| `SCENARIO_NOT_FOUND` | 404 | Scenario not found |
+| `INVALID_GOAL_DATE` | 400 | Date parameters are invalid |
+| `INVALID_GOAL_STATUS_TRANSITION` | 400 | Cannot transition to the requested status |
+| `INVALID_GOAL_TYPE` | 400 | Invalid goal type identifier |
+| `INVALID_GOAL_SIMULATION_REQUEST` | 400 | Simulation request failed validation |
+| `LINKED_ACCOUNT_NOT_FOUND` | 404 | Linked account not found or not owned by the caller |
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Draft simulation before saving | Users can test assumptions without committing to a persisted goal |
+| Scenarios for comparison | Structured comparison of alternate assumptions; better than one-off calculations |
+| Prompt-based simulation | Natural language entry point for quick feasibility checks |
+| Warnings over errors | Provides context without blocking results; users decide how to interpret |
 
 ## Related Documents
 
 - [Getting Started](../getting-started.md)
 - [Usage Guide](../usage-guide.md)
 - [API Reference](../api-reference.md)
+
+## Referenced Files
+
+| File | Purpose |
+|------|---------|
+| `src/main/java/com/saveapenny/goal/entity/GoalEntity.java` | JPA entity |
+| `src/main/java/com/saveapenny/goal/interfaces/http/GoalController.java` | REST endpoints |
+| `src/main/java/com/saveapenny/goal/service/impl/GoalServiceImpl.java` | Business logic and simulation |
+| `src/main/java/com/saveapenny/goal/simulation/strategy/` | Strategy pattern implementations per goal type |
