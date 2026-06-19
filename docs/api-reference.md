@@ -1,24 +1,35 @@
 # API Reference
 
-## Base URLs
+## Overview
 
-- API base: `/api/v1`
+This document lists all REST API endpoints. For the complete field-level schema details, use the Swagger UI or OpenAPI document.
+
+| Source | URL |
+|--------|-----|
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| OpenAPI JSON | `http://localhost:8080/v3/api-docs` |
+
+## Base URL
+
+All endpoints are prefixed with `/api/v1` unless otherwise noted.
 
 ## Authentication
 
-See [Auth Flow](auth-flow.md) for the complete token lifecycle and [Error Codes](error-codes.md) for all error responses.
+Public endpoints (no authentication required):
 
-Public endpoints:
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/auth/register` | Create account |
+| POST | `/api/v1/auth/login` | Authenticate |
+| POST | `/api/v1/auth/refresh` | Rotate tokens |
+| POST | `/api/v1/auth/logout` | Revoke refresh token |
+| GET | `/actuator/health` | Health check |
+| GET | `/v3/api-docs` | OpenAPI JSON spec |
+| GET | `/v3/api-docs.yaml` | OpenAPI YAML spec |
+| GET | `/swagger-ui.html` | Swagger UI |
+| GET | `/swagger-ui/**` | Swagger UI assets |
 
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/refresh`
-- `POST /api/v1/auth/logout`
-- `GET /actuator/health`
-- `GET /v3/api-docs`
-- `GET /swagger-ui.html`
-
-All other API endpoints require:
+All other endpoints require:
 
 ```text
 Authorization: Bearer <accessToken>
@@ -54,10 +65,13 @@ Error:
 
 ## Common Conventions
 
-- IDs are UUIDs
-- dates use ISO-8601 format such as `2026-06-09`
-- currencies use 3-letter ISO codes such as `USD`, `EUR`, `TRY`
-- most list endpoints use Spring pagination: `page`, `size`, `sort`
+| Convention | Standard |
+|------------|----------|
+| IDs | UUID (v4) |
+| Dates | ISO-8601 (e.g., `2026-06-09`) |
+| Date-times | ISO-8601 with timezone (e.g., `2026-06-09T12:00:00Z`) |
+| Currencies | ISO-4217 3-letter codes (e.g., `USD`, `EUR`, `TRY`) |
+| Pagination | Spring-style: `page`, `size`, `sort` parameters |
 
 ## Authentication Endpoints
 
@@ -104,174 +118,206 @@ Error:
 }
 ```
 
-## Endpoint Groups
+## Users
 
-### Users
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/users/me` | Get current user profile |
+| PUT | `/api/v1/users/me` | Update user profile |
+| PUT | `/api/v1/users/me/password` | Change password (revokes all refresh tokens) |
 
-- `GET /api/v1/users/me`
-- `PUT /api/v1/users/me`
-- `PUT /api/v1/users/me/password`
+## Accounts
 
-### Accounts
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/accounts` | Create an account |
+| GET | `/api/v1/accounts` | List accounts (paginated) |
+| GET | `/api/v1/accounts/{accountId}` | Get account details |
+| PUT | `/api/v1/accounts/{accountId}` | Update account name |
+| DELETE | `/api/v1/accounts/{accountId}` | Soft-delete an account |
 
-- `POST /api/v1/accounts`
-- `GET /api/v1/accounts`
-- `GET /api/v1/accounts/{accountId}`
-- `PUT /api/v1/accounts/{accountId}`
-- `DELETE /api/v1/accounts/{accountId}`
+See [Accounts](features/accounts.md) for mutation rules and currency constraints.
 
-### Categories
+## Categories
 
-- `POST /api/v1/categories`
-- `GET /api/v1/categories`
-- `GET /api/v1/categories/{categoryId}`
-- `PUT /api/v1/categories/{categoryId}`
-- `DELETE /api/v1/categories/{categoryId}`
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/categories` | Create a user category |
+| GET | `/api/v1/categories` | List categories (system + user) |
+| GET | `/api/v1/categories/{categoryId}` | Get category details |
+| PUT | `/api/v1/categories/{categoryId}` | Update a category |
+| DELETE | `/api/v1/categories/{categoryId}` | Delete a user category |
 
-### Transactions
+See [Categories](features/categories.md) for system vs. user category rules.
 
-- `POST /api/v1/transactions`
-- `POST /api/v1/transactions/transfer`
-- `GET /api/v1/transactions`
-- `GET /api/v1/transactions/{transactionId}`
-- `PUT /api/v1/transactions/{transactionId}`
-- `DELETE /api/v1/transactions/{transactionId}`
+## Transactions
 
-Transaction query filters:
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/transactions` | Create an income or expense |
+| POST | `/api/v1/transactions/transfer` | Transfer between owned accounts |
+| GET | `/api/v1/transactions` | List transactions (paginated, filterable) |
+| GET | `/api/v1/transactions/{transactionId}` | Get transaction details |
+| PUT | `/api/v1/transactions/{transactionId}` | Update a transaction |
+| DELETE | `/api/v1/transactions/{transactionId}` | Delete a transaction |
 
-- `from`
-- `to`
-- `type`
-- `accountId`
-- `categoryId`
-- `minAmount`
-- `maxAmount`
-- `keyword`
-- `page`
-- `size`
-- `sort`
+### Query Filters
 
-### Budgets
+`GET /api/v1/transactions` supports:
 
-- `POST /api/v1/budgets`
-- `GET /api/v1/budgets`
-- `GET /api/v1/budgets/{budgetId}`
-- `GET /api/v1/budgets/{budgetId}/status`
-- `PUT /api/v1/budgets/{budgetId}`
-- `DELETE /api/v1/budgets/{budgetId}`
-- `DELETE /api/v1/budgets/batch`
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from` | Date | Start date (inclusive) |
+| `to` | Date | End date (inclusive) |
+| `type` | String | `INCOME` or `EXPENSE` |
+| `accountId` | UUID | Filter by account |
+| `categoryId` | UUID | Filter by category |
+| `minAmount` | Decimal | Minimum amount |
+| `maxAmount` | Decimal | Maximum amount |
+| `keyword` | String | Search in description and merchant |
+| `page` | Integer | Page number (0-based) |
+| `size` | Integer | Page size |
+| `sort` | String | Sort field and direction |
 
-### Reports
+See [Transactions](features/transactions.md) for balance impact and transfer behavior.
 
-- `GET /api/v1/reports/monthly-summary?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/monthly-summary/export?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/category-spending?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/cash-flow?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `GET /api/v1/reports/net-worth?snapshotDate=YYYY-MM-DD`
+## Budgets
 
-Net worth snapshots:
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/budgets` | Create a budget |
+| GET | `/api/v1/budgets` | List budgets (paginated) |
+| GET | `/api/v1/budgets/{budgetId}` | Get budget details |
+| GET | `/api/v1/budgets/{budgetId}/status` | Get spending status |
+| PUT | `/api/v1/budgets/{budgetId}` | Update budget |
+| DELETE | `/api/v1/budgets/{budgetId}` | Delete a budget |
+| DELETE | `/api/v1/budgets/batch` | Delete multiple budgets |
 
-The `/net-worth` endpoint returns total assets minus total liabilities as of the given `snapshotDate`. Snapshots are persisted on first access per (user, date) and served from the snapshot table on subsequent requests. A daily scheduled job pre-computes snapshots for all active users so historical dates return stable, previously-captured values.
+See [Budgets](features/budgets.md) for period types and status calculation.
 
-### Recurring Transactions
+## Reports
 
-Recurring transactions automate regular income/expense entries. Each recurring item follows a lifecycle with explicit status:
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/reports/monthly-summary?from=&to=` | Monthly income/expense summary |
+| GET | `/api/v1/reports/monthly-summary/export?from=&to=` | CSV download |
+| GET | `/api/v1/reports/category-spending?from=&to=` | Spending by category |
+| GET | `/api/v1/reports/cash-flow?from=&to=` | Daily cash flow |
+| GET | `/api/v1/reports/net-worth?snapshotDate=` | Net worth snapshot |
 
-- `ACTIVE` — normal scheduling
-- `PAUSED` — temporarily suspended, not processed
-- `EXPIRED` — past `endDate` or explicitly ended
-- `FAILED` — last execution failed
+See [Reports](features/reports.md) for report details and best practices.
 
-Optional classification metadata (for UI analytics):
+## Recurring Transactions
 
-- `PAYCHECK`, `SUBSCRIPTION`, `RENT`, `UTILITY`, `LOAN_PAYMENT`, `SAVINGS_CONTRIBUTION`, `OTHER`
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/automations/recurring-transactions` | Create |
+| GET | `/api/v1/automations/recurring-transactions` | List (paginated) |
+| GET | `/api/v1/automations/recurring-transactions/{id}` | Get details |
+| PUT | `/api/v1/automations/recurring-transactions/{id}` | Update |
+| DELETE | `/api/v1/automations/recurring-transactions/{id}` | Soft-delete (→ EXPIRED) |
+| PATCH | `/api/v1/automations/recurring-transactions/{id}/pause` | Pause |
+| PATCH | `/api/v1/automations/recurring-transactions/{id}/resume` | Resume |
+| GET | `/api/v1/automations/recurring-transactions/{id}/history` | Execution history |
+| GET | `/api/v1/automations/recurring-transactions/upcoming?limit=10` | Upcoming projections |
 
-Endpoints:
+See [Recurring Transactions](features/recurring-transactions.md) for lifecycle and classification.
 
-- `POST /api/v1/automations/recurring-transactions`
-- `GET /api/v1/automations/recurring-transactions`
-- `GET /api/v1/automations/recurring-transactions/{recurringTransactionId}`
-- `PUT /api/v1/automations/recurring-transactions/{recurringTransactionId}`
-- `DELETE /api/v1/automations/recurring-transactions/{recurringTransactionId}`
-- `PATCH /api/v1/automations/recurring-transactions/{recurringTransactionId}/pause`
-- `PATCH /api/v1/automations/recurring-transactions/{recurringTransactionId}/resume`
-- `GET /api/v1/automations/recurring-transactions/{recurringTransactionId}/history`
-- `GET /api/v1/automations/recurring-transactions/upcoming?limit=10`
+## Notifications
 
-Create/Update request fields:
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/notifications` | Create a notification |
+| GET | `/api/v1/notifications` | List notifications (paginated) |
+| GET | `/api/v1/notifications/{notificationId}` | Get notification details |
+| PUT | `/api/v1/notifications/{notificationId}` | Update a notification |
+| DELETE | `/api/v1/notifications/{notificationId}` | Delete a notification |
+| GET | `/api/v1/notifications/unread-count` | Get unread count |
+| PATCH | `/api/v1/notifications/mark-all-read` | Mark all notifications as read |
 
-- `accountId` (UUID, required)
-- `categoryId` (UUID, required)
-- `type` (INCOME or EXPENSE, required)
-- `amount` (decimal, required)
-- `frequency` (DAILY, WEEKLY, MONTHLY, or YEARLY, required)
-- `nextRunDate` (date, required)
-- `name` (string, optional) — display name
-- `description` (string, optional) — copied into generated transactions
-- `startDate` (date, optional)
-- `endDate` (date, optional) — auto-expires after this date
-- `classification` (enum, optional) — see list above
+See [Notifications](features/notifications.md).
 
-Status management:
+## Transaction Imports
 
-- `pause` transitions from `ACTIVE` to `PAUSED`
-- `resume` transitions from `PAUSED` to `ACTIVE`
-- `delete` transitions to `EXPIRED` (soft-delete)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/imports/transactions/preview` | Upload and preview CSV |
+| POST | `/api/v1/imports/transactions/confirm` | Confirm and start import |
+| GET | `/api/v1/imports/transactions/{importId}/status` | Poll import status |
 
-### Notifications
+See [CSV Import](features/csv-import.md) for workflow details.
 
-- `POST /api/v1/notifications`
-- `GET /api/v1/notifications`
-- `GET /api/v1/notifications/{notificationId}`
-- `PUT /api/v1/notifications/{notificationId}`
-- `DELETE /api/v1/notifications/{notificationId}`
-- `GET /api/v1/notifications/unread-count`
-- `PATCH /api/v1/notifications/mark-all-read`
+## OCR Imports
 
-### Transaction Imports
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/imports/ocr` | Upload a document for OCR |
+| GET | `/api/imports/ocr/{jobId}` | Get job status and results |
 
-- `POST /api/v1/imports/transactions/preview`
-- `POST /api/v1/imports/transactions/confirm`
-- `GET /api/v1/imports/transactions/{importId}/status`
+See [OCR](features/ocr.md) for configuration and performance characteristics.
 
-### OCR Imports
+## Audits
 
-- `POST /api/v1/imports/ocr`
-- `GET /api/v1/imports/ocr/{jobId}`
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/audits` | Create an audit entry |
+| GET | `/api/v1/audits` | List audit logs (paginated, filterable) |
+| GET | `/api/v1/audits/{auditLogId}` | Get audit entry details |
 
-### Audits
+See [Audit Logs](features/audit-logs.md) for tracked resources and query filters.
 
-- `GET /api/v1/audits`
-- `GET /api/v1/audits/{auditLogId}`
+## Assistant
 
-### Assistant
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/assistant/chat` | Send a message and get a response |
 
-- `POST /api/v1/assistant/chat`
+See [Assistant](features/assistant.md) for capabilities and example questions.
 
-### Insights
+## Insights
 
-- `GET /api/v1/insights`
-- `GET /api/v1/insights/{id}`
-- `PATCH /api/v1/insights/{id}/read`
-- `PATCH /api/v1/insights/{id}/dismiss`
-- `POST /api/v1/insights/generate`
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/insights` | List insights (paginated) |
+| GET | `/api/v1/insights/{id}` | Get insight details |
+| PATCH | `/api/v1/insights/{id}/read` | Mark as read |
+| PATCH | `/api/v1/insights/{id}/dismiss` | Dismiss an insight |
+| POST | `/api/v1/insights/generate` | Trigger on-demand generation |
 
-### Goals
+See [Insights](features/insights.md) for detection methods and configuration.
 
-- `POST /api/v1/goals`
-- `GET /api/v1/goals`
-- `GET /api/v1/goals/{goalId}`
-- `PATCH /api/v1/goals/{goalId}`
-- `DELETE /api/v1/goals/{goalId}`
-- `PATCH /api/v1/goals/{goalId}/status`
-- `POST /api/v1/goals/{goalId}/scenarios`
-- `GET /api/v1/goals/{goalId}/scenarios`
-- `GET /api/v1/goals/{goalId}/runs`
-- `POST /api/v1/goals/simulate`
-- `POST /api/v1/goals/simulate/draft`
-- `POST /api/v1/goals/{goalId}/simulate`
-- `POST /api/v1/goals/{goalId}/scenarios/compare`
-- `POST /api/v1/goals/{goalId}/what-if`
+## Goals
+
+### Goal Management
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/goals` | Create a goal |
+| GET | `/api/v1/goals` | List goals |
+| GET | `/api/v1/goals/{goalId}` | Get goal details |
+| PATCH | `/api/v1/goals/{goalId}` | Update goal fields |
+| DELETE | `/api/v1/goals/{goalId}` | Delete a goal |
+| PATCH | `/api/v1/goals/{goalId}/status` | Update goal status |
+
+### Goals — Scenarios and History
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/goals/{goalId}/scenarios` | Create a scenario |
+| GET | `/api/v1/goals/{goalId}/scenarios` | List scenarios |
+| GET | `/api/v1/goals/{goalId}/runs` | List simulation run history |
+| POST | `/api/v1/goals/{goalId}/scenarios/compare` | Compare scenarios |
+| POST | `/api/v1/goals/{goalId}/what-if` | What-if analysis |
+
+### Goals — Simulation
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/goals/simulate` | Prompt-based simulation |
+| POST | `/api/v1/goals/simulate/draft` | Draft simulation (before saving) |
+| POST | `/api/v1/goals/{goalId}/simulate` | Re-run saved goal simulation |
+
+See [Goals](features/goals.md) for goal types, feasibility values, and warnings.
 
 ## Example Protected Request
 
@@ -282,15 +328,20 @@ curl -X GET "http://localhost:8080/api/v1/accounts?page=0&size=20&sort=name,asc"
 
 ## Common Error Cases
 
-- `401 ACCESS_DENIED`: missing or invalid authentication
-- `400 VALIDATION_FAILED`: request body or query parameter validation failed
-- `404 *_NOT_FOUND`: resource does not exist or is not owned by the caller
-- `409 *_ALREADY_EXISTS`: duplicate resource or conflicting request
-- `503 ASSISTANT_DISABLED`: assistant feature is disabled
+| HTTP | Code | When |
+|------|------|------|
+| 400 | `VALIDATION_FAILED` | Request body or query parameter validation failed |
+| 401 | `ACCESS_DENIED` | Missing, invalid, or expired access token |
+| 404 | `*_NOT_FOUND` | Resource does not exist or is not owned by the caller |
+| 409 | `*_ALREADY_EXISTS` | Duplicate resource or conflicting request |
+| 429 | `RATE_LIMITED` | Too many requests |
+| 503 | `*_DISABLED` | Feature is not enabled (assistant, OCR) |
 
-## Source Of Truth For Schemas
+See [Error Codes](error-codes.md) for the complete error catalogue.
 
-Use Swagger UI and the OpenAPI document for the most complete field-level schema details:
+## Related Documents
 
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8080/v3/api-docs`
+- [Auth Flow](auth-flow.md) — Token lifecycle and mobile implementation
+- [Error Codes](error-codes.md) — Complete error catalogue
+- [Swagger UI](http://localhost:8080/swagger-ui.html) — Interactive API browser
+- [OpenAPI JSON](http://localhost:8080/v3/api-docs) — Machine-readable API spec

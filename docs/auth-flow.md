@@ -2,81 +2,46 @@
 
 ## Overview
 
-SaveAPenny uses a dual-token auth system:
+SaveAPenny uses a dual-token authentication system: short-lived JWTs for stateless API access and opaque refresh tokens for secure credential rotation. This design avoids server-side session storage while enabling token revocation.
 
-- **Access token** — short-lived JWT (15 min), carried in `Authorization: Bearer` header
-- **Refresh token** — long-lived opaque token (7 days), used only to obtain new access tokens
-
-Both tokens are issued on login and registration. Refresh tokens support rotation — each refresh invalidates the previous token and issues a new pair.
+| Token | Format | Expiry | Revocable | Stored Server-Side |
+|-------|--------|--------|-----------|-------------------|
+| **Access token** | JWT (HS512-signed) | 15 minutes | No (stateless) | No |
+| **Refresh token** | Opaque UUID (v4) | 7 days | Yes | Bcrypt hash |
 
 ## Endpoints
 
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/api/v1/auth/register` | POST | None | Create account |
-| `/api/v1/auth/login` | POST | None | Authenticate |
-| `/api/v1/auth/refresh` | POST | None | Rotate tokens |
-| `/api/v1/auth/logout` | POST | None | Revoke refresh token |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/v1/auth/register` | None | Create account, return token pair |
+| POST | `/api/v1/auth/login` | None | Authenticate, return token pair |
+| POST | `/api/v1/auth/refresh` | None | Rotate refresh token, return new pair |
+| POST | `/api/v1/auth/logout` | None | Revoke refresh token |
+
+All auth endpoints are rate-limited (5 POST/min per IP). See [Rate Limiting](rate-limiting.md).
 
 ## Token Lifecycle
 
 ```
 Register / Login
     │
-    ├── accessToken (JWT, 15 min)
-    └── refreshToken (opaque, 7 days)
+    ├── accessToken (JWT, 15 min, stateless)
+    └── refreshToken (opaque UUID, 7 days, bcrypt-hashed in DB)
               │
               ▼
-        Refresh (rotate)
+          Refresh (rotate)
               │
               ├── new accessToken (15 min)
-              └── new refreshToken (7 days)
+              └── new refreshToken (7 days, old one revoked)
                     │
                     ├── Refresh → rotate again
                     └── Logout → revoked
+
+Password change
+    │
+    └── All refresh tokens for user revoked
+        (existing access tokens remain valid until expiry)
 ```
-
-## Mobile Client Implementation
-
-### Token Storage
-
-Store both tokens in secure platform storage:
-
-- **iOS**: `kSecClassGenericPassword` (Keychain)
-- **Android**: `EncryptedSharedPreferences`
-
-Never store tokens in plaintext preferences, `UserDefaults`, or `SharedPreferences`.
-
-### Auto-Refresh Strategy
-
-Before each API call, check if the access token is expired or expires within 60 seconds. If so, refresh proactively:
-
-```
-1. Check access token expiry (decode JWT `exp` claim)
-2. If expired or expires in < 60s:
-   a. Call POST /api/v1/auth/refresh with current refreshToken
-   b. Store new accessToken and refreshToken
-   c. Retry original request with new accessToken
-3. If refresh fails (401):
-   a. Clear stored tokens
-   b. Redirect to login
-```
-
-### Why Proactive Refresh?
-
-Proactive refresh avoids race conditions where multiple in-flight requests all attempt to refresh simultaneously. For a simpler approach, intercept 401 responses and attempt a single refresh before retrying.
-
-### Password Change Behavior
-
-Changing passwords via `PUT /api/v1/users/me/password` revokes **all** active refresh tokens for that user. After a password change:
-
-- The current access token remains valid until it expires (15 min max)
-- The refresh token is immediately revoked
-- The user must log in again to obtain new tokens
-
-### Token Reuse Detection
-
-If a stolen refresh token is used after the legitimate token has already been rotated, the legitimate user's next refresh will fail with `401 INVALID_REFRESH_TOKEN`. Mobile clients should handle this by clearing tokens and redirecting to login.
 
 ## Response Shapes
 
@@ -87,7 +52,7 @@ If a stolen refresh token is used after the legitimate token has already been ro
   "success": true,
   "data": {
     "accessToken": "<jwt>",
-    "refreshToken": "<opaque>",
+    "refreshToken": "<opaque-uuid>",
     "expiresIn": 900,
     "tokenType": "Bearer"
   }
@@ -101,7 +66,7 @@ If a stolen refresh token is used after the legitimate token has already been ro
   "success": true,
   "data": {
     "accessToken": "<new-jwt>",
-    "refreshToken": "<new-opaque>",
+    "refreshToken": "<new-opaque-uuid>",
     "expiresIn": 900,
     "tokenType": "Bearer"
   }
@@ -120,23 +85,86 @@ If a stolen refresh token is used after the legitimate token has already been ro
 }
 ```
 
+## Mobile Client Implementation
+
+### Token Storage
+
+| Platform | Storage Mechanism |
+|----------|------------------|
+| iOS | `kSecClassGenericPassword` (Keychain) |
+| Android | `EncryptedSharedPreferences` |
+
+Never store tokens in `UserDefaults`, `SharedPreferences`, or plaintext files.
+
+### Auto-Refresh Strategy
+
+Proactive refresh avoids race conditions where multiple in-flight requests all attempt to refresh simultaneously:
+
+```
+Before each API call:
+1. Decode JWT `exp` claim
+2. If expired or expires in < 60 seconds:
+   a. POST /api/v1/auth/refresh with current refreshToken
+   b. Store new accessToken and refreshToken
+   c. Retry original request with new accessToken
+3. If refresh fails (401):
+   a. Clear stored tokens
+   b. Redirect to login screen
+```
+
+### Reactive Fallback
+
+For simpler clients, intercept 401 responses and attempt a single refresh before retrying the original request. If the refresh also returns 401, clear tokens and redirect to login.
+
+### Token Reuse Detection
+
+Refresh tokens are rotated on every use. If a stolen token is used after the legitimate token has already been rotated, the next legitimate refresh attempt returns `401 INVALID_REFRESH_TOKEN`. Clients should handle this by clearing tokens and redirecting to login.
+
+## Password Change Behavior
+
+`PUT /api/v1/users/me/password` revokes **all** active refresh tokens for the user:
+
+- The current access token remains valid until it expires (max 15 minutes)
+- The refresh token is immediately revoked
+- The user must log in again to obtain new tokens
+
 ## Error Codes
 
 | Code | HTTP | Meaning |
 |------|------|---------|
-| `INVALID_CREDENTIALS` | 401 | Email or password is wrong |
-| `INVALID_REFRESH_TOKEN` | 401 | Token is invalid, expired, or revoked |
-| `EMAIL_ALREADY_EXISTS` | 409 | Registration email is taken |
-| `RATE_LIMITED` | 429 | Too many login attempts |
+| `INVALID_CREDENTIALS` | 401 | Email or password is incorrect |
+| `INVALID_REFRESH_TOKEN` | 401 | Token is invalid, expired, or has been rotated |
+| `REFRESH_TOKEN_EXPIRED` | 401 | Token is past its 7-day expiry |
+| `EMAIL_ALREADY_EXISTS` | 409 | Registration email is already in use |
+| `RATE_LIMITED` | 429 | Too many login attempts (5/min per IP) |
 
 ## Public Endpoints
 
-These do not require authentication:
+These endpoints do not require authentication:
 
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh`
 - `POST /api/v1/auth/logout`
 - `GET /actuator/health`
-- `GET /v3/api-docs`
-- `GET /swagger-ui.html`
+- `GET /v3/api-docs/**`
+- `GET /swagger-ui/**`
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Access tokens are not revocable | Stateless verification avoids DB lookup on every request; short expiry limits exposure |
+| Refresh tokens are bcrypt-hashed | Database compromise does not expose usable tokens |
+| Rotation on every refresh | Limits the window for token theft; stolen tokens are invalidated after first legitimate use |
+| Proactive refresh before expiry | Avoids race conditions from concurrent 401 handling |
+
+## Referenced Files
+
+| File | Purpose |
+|------|---------|
+| `src/main/java/com/saveapenny/auth/service/JwtService.java` | JWT creation, parsing, validation |
+| `src/main/java/com/saveapenny/auth/service/RefreshTokenService.java` | Refresh token generation, hashing, rotation |
+| `src/main/java/com/saveapenny/auth/controller/AuthController.java` | REST endpoints for register, login, refresh, logout |
+| `src/main/java/com/saveapenny/config/security/HeaderUserAuthenticationFilter.java` | Extracts JWT from `Authorization` header, sets security context |
+| `src/main/resources/application.yml` | `security.jwt.secret` and `security.jwt.refresh-token-expiry-days` |

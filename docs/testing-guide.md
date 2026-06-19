@@ -2,7 +2,13 @@
 
 ## Overview
 
-SaveAPenny has 830+ tests covering unit, integration, and regression scenarios. The test suite is the primary verification gate.
+SaveAPenny has 830+ tests covering unit, integration, and regression scenarios. Tests are the primary verification gate and run on every PR and push to main via GitHub Actions.
+
+## Prerequisites
+
+- **Java 24** — required for running tests
+- **Docker** — required for Testcontainers-based integration tests
+- **Tesseract** — required only for OCR golden-image regression tests
 
 ## Running Tests
 
@@ -20,63 +26,66 @@ mvn -Dtest=AuthFlowIntegrationTest#loginThenRefresh_thenOldTokenFails test
 mvn package -DskipTests
 ```
 
-## Test Categories
+## Test Types
+
+| Type | Spring Context | Docker | Typical Speed | Location |
+|------|---------------|--------|---------------|----------|
+| Unit | No | No | Milliseconds | `.../service/impl/*Test.java`, `.../mapper/*Test.java` |
+| Slice (`@WebMvcTest`) | Web layer only | No | ~100ms | `.../controller/*Test.java` |
+| Repository (`@DataJpaTest`) | JPA only | No | ~30ms | `.../repository/*Test.java` |
+| Integration (`@SpringBootTest`) | Full | No (H2) | Seconds | `.../integration/*IntegrationTest.java` |
+| Golden Image | Web + JPA | No (H2) | Seconds | `.../ocr/.../OcrGoldenImageRegressionTest.java` |
 
 ### Unit Tests
 
-Pure JUnit 5 + Mockito tests. No Spring context loaded. Fastest tier.
+Pure JUnit 5 + Mockito tests. No Spring context loaded. Cover service logic, mappers, and validation.
 
-```
-src/test/java/.../service/impl/*Test.java
-src/test/java/.../mapper/*Test.java
-```
+```java
+@ExtendWith(MockitoExtension.class)
+class MyServiceTest {
+    @Mock
+    private MyRepository repository;
 
-Run in milliseconds. Cover service logic, mappers, and validation.
+    @InjectMocks
+    private MyServiceImpl service;
+
+    @Test
+    void calculateTotal_whenMultipleItems_returnsSum() {
+        // pure logic, no Spring
+    }
+}
+```
 
 ### Slice Tests (`@WebMvcTest`)
 
 Controller tests loading only the web layer with mocked services. Test HTTP request/response mapping, validation, and error handling.
 
-```
-src/test/java/.../controller/*Test.java
-```
+```java
+@WebMvcTest(MyController.class)
+@Import({SecurityConfig.class, HeaderUserAuthenticationFilter.class})
+class MyControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
 
-Run in ~100ms each. Import `SecurityConfig` and `HeaderUserAuthenticationFilter` for auth context.
+    @MockitoBean
+    private MyService myService;
+
+    @Test
+    void getEndpoint_whenAuthenticated_returns200() throws Exception {
+        mockMvc.perform(get("/api/v1/...")
+                        .header("Authorization", "Bearer " + validJwt))
+                .andExpect(status().isOk());
+    }
+}
+```
 
 ### Repository Tests (`@DataJpaTest`)
 
-H2-backed repository tests. Cover queries, sorting, pagination, and constraints.
-
-```
-src/test/java/.../repository/*Test.java
-```
-
-Run in ~30ms each.
+H2-backed repository tests covering queries, sorting, pagination, and constraints.
 
 ### Integration Tests (`@SpringBootTest`)
 
-Full Spring context with H2 in PostgreSQL mode and `ddl-auto=create-drop`. Test end-to-end flows across multiple layers.
-
-```
-src/test/java/.../integration/*IntegrationTest.java
-```
-
-Each test class uses `@TestPropertySource` with an isolated H2 database (`jdbc:h2:mem:<unique-name>`) so they do not interfere with each other.
-
-### Golden Image Regression
-
-The OCR golden image test (`OcrGoldenImageRegressionTest.java`) runs with H2 and skips via `Assumptions.assumeTrue` when OCR is disabled or Tesseract is not installed. It is not part of the default CI path.
-
-## Test Conventions
-
-| Convention | Standard |
-|------------|----------|
-| Naming | `{method}_when{Condition}_expects{Result}` |
-| Assertions | AssertJ or JUnit 5 assertions |
-| Mocking | Mockito with `@ExtendWith(MockitoExtension.class)` |
-| Test data | Constructed manually (no test fixtures framework) |
-
-## Integration Test Template
+Full Spring context with H2 in PostgreSQL compatibility mode. Each test class uses an isolated in-memory database via `@TestPropertySource`:
 
 ```java
 @SpringBootTest
@@ -89,22 +98,65 @@ The OCR golden image test (`OcrGoldenImageRegressionTest.java`) runs with H2 and
         "security.jwt.secret=0123456789012345678901234567890123456789012345678901234567890123"
 })
 class MyIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    void myTest() throws Exception {
+    void endToEndFlow_whenValidRequest_succeeds() throws Exception {
         mockMvc.perform(post("/api/v1/..."))
                 .andExpect(status().isOk());
     }
 }
 ```
 
+### Golden Image Regression (OCR)
+
+The OCR golden image test (`OcrGoldenImageRegressionTest.java`) runs with H2 and skips via `Assumptions.assumeTrue` when OCR is disabled or Tesseract is not installed.
+
+## Test Conventions
+
+| Convention | Standard |
+|------------|----------|
+| Naming | `{method}_when{Condition}_expects{Result}` |
+| Assertions | AssertJ or JUnit 5 |
+| Mocking | Mockito with `@ExtendWith(MockitoExtension.class)` |
+| Test data | Constructed manually (no test fixtures framework) |
+
 ## Preventing Flaky Tests
 
-- Integration tests use unique in-memory databases per class
-- H2 is configured in PostgreSQL compatibility mode (`MODE=PostgreSQL`)
-- Repository tests reset state between methods via `@DataJpaTest` rollback
-- No shared mutable state between test classes
-- OCR tests use `Assumptions.assumeTrue` to skip when native dependencies are unavailable
+| Practice | Detail |
+|----------|--------|
+| Unique databases | Integration tests use isolated in-memory H2 databases per class |
+| PostgreSQL compatibility | H2 configured with `MODE=PostgreSQL` for dialect compatibility |
+| Automatic rollback | `@DataJpaTest` rolls back between methods |
+| No shared state | No mutable state shared between test classes |
+| Conditional skipping | OCR tests use `Assumptions.assumeTrue` when native deps are missing |
+
+## CI Pipeline
+
+Tests run across three GitHub Actions workflows:
+
+| Workflow | Command | When |
+|----------|---------|------|
+| validate.yml | `mvn -B -DskipTests package` | Every PR and push to main |
+| ci.yml | `mvn -B clean verify` | Every PR and push to main |
+| test.yml | `mvn -B clean verify` | Every PR and push to main (dedicated, with OCR verification) |
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| H2 over Testcontainers for most tests | Faster (in-memory, no container startup), still PostgreSQL-compatible |
+| Unique H2 databases per test class | Parallel-safe, no cross-class interference |
+| `ddl-auto=create-drop` in tests | No Flyway setup needed per test; schema derived from entities |
+| `@TestPropertySource` over `application-test.yml` | Explicit isolation; each test owns its datasource URL |
+
+## Referenced Files
+
+| File | Purpose |
+|------|---------|
+| `src/test/java/.../config/security/SecurityConfigTest.java` | Security filter chain tests |
+| `src/test/java/.../config/security/RateLimiterTest.java` | Token bucket unit tests |
+| `src/test/java/.../config/security/RateLimitingFilterTest.java` | Rate limiting filter tests |
+| `src/test/java/.../config/security/HeaderUserAuthenticationFilterTest.java` | JWT filter tests |
+| `src/test/java/.../integration/` | End-to-end integration test classes |

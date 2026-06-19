@@ -1,6 +1,10 @@
 # Error Codes
 
-All errors return HTTP 4xx or 5xx with a consistent JSON envelope:
+## Overview
+
+All API errors return an HTTP 4xx or 5xx status code with a consistent JSON envelope. The `code` field is a machine-readable identifier; the `message` field is a human-readable description; `details` contains field-level validation errors when applicable.
+
+## Response Format
 
 ```json
 {
@@ -18,49 +22,78 @@ All errors return HTTP 4xx or 5xx with a consistent JSON envelope:
 
 ### Authentication (401)
 
-| Code | Meaning |
-|------|---------|
-| `ACCESS_DENIED` | Missing, invalid, or expired access token |
-| `INVALID_CREDENTIALS` | Email or password is incorrect |
-| `INVALID_REFRESH_TOKEN` | Refresh token is invalid, expired, or revoked |
-| `ACCOUNT_LOCKED` | Account is temporarily locked due to suspicious activity |
+| Code | Message | Meaning |
+|------|---------|---------|
+| `ACCESS_DENIED` | "Unauthorized." or "Invalid or expired access token." | Missing, invalid, or expired JWT |
+| `INVALID_CREDENTIALS` | — | Email or password is incorrect |
+| `INVALID_REFRESH_TOKEN` | — | Refresh token is invalid, expired, or has been rotated |
+| `REFRESH_TOKEN_EXPIRED` | — | Refresh token is past its 7-day expiry |
+
+### Forbidden (403)
+
+| Code | Message | Meaning |
+|------|---------|---------|
+| `ACCESS_DENIED` | — | Authenticated but insufficient permissions |
+| `AUDIT_LOG_ACCESS_DENIED` | — | Attempt to access another user's audit log |
 
 ### Validation (400)
 
 | Code | Meaning |
 |------|---------|
-| `VALIDATION_FAILED` | Request body or query params failed validation. `details` contains field-level messages |
+| `VALIDATION_FAILED` | Request body or query parameters failed validation. `details` contains field-level messages |
 | `INVALID_TRANSACTION_CURRENCY` | Transaction currency does not match the account currency |
 | `ACCOUNT_MUTATION_NOT_ALLOWED` | Attempt to change account type or currency after the account has been used |
-| `INVALID_OCR_FILE` | Uploaded file is too large or has an unsupported format |
-| `INVALID_CSV_FORMAT` | CSV file cannot be parsed |
-| `INVALID_DATE_RANGE` | Date range parameters are invalid |
+| `ACCOUNT_INACTIVE` | Account is soft-deleted or inactive |
+| `INVALID_OCR_FILE` | Uploaded file exceeds size limit or has unsupported format |
+| `INVALID_IMPORT_FILE` | CSV file cannot be parsed |
+| `INVALID_BUDGET_DATE_RANGE` | Budget date range parameters are invalid |
+| `INVALID_REPORT_DATE_RANGE` | Report date range parameters are invalid |
+| `INVALID_NET_WORTH_SNAPSHOT_DATE` | Snapshot date is in the future |
+| `INVALID_AUDIT_DATE_RANGE` | Audit date range parameters are invalid |
+| `INVALID_TRANSFER` | Transfer source and destination are the same account or currencies do not match |
+| `INSUFFICIENT_BALANCE` | Account balance is insufficient for the requested transfer |
+| `INVALID_PASSWORD` | Password does not meet strength requirements |
+| `PASSWORD_REUSE_NOT_ALLOWED` | Password matches a previously used password |
+| `INVALID_RECURRING_TRANSACTION_NEXT_RUN_DATE` | Next run date is in the past |
+| `INVALID_RECURRING_TRANSACTION_TYPE` | Invalid frequency or classification |
+| `INVALID_RECURRING_TRANSACTION_STATUS_TRANSITION` | Cannot transition to the requested status |
+| `SYSTEM_CATEGORY_MODIFICATION_NOT_ALLOWED` | Attempt to modify or delete a system category |
+| `INVALID_GOAL_DATE` | Goal date parameters are invalid |
+| `INVALID_GOAL_STATUS_TRANSITION` | Cannot transition goal to the requested status |
+| `INVALID_GOAL_TYPE` | Invalid goal type identifier |
+| `INVALID_GOAL_SIMULATION_REQUEST` | Goal simulation request failed validation |
+| `OCR_PROCESSING_FAILED` | OCR engine encountered an unrecoverable error |
 
 ### Not Found (404)
 
 | Code | Meaning |
 |------|---------|
 | `USER_NOT_FOUND` | User resource not found |
+| `TRANSACTION_NOT_FOUND` | Transaction not found or not owned by the caller |
 | `ACCOUNT_NOT_FOUND` | Account not found or not owned by the caller |
 | `CATEGORY_NOT_FOUND` | Category not found or not owned by the caller |
-| `TRANSACTION_NOT_FOUND` | Transaction not found or not owned by the caller |
 | `BUDGET_NOT_FOUND` | Budget not found or not owned by the caller |
 | `RECURRING_TRANSACTION_NOT_FOUND` | Recurring transaction not found or not owned by the caller |
+| `RECURRING_TRANSACTION_DEPENDENCY_NOT_FOUND` | Referenced account or category not found |
 | `NOTIFICATION_NOT_FOUND` | Notification not found or not owned by the caller |
 | `IMPORT_NOT_FOUND` | Import job not found or not owned by the caller |
 | `OCR_JOB_NOT_FOUND` | OCR job not found or not owned by the caller |
 | `INSIGHT_NOT_FOUND` | Insight not found or not owned by the caller |
 | `GOAL_NOT_FOUND` | Goal not found or not owned by the caller |
 | `SCENARIO_NOT_FOUND` | Scenario not found or not owned by the caller |
+| `ASSISTANT_CHAT_SESSION_NOT_FOUND` | Chat session not found or expired |
+| `AUDIT_LOG_NOT_FOUND` | Audit entry not found or not owned by the caller |
+| `LINKED_ACCOUNT_NOT_FOUND` | Linked account not found or not owned by the caller |
 
 ### Conflict (409)
 
 | Code | Meaning |
 |------|---------|
 | `EMAIL_ALREADY_EXISTS` | Registration email is already in use |
-| `CATEGORY_ALREADY_EXISTS` | Category name conflicts with an existing category |
-| `ACCOUNT_ALREADY_EXISTS` | Account name conflicts with an existing or deleted account |
-| `BUDGET_ALREADY_EXISTS` | Budget already exists for the given period |
+| `CATEGORY_NAME_ALREADY_EXISTS` | Category name conflicts with an existing category |
+| `ACCOUNT_NAME_ALREADY_EXISTS` | Account name conflicts with an existing or soft-deleted account |
+| `BUDGET_ALREADY_EXISTS` | Budget already exists for the given category and period |
+| `IMPORT_ALREADY_RUNNING` | An import is already in progress |
 
 ### Rate Limited (429)
 
@@ -80,10 +113,12 @@ All errors return HTTP 4xx or 5xx with a consistent JSON envelope:
 | Code | HTTP | Meaning |
 |------|------|---------|
 | `INTERNAL_SERVER_ERROR` | 500 | Unexpected server error. Check server logs |
+| `ASSISTANT_PROCESSING_FAILED` | 502 | AI provider returned an error or response could not be parsed |
+| `INSIGHT_GENERATION_FAILED` | 500 | Insight generation job failed |
 
 ## Validation Details Format
 
-When `VALIDATION_FAILED` is returned, `details` contains field-level messages:
+When `VALIDATION_FAILED` is returned, the `details` array contains field-level messages:
 
 ```json
 {
@@ -106,4 +141,12 @@ Rate-limited responses include the `Retry-After` header:
 Retry-After: 60
 ```
 
-The value is in seconds. Mobile clients should wait at least this long before retrying.
+The value is an integer number of seconds. Clients should wait at least this long before retrying.
+
+## Referenced Files
+
+| File | Purpose |
+|------|---------|
+| `src/main/java/com/saveapenny/shared/exception/GlobalExceptionHandler.java` | `@RestControllerAdvice` handling all exception types |
+| `src/main/java/com/saveapenny/shared/api/ApiError.java` | Error envelope model |
+| `src/main/java/com/saveapenny/shared/api/ApiResponse.java` | Response envelope model |
