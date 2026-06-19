@@ -29,6 +29,7 @@ import com.saveapenny.mcp.goal.ListGoalsToolInput;
 import com.saveapenny.mcp.goal.ListGoalsToolResult;
 import com.saveapenny.mcp.goal.WhatIfToolInput;
 import com.saveapenny.mcp.registry.ToolRegistry;
+import com.saveapenny.mcp.error.ToolValidationException;
 import com.saveapenny.mcp.report.CurrentMonthSummaryToolInput;
 import com.saveapenny.mcp.report.CurrentMonthSummaryToolResult;
 import com.saveapenny.mcp.report.TopSpendingCategoriesToolInput;
@@ -266,9 +267,52 @@ class SpringAiMcpToolAdapterTest {
                                 .build())
                         .build()));
 
-        String result = adapter.whatIf(UUID.randomUUID().toString(), 500);
+        String result = adapter.whatIf(UUID.randomUUID().toString(), 500d);
 
         assertTrue(result.contains("What-if result"));
         assertTrue(result.contains("200.00"));
+    }
+
+    @Test
+    void getGoal_rejectsInvalidGoalIdAsValidationError() {
+        ToolValidationException exception = assertThrows(ToolValidationException.class, () -> adapter.getGoal("not-a-uuid"));
+
+        assertEquals("goalId", exception.getErrors().getFirst().field());
+    }
+
+    @Test
+    void listGoals_rejectsInvalidStatusAsValidationError() {
+        ToolValidationException exception = assertThrows(ToolValidationException.class, () -> adapter.listGoals("bad-status", null, 5));
+
+        assertEquals("status", exception.getErrors().getFirst().field());
+    }
+
+    @Test
+    void getTopSpendingCategories_preservesInvalidLimitForHandlerValidation() {
+        when(assistantToolContextHolder.requireCurrentUserId()).thenReturn(UUID.randomUUID());
+        when(toolRegistry.findByName("getTopSpendingCategories")).thenReturn(Optional.of(topSpendingCategoriesHandler));
+        when(topSpendingCategoriesHandler.execute(any(ToolExecutionContext.class), any(TopSpendingCategoriesToolInput.class)))
+                .thenThrow(new ToolValidationException("limit must be greater than 0.", List.of()));
+
+        assertThrows(ToolValidationException.class, () -> adapter.getTopSpendingCategories(0));
+    }
+
+    @Test
+    void whatIf_preservesZeroMonthlyContributionOverride() {
+        when(assistantToolContextHolder.requireCurrentUserId()).thenReturn(UUID.randomUUID());
+        when(toolRegistry.findByName("what_if")).thenReturn(Optional.of(whatIfHandler));
+        when(whatIfHandler.execute(any(ToolExecutionContext.class), any(WhatIfToolInput.class)))
+                .thenReturn(ToolResult.of(com.saveapenny.goal.simulation.dto.GoalWhatIfResponse.builder()
+                        .result(com.saveapenny.goal.simulation.SimulationResult.builder()
+                                .feasibility(com.saveapenny.goal.entity.Feasibility.ON_TRACK)
+                                .summary(java.util.Map.of("projectedAmount", new BigDecimal("5000.00")))
+                                .build())
+                        .build()));
+
+        adapter.whatIf(UUID.randomUUID().toString(), 0d);
+
+        ArgumentCaptor<WhatIfToolInput> inputCaptor = ArgumentCaptor.forClass(WhatIfToolInput.class);
+        verify(whatIfHandler).execute(any(ToolExecutionContext.class), inputCaptor.capture());
+        assertEquals(0d, inputCaptor.getValue().overrides().get("monthlyContribution").doubleValue());
     }
 }

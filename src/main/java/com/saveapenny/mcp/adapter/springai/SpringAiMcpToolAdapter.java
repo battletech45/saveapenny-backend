@@ -3,6 +3,8 @@ package com.saveapenny.mcp.adapter.springai;
 import com.saveapenny.assistant.tool.AssistantToolContextHolder;
 import com.saveapenny.goal.entity.GoalStatus;
 import com.saveapenny.goal.entity.GoalType;
+import com.saveapenny.mcp.error.ToolError;
+import com.saveapenny.mcp.error.ToolValidationException;
 import com.saveapenny.mcp.budget.MonthlyBudgetStatusToolInput;
 import com.saveapenny.mcp.budget.MonthlyBudgetStatusToolResult;
 import com.saveapenny.mcp.goal.CompareScenariosToolInput;
@@ -29,6 +31,7 @@ import com.saveapenny.mcp.report.TopSpendingCategoriesToolInput;
 import com.saveapenny.mcp.report.TopSpendingCategoriesToolResult;
 import com.saveapenny.mcp.transaction.RecentTransactionsToolInput;
 import com.saveapenny.mcp.transaction.RecentTransactionsToolResult;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.UUID;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -77,10 +80,10 @@ public class SpringAiMcpToolAdapter {
 
     @Tool(name = TOP_SPENDING_CATEGORIES_TOOL, description = "Get the authenticated user's top expense categories for the current month.")
     public String getTopSpendingCategories(
-            @ToolParam(description = "Maximum number of categories to return.", required = false) int topCategoriesLimit) {
+            @ToolParam(description = "Maximum number of categories to return.", required = false) Integer topCategoriesLimit) {
         TopSpendingCategoriesToolResult topCategories = execute(
-                        TOP_SPENDING_CATEGORIES_TOOL,
-                        new TopSpendingCategoriesToolInput(topCategoriesLimit),
+                         TOP_SPENDING_CATEGORIES_TOOL,
+                         new TopSpendingCategoriesToolInput(topCategoriesLimit),
                         TopSpendingCategoriesToolResult.class);
 
         if (topCategories.categories().isEmpty()) {
@@ -106,7 +109,7 @@ public class SpringAiMcpToolAdapter {
 
     @Tool(name = MONTHLY_BUDGET_STATUS_TOOL, description = "Get the authenticated user's monthly budget status overview.")
     public String getMonthlyBudgetStatus(
-            @ToolParam(description = "Maximum number of budget entries to include.", required = false) int limit) {
+            @ToolParam(description = "Maximum number of budget entries to include.", required = false) Integer limit) {
         MonthlyBudgetStatusToolResult budgets = execute(
                 MONTHLY_BUDGET_STATUS_TOOL,
                 new MonthlyBudgetStatusToolInput(limit),
@@ -138,7 +141,7 @@ public class SpringAiMcpToolAdapter {
 
     @Tool(name = RECENT_TRANSACTIONS_TOOL, description = "Get the authenticated user's recent transactions from the last 30 days.")
     public String getRecentTransactions(
-            @ToolParam(description = "Maximum number of transactions to include.", required = false) int limit) {
+            @ToolParam(description = "Maximum number of transactions to include.", required = false) Integer limit) {
         RecentTransactionsToolResult transactions = execute(
                 RECENT_TRANSACTIONS_TOOL,
                 new RecentTransactionsToolInput(limit),
@@ -172,10 +175,10 @@ public class SpringAiMcpToolAdapter {
     public String listGoals(
             @ToolParam(description = "Optional status filter.", required = false) String status,
             @ToolParam(description = "Optional goal type filter.", required = false) String type,
-            @ToolParam(description = "Maximum number of goals to include.", required = false) int limit) {
+            @ToolParam(description = "Maximum number of goals to include.", required = false) Integer limit) {
         ListGoalsToolResult result = execute(
                 LIST_GOALS_TOOL,
-                new ListGoalsToolInput(parseGoalStatus(status), parseGoalType(type), limit <= 0 ? null : limit),
+                new ListGoalsToolInput(parseGoalStatus(status), parseGoalType(type), limit),
                 ListGoalsToolResult.class);
         if (result.goals().isEmpty()) {
             return "Goals: none.";
@@ -202,7 +205,7 @@ public class SpringAiMcpToolAdapter {
 
     @Tool(name = GET_GOAL_TOOL, description = "Get one goal with scenarios and latest run.")
     public String getGoal(@ToolParam(description = "Goal id.") String goalId) {
-        GetGoalToolResult result = execute(GET_GOAL_TOOL, new GetGoalToolInput(UUID.fromString(goalId)), GetGoalToolResult.class);
+        GetGoalToolResult result = execute(GET_GOAL_TOOL, new GetGoalToolInput(parseUuid(goalId, "goalId")), GetGoalToolResult.class);
         var goal = result.goal();
         return "Goal: " + goal.title() + " [" + goal.type() + ", " + goal.status() + "] target="
                 + goal.targetAmount() + ' ' + goal.currency()
@@ -214,7 +217,7 @@ public class SpringAiMcpToolAdapter {
     public String getGoalProgress(@ToolParam(description = "Goal id.") String goalId) {
         GetGoalProgressToolResult result = execute(
                 GET_GOAL_PROGRESS_TOOL,
-                new GetGoalProgressToolInput(UUID.fromString(goalId)),
+                new GetGoalProgressToolInput(parseUuid(goalId, "goalId")),
                 GetGoalProgressToolResult.class);
         return "Goal progress: status=" + result.status()
                 + ", currentAmount=" + result.currentAmount()
@@ -227,7 +230,7 @@ public class SpringAiMcpToolAdapter {
     public String listGoalScenarios(@ToolParam(description = "Goal id.") String goalId) {
         ListGoalScenariosToolResult result = execute(
                 LIST_GOAL_SCENARIOS_TOOL,
-                new ListGoalScenariosToolInput(UUID.fromString(goalId)),
+                new ListGoalScenariosToolInput(parseUuid(goalId, "goalId")),
                 ListGoalScenariosToolResult.class);
         if (result.scenarios().isEmpty()) {
             return "Goal scenarios: none.";
@@ -250,10 +253,10 @@ public class SpringAiMcpToolAdapter {
     @Tool(name = LIST_GOAL_RUNS_TOOL, description = "List simulation runs for a goal.")
     public String listGoalRuns(
             @ToolParam(description = "Goal id.") String goalId,
-            @ToolParam(description = "Maximum number of runs to include.", required = false) int limit) {
+            @ToolParam(description = "Maximum number of runs to include.", required = false) Integer limit) {
         ListGoalRunsToolResult result = execute(
                 LIST_GOAL_RUNS_TOOL,
-                new ListGoalRunsToolInput(UUID.fromString(goalId), limit <= 0 ? null : limit),
+                new ListGoalRunsToolInput(parseUuid(goalId, "goalId"), limit),
                 ListGoalRunsToolResult.class);
         if (result.runs().isEmpty()) {
             return "Goal runs: none.";
@@ -274,7 +277,7 @@ public class SpringAiMcpToolAdapter {
     public String simulateGoal(@ToolParam(description = "Goal id.") String goalId) {
         var result = execute(
                 SIMULATE_GOAL_TOOL,
-                new SimulateGoalToolInput(UUID.fromString(goalId), null),
+                new SimulateGoalToolInput(parseUuid(goalId, "goalId"), null),
                 com.saveapenny.goal.simulation.SimulationResult.class);
         return "Goal simulation: feasibility=" + result.getFeasibility()
                 + ", horizonMonths=" + result.getHorizonMonths()
@@ -285,7 +288,7 @@ public class SpringAiMcpToolAdapter {
     public String compareScenarios(@ToolParam(description = "Goal id.") String goalId) {
         var result = execute(
                 COMPARE_SCENARIOS_TOOL,
-                new CompareScenariosToolInput(UUID.fromString(goalId), null),
+                new CompareScenariosToolInput(parseUuid(goalId, "goalId"), null),
                 com.saveapenny.goal.simulation.dto.GoalScenarioComparisonResponse.class);
         if (result.getScenarios().isEmpty()) {
             return "Scenario comparison: none.";
@@ -309,14 +312,14 @@ public class SpringAiMcpToolAdapter {
     @Tool(name = WHAT_IF_TOOL, description = "Run a one-off what-if simulation for a goal.")
     public String whatIf(
             @ToolParam(description = "Goal id.") String goalId,
-            @ToolParam(description = "New monthly contribution for savings-style goals.", required = false) double monthlyContribution) {
-        com.fasterxml.jackson.databind.node.ObjectNode overrides = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
-        if (monthlyContribution > 0) {
+            @ToolParam(description = "New monthly contribution for savings-style goals.", required = false) Double monthlyContribution) {
+        var overrides = JsonNodeFactory.instance.objectNode();
+        if (monthlyContribution != null) {
             overrides.put("monthlyContribution", monthlyContribution);
         }
         var result = execute(
                 WHAT_IF_TOOL,
-                new WhatIfToolInput(UUID.fromString(goalId), overrides),
+                new WhatIfToolInput(parseUuid(goalId, "goalId"), overrides),
                 com.saveapenny.goal.simulation.dto.GoalWhatIfResponse.class);
         return "What-if result: feasibility=" + result.getResult().getFeasibility()
                 + ", projected=" + result.getResult().getSummary().get("projectedAmount")
@@ -339,13 +342,43 @@ public class SpringAiMcpToolAdapter {
         if (status == null || status.isBlank()) {
             return null;
         }
-        return GoalStatus.valueOf(status.trim().toUpperCase());
+        try {
+            return GoalStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw invalidEnum("status", status, GoalStatus.values());
+        }
     }
 
     private GoalType parseGoalType(String type) {
         if (type == null || type.isBlank()) {
             return null;
         }
-        return GoalType.valueOf(type.trim().toUpperCase());
+        try {
+            return GoalType.valueOf(type.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw invalidEnum("type", type, GoalType.values());
+        }
+    }
+
+    private UUID parseUuid(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new ToolValidationException(
+                    fieldName + " must be a valid UUID.",
+                    java.util.List.of(new ToolError(null, fieldName + " must be a valid UUID.", fieldName)));
+        }
+    }
+
+    private <E extends Enum<E>> ToolValidationException invalidEnum(String fieldName, String value, E[] allowedValues) {
+        return new ToolValidationException(
+                fieldName + " must be one of: " + java.util.Arrays.toString(allowedValues) + '.',
+                java.util.List.of(new ToolError(
+                        null,
+                        fieldName + " value '" + value + "' is invalid.",
+                        fieldName)));
     }
 }
