@@ -20,6 +20,7 @@ import com.saveapenny.automation.repository.RecurringTransactionRepository;
 import com.saveapenny.automation.service.RecurringTransactionService;
 import com.saveapenny.category.entity.Category;
 import com.saveapenny.category.repository.CategoryRepository;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.transaction.entity.TransactionType;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     private final RecurringExecutionHistoryMapper executionHistoryMapper;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
+    private final TimeService timeService;
 
     public RecurringTransactionServiceImpl(
             RecurringTransactionRepository recurringTransactionRepository,
@@ -47,13 +49,15 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
             RecurringExecutionHistoryRepository executionHistoryRepository,
             RecurringExecutionHistoryMapper executionHistoryMapper,
             AccountRepository accountRepository,
-            CategoryRepository categoryRepository) {
+            CategoryRepository categoryRepository,
+            TimeService timeService) {
         this.recurringTransactionRepository = recurringTransactionRepository;
         this.recurringTransactionMapper = recurringTransactionMapper;
         this.executionHistoryRepository = executionHistoryRepository;
         this.executionHistoryMapper = executionHistoryMapper;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
+        this.timeService = timeService;
     }
 
     @Override
@@ -155,13 +159,13 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
                 .findAllByUserIdAndStatusAndNextRunDateLessThanEqual(
                         currentUserId,
                         RecurringStatus.ACTIVE,
-                        LocalDate.now().plusMonths(6));
+                        timeService.today().plusMonths(6));
 
         List<UpcomingRunResponse> result = new ArrayList<>();
         for (RecurringTransaction item : activeItems) {
             LocalDate runDate = item.getNextRunDate();
             for (int i = 0; i < limit && result.size() < limit * 10; i++) {
-                if (runDate.isBefore(LocalDate.now())) {
+                if (runDate.isBefore(timeService.today())) {
                     runDate = nextRunDate(runDate, item.getFrequency());
                     continue;
                 }
@@ -182,7 +186,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     @Override
     @Transactional(readOnly = true)
     public List<RecurringTransactionResponse> getDueRecurringTransactions(LocalDate runDate) {
-        LocalDate effectiveRunDate = runDate == null ? LocalDate.now() : runDate;
+        LocalDate effectiveRunDate = runDate == null ? timeService.today() : runDate;
         return recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(RecurringStatus.ACTIVE, effectiveRunDate)
                 .stream()
                 .map(recurringTransactionMapper::toResponse)
@@ -217,7 +221,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     }
 
     private void validateNextRunDate(LocalDate nextRunDate) {
-        if (nextRunDate == null || nextRunDate.isBefore(LocalDate.now())) {
+        if (nextRunDate == null || nextRunDate.isBefore(timeService.today())) {
             throw new InvalidRecurringTransactionNextRunDateException(nextRunDate);
         }
     }

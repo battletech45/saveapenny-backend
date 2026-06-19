@@ -2,6 +2,7 @@ package com.saveapenny.goal.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.goal.dto.CreateGoalRequest;
 import com.saveapenny.goal.dto.CreateScenarioRequest;
 import com.saveapenny.goal.dto.GoalDetailResponse;
@@ -45,18 +46,21 @@ public class GoalServiceImpl implements GoalService {
     private final GoalRunRepository goalRunRepository;
     private final AccountRepository accountRepository;
     private final GoalMapper goalMapper;
+    private final TimeService timeService;
 
     public GoalServiceImpl(
             GoalRepository goalRepository,
             ScenarioRepository scenarioRepository,
             GoalRunRepository goalRunRepository,
             AccountRepository accountRepository,
-            GoalMapper goalMapper) {
+            GoalMapper goalMapper,
+            TimeService timeService) {
         this.goalRepository = goalRepository;
         this.scenarioRepository = scenarioRepository;
         this.goalRunRepository = goalRunRepository;
         this.accountRepository = accountRepository;
         this.goalMapper = goalMapper;
+        this.timeService = timeService;
     }
 
     @Override
@@ -225,7 +229,7 @@ public class GoalServiceImpl implements GoalService {
     }
 
     private void validateFutureDate(LocalDate targetDate) {
-        if (targetDate == null || !targetDate.isAfter(LocalDate.now())) {
+        if (targetDate == null || !targetDate.isAfter(timeService.today())) {
             throw new InvalidGoalDateException(targetDate);
         }
     }

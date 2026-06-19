@@ -6,22 +6,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.saveapenny.user.entity.Role;
-import com.saveapenny.user.repository.RoleRepository;
+import com.saveapenny.test.TestcontainersIntegrationTest;
 import java.time.LocalDate;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:report-flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",
@@ -30,22 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
         "spring.flyway.enabled=false",
         "security.jwt.secret=0123456789012345678901234567890123456789012345678901234567890123"
 })
-class ReportFlowIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @BeforeEach
-    void setUpRole() {
-        roleRepository.findByName("ROLE_USER")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
-    }
+class ReportFlowIntegrationTest extends TestcontainersIntegrationTest {
 
     @Test
     void reportsEndpoints_returnExpectedAggregates_andRespectOwnership() throws Exception {

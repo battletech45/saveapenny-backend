@@ -186,17 +186,17 @@ class GoalToolMappingSupportTest {
 
     @Test
     void monthsRemaining_returnsZero_whenNull() {
-        assertEquals(0, GoalToolMappingSupport.monthsRemaining(null));
+        assertEquals(0, GoalToolMappingSupport.monthsRemaining(null, LocalDate.of(2026, 6, 19)));
     }
 
     @Test
     void monthsRemaining_returnsZero_whenPastDate() {
-        assertEquals(0, GoalToolMappingSupport.monthsRemaining(LocalDate.of(2020, 1, 1)));
+        assertEquals(0, GoalToolMappingSupport.monthsRemaining(LocalDate.of(2020, 1, 1), LocalDate.of(2026, 6, 19)));
     }
 
     @Test
     void monthsRemaining_returnsPositiveForFutureDate() {
-        int result = GoalToolMappingSupport.monthsRemaining(LocalDate.of(2027, 6, 1));
+        int result = GoalToolMappingSupport.monthsRemaining(LocalDate.of(2027, 6, 1), LocalDate.of(2026, 6, 19));
         assertTrue(result > 0);
     }
 

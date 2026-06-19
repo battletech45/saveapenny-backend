@@ -5,6 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
+
+import com.saveapenny.config.TimeService;
 import com.saveapenny.insight.config.InsightProperties;
 import com.saveapenny.insight.entity.InsightType;
 import com.saveapenny.transaction.dto.TransactionResponse;
@@ -14,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,8 +37,16 @@ class AnomalyDetectorTest {
     @Mock
     private InsightProperties insightProperties;
 
+    @Mock
+    private TimeService timeService;
+
     @InjectMocks
     private AnomalyDetector detector;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+    }
 
     @Test
     void analyze_returnsAnomalyWhenTransactionIsFarFromMean() {

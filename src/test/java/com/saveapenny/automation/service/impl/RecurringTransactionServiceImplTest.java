@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +26,7 @@ import com.saveapenny.automation.repository.RecurringExecutionHistoryRepository;
 import com.saveapenny.automation.repository.RecurringTransactionRepository;
 import com.saveapenny.category.entity.Category;
 import com.saveapenny.category.repository.CategoryRepository;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.transaction.entity.TransactionType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -55,6 +57,8 @@ class RecurringTransactionServiceImplTest {
     private AccountRepository accountRepository;
     @Mock
     private CategoryRepository categoryRepository;
+    @Mock
+    private TimeService timeService;
 
     @InjectMocks
     private RecurringTransactionServiceImpl recurringTransactionService;
@@ -66,6 +70,7 @@ class RecurringTransactionServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
         userId = UUID.randomUUID();
         recurringId = UUID.randomUUID();
         accountId = UUID.randomUUID();

@@ -11,6 +11,7 @@ import com.saveapenny.automation.repository.RecurringExecutionHistoryRepository;
 import com.saveapenny.automation.repository.RecurringTransactionRepository;
 import com.saveapenny.automation.service.AutomationDistributedLockService;
 import com.saveapenny.automation.service.RecurringTransactionExecutionService;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.transaction.dto.CreateTransactionRequest;
 import com.saveapenny.transaction.service.TransactionService;
 import java.time.LocalDate;
@@ -33,18 +34,21 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
     private final TransactionService transactionService;
     private final AccountRepository accountRepository;
     private final AutomationDistributedLockService lockService;
+    private final TimeService timeService;
 
     public RecurringTransactionExecutionServiceImpl(
             RecurringTransactionRepository recurringTransactionRepository,
             RecurringExecutionHistoryRepository executionHistoryRepository,
             TransactionService transactionService,
             AccountRepository accountRepository,
-            AutomationDistributedLockService lockService) {
+            AutomationDistributedLockService lockService,
+            TimeService timeService) {
         this.recurringTransactionRepository = recurringTransactionRepository;
         this.executionHistoryRepository = executionHistoryRepository;
         this.transactionService = transactionService;
         this.accountRepository = accountRepository;
         this.lockService = lockService;
+        this.timeService = timeService;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
         }
 
         try {
-            LocalDate effectiveRunDate = runDate == null ? LocalDate.now() : runDate;
+            LocalDate effectiveRunDate = runDate == null ? timeService.today() : runDate;
             List<RecurringTransaction> dueTransactions =
                     recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(RecurringStatus.ACTIVE, effectiveRunDate);
 

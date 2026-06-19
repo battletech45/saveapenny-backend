@@ -1,5 +1,12 @@
 package com.saveapenny.account.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.saveapenny.test.IntegrationTestBase;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MvcResult;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -7,22 +14,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.saveapenny.user.entity.Role;
-import com.saveapenny.user.repository.RoleRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-@SpringBootTest
-@AutoConfigureMockMvc
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:account-flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",
@@ -31,42 +22,11 @@ import org.springframework.test.web.servlet.MvcResult;
         "spring.flyway.enabled=false",
         "security.jwt.secret=0123456789012345678901234567890123456789012345678901234567890123"
 })
-class AccountFlowIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @BeforeEach
-    void setUpRole() {
-        roleRepository.findByName("ROLE_USER")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
-    }
+class AccountFlowIntegrationTest extends IntegrationTestBase {
 
     @Test
     void accountCrudFlow_worksForAuthenticatedUser() throws Exception {
-        String registerBody = """
-                {
-                  "email": "account.flow@example.com",
-                  "password": "Strong@123",
-                  "fullName": "Account Flow"
-                }
-                """;
-
-        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andReturn();
-
-        JsonNode registerJson = objectMapper.readTree(registerResult.getResponse().getContentAsString());
-        String accessToken = registerJson.path("data").path("accessToken").asText();
+        String accessToken = register("account.flow@example.com", "Account Flow");
 
         String createBody = """
                 {

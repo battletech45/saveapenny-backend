@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.goal.dto.CreateGoalRequest;
 import com.saveapenny.goal.dto.CreateScenarioRequest;
 import com.saveapenny.goal.dto.GoalResponse;
@@ -66,6 +68,9 @@ class GoalServiceImplTest {
     @Mock
     private AccountRepository accountRepository;
 
+    @Mock
+    private TimeService timeService;
+
     @Spy
     private GoalMapper goalMapper = Mappers.getMapper(GoalMapper.class);
 
@@ -81,6 +86,7 @@ class GoalServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
         ReflectionTestUtils.setField(goalMapper, "objectMapper", objectMapper);
 
         userId = UUID.randomUUID();

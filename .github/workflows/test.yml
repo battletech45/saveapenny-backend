@@ -106,6 +106,24 @@ jobs:
             **/target/failsafe-reports/*
           if-no-files-found: warn
 
+      - name: Upload test timing metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-metrics
+          path: |
+            **/target/test-metrics/*
+          if-no-files-found: warn
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: |
+            **/target/site/jacoco/*
+          if-no-files-found: warn
+
       - name: Write job summary
         if: always()
         run: |
@@ -118,6 +136,6 @@ jobs:
             echo "- OCR runtime: tesseract-ocr, tesseract-ocr-eng"
             echo "- OCR_TESSDATA_PATH: \`${OCR_TESSDATA_PATH}\`"
             echo "- Command: \`mvn -B clean verify\`"
-            echo "- Artifacts: \`surefire-reports\`, \`failsafe-reports\`"
+            echo "- Artifacts: \`surefire-reports\`, \`failsafe-reports\`, \`test-metrics\`, \`jacoco-report\`"
             echo "- OCR verification: golden-image and real-media OCR reports must exist and not be skipped"
           } >> "$GITHUB_STEP_SUMMARY"

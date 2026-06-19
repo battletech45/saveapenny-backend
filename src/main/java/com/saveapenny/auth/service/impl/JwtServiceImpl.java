@@ -1,6 +1,7 @@
 package com.saveapenny.auth.service.impl;
 
 import com.saveapenny.auth.service.JwtService;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.user.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -21,14 +22,16 @@ public class JwtServiceImpl implements JwtService {
     private static final long ACCESS_TOKEN_EXPIRY_SECONDS = 900L;
 
     private final SecretKey signingKey;
+    private final TimeService timeService;
 
-    public JwtServiceImpl(@Value("${security.jwt.secret}") String jwtSecret) {
+    public JwtServiceImpl(@Value("${security.jwt.secret}") String jwtSecret, TimeService timeService) {
         this.signingKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        this.timeService = timeService;
     }
 
     @Override
     public String generateAccessToken(User user) {
-        Instant now = Instant.now();
+        Instant now = timeService.now();
         Instant expiry = now.plus(ACCESS_TOKEN_EXPIRY_SECONDS, ChronoUnit.SECONDS);
 
         List<String> roles = user.getUserRoles().stream()

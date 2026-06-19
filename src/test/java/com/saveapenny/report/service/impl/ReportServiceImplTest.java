@@ -3,9 +3,11 @@ package com.saveapenny.report.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.report.dto.CashFlowPointResponse;
 import java.util.List;
 import com.saveapenny.report.dto.CategorySpendingResponse;
@@ -45,6 +47,8 @@ class ReportServiceImplTest {
     private NetWorthSnapshotRepository netWorthSnapshotRepository;
     @Mock
     private ReportMapper reportMapper;
+    @Mock
+    private TimeService timeService;
 
     @InjectMocks
     private ReportServiceImpl reportService;
@@ -55,6 +59,7 @@ class ReportServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
         userId = UUID.randomUUID();
         from = LocalDate.of(2026, 5, 1);
         to = LocalDate.of(2026, 5, 31);

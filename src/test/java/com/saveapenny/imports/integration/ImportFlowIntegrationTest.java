@@ -9,27 +9,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.account.entity.Account;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.test.TestcontainersIntegrationTest;
 import com.saveapenny.transaction.repository.TransactionRepository;
-import com.saveapenny.user.entity.Role;
-import com.saveapenny.user.repository.RoleRepository;
+import org.springframework.test.context.TestPropertySource;
 import java.math.BigDecimal;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:import-flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",
@@ -38,16 +30,7 @@ import org.springframework.test.web.servlet.MvcResult;
         "spring.flyway.enabled=false",
         "security.jwt.secret=0123456789012345678901234567890123456789012345678901234567890123"
 })
-class ImportFlowIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private RoleRepository roleRepository;
+class ImportFlowIntegrationTest extends TestcontainersIntegrationTest {
 
     @Autowired
     private TransactionRepository transactionRepository;
@@ -55,15 +38,9 @@ class ImportFlowIntegrationTest {
     @Autowired
     private AccountRepository accountRepository;
 
-    @BeforeEach
-    void setUpRole() {
-        roleRepository.findByName("ROLE_USER")
-                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
-    }
-
     @Test
     void previewConfirmAndStatusFlow_persistsTransactionsAndUpdatesBalances() throws Exception {
-        String token = registerAndGetToken("imports.flow@example.com", "Imports Flow");
+        String token = register("imports.flow@example.com", "Imports Flow");
 
         String accountId = extractField(mockMvc.perform(post("/api/v1/accounts")
                         .header("Authorization", "Bearer " + token)
@@ -149,7 +126,7 @@ class ImportFlowIntegrationTest {
 
     @Test
     void preview_returnsBadRequest_forInvalidFile() throws Exception {
-        String token = registerAndGetToken("imports.invalid@example.com", "Imports Invalid");
+        String token = register("imports.invalid@example.com", "Imports Invalid");
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -163,25 +140,6 @@ class ImportFlowIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_IMPORT_FILE"));
-    }
-
-    private String registerAndGetToken(String email, String fullName) throws Exception {
-        String registerBody = """
-                {
-                  "email": "%s",
-                  "password": "Strong@123",
-                  "fullName": "%s"
-                }
-                """.formatted(email, fullName);
-
-        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        JsonNode registerJson = objectMapper.readTree(registerResult.getResponse().getContentAsString());
-        return registerJson.path("data").path("accessToken").asText();
     }
 
     private String extractField(MvcResult result, String objectName, String fieldName) throws Exception {

@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.saveapenny.config.TimeService;
 import com.saveapenny.user.entity.Role;
 import com.saveapenny.user.entity.User;
 import com.saveapenny.user.entity.UserRole;
 import com.saveapenny.user.entity.UserRoleId;
+import java.time.Clock;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +23,8 @@ class JwtServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtServiceImpl("0123456789012345678901234567890123456789012345678901234567890123");
+        TimeService timeService = new TimeService(Clock.systemUTC());
+        jwtService = new JwtServiceImpl("0123456789012345678901234567890123456789012345678901234567890123", timeService);
 
         UUID userId = UUID.randomUUID();
         Role role = Role.builder().id(UUID.randomUUID()).name("ROLE_USER").build();
@@ -55,8 +58,9 @@ class JwtServiceImplTest {
 
     @Test
     void isAccessTokenValid_returnsFalseForTokenSignedWithDifferentKey() {
+        TimeService timeService = new TimeService(Clock.systemUTC());
         JwtServiceImpl otherJwtService =
-                new JwtServiceImpl("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+                new JwtServiceImpl("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", timeService);
         String token = otherJwtService.generateAccessToken(user);
 
         assertFalse(jwtService.isAccessTokenValid(token));

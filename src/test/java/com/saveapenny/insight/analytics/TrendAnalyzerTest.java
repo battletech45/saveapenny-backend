@@ -3,8 +3,10 @@ package com.saveapenny.insight.analytics;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.config.TimeService;
 import com.saveapenny.insight.entity.InsightType;
 import com.saveapenny.transaction.dto.TransactionResponse;
 import com.saveapenny.transaction.entity.TransactionType;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,8 +32,16 @@ class TrendAnalyzerTest {
     @Mock
     private TransactionService transactionService;
 
+    @Mock
+    private TimeService timeService;
+
     @InjectMocks
     private TrendAnalyzer analyzer;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+    }
 
     @Test
     void analyze_returnsIncreasingTrendWhenSpendingRises() {

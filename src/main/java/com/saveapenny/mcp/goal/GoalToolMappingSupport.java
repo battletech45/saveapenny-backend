@@ -131,10 +131,10 @@ final class GoalToolMappingSupport {
         return GoalToolModels.ProgressStatus.ON_TRACK;
     }
 
-    static int monthsRemaining(LocalDate targetDate) {
+    static int monthsRemaining(LocalDate targetDate, LocalDate today) {
         if (targetDate == null) {
             return 0;
         }
-        return Math.max((int) java.time.temporal.ChronoUnit.MONTHS.between(LocalDate.now().withDayOfMonth(1), targetDate.withDayOfMonth(1)), 0);
+        return Math.max((int) java.time.temporal.ChronoUnit.MONTHS.between(today.withDayOfMonth(1), targetDate.withDayOfMonth(1)), 0);
     }
 }

@@ -1,5 +1,6 @@
 package com.saveapenny.insight.analytics;
 
+import com.saveapenny.config.TimeService;
 import com.saveapenny.transaction.dto.TransactionResponse;
 import com.saveapenny.transaction.entity.TransactionType;
 import com.saveapenny.transaction.service.TransactionService;
@@ -20,15 +21,17 @@ public class SpendingPatternAnalyzer {
     private static final BigDecimal THRESHOLD = new BigDecimal("0.20");
 
     private final TransactionService transactionService;
+    private final TimeService timeService;
 
-    public SpendingPatternAnalyzer(TransactionService transactionService) {
+    public SpendingPatternAnalyzer(TransactionService transactionService, TimeService timeService) {
         this.transactionService = transactionService;
+        this.timeService = timeService;
     }
 
     public List<InsightCandidate> analyze(UUID userId) {
         List<InsightCandidate> results = new ArrayList<>();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = timeService.today();
         LocalDate currentStart = now.withDayOfMonth(1);
         LocalDate previousStart = currentStart.minusMonths(1);
         LocalDate previousEnd = currentStart.minusDays(1);

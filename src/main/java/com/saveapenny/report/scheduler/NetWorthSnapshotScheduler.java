@@ -1,5 +1,6 @@
 package com.saveapenny.report.scheduler;
 
+import com.saveapenny.config.TimeService;
 import com.saveapenny.report.entity.NetWorthSnapshot;
 import com.saveapenny.report.repository.NetWorthSnapshotRepository;
 import com.saveapenny.report.repository.ReportAccountRepository;
@@ -27,22 +28,25 @@ public class NetWorthSnapshotScheduler {
     private final ReportAccountRepository reportAccountRepository;
     private final NetWorthSnapshotRepository netWorthSnapshotRepository;
     private final TransactionTemplate requiresNewTransactionTemplate;
+    private final TimeService timeService;
 
     public NetWorthSnapshotScheduler(
             UserRepository userRepository,
             ReportAccountRepository reportAccountRepository,
             NetWorthSnapshotRepository netWorthSnapshotRepository,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            TimeService timeService) {
         this.userRepository = userRepository;
         this.reportAccountRepository = reportAccountRepository;
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
+        this.timeService = timeService;
         this.requiresNewTransactionTemplate = new TransactionTemplate(transactionManager);
         this.requiresNewTransactionTemplate.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Scheduled(cron = "${report.net-worth.snapshot-cron:0 0 2 * * *}")
     public void computeDailySnapshots() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = timeService.today().minusDays(1);
         int pageNumber = 0;
         Page<UUID> page;
         do {

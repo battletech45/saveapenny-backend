@@ -1,5 +1,6 @@
 package com.saveapenny.insight.analytics;
 
+import com.saveapenny.config.TimeService;
 import com.saveapenny.transaction.dto.TransactionResponse;
 import com.saveapenny.transaction.entity.TransactionType;
 import com.saveapenny.transaction.service.TransactionService;
@@ -19,15 +20,17 @@ import org.springframework.stereotype.Component;
 public class TrendAnalyzer {
 
     private final TransactionService transactionService;
+    private final TimeService timeService;
 
-    public TrendAnalyzer(TransactionService transactionService) {
+    public TrendAnalyzer(TransactionService transactionService, TimeService timeService) {
         this.transactionService = transactionService;
+        this.timeService = timeService;
     }
 
     public List<InsightCandidate> analyze(UUID userId) {
         List<InsightCandidate> results = new ArrayList<>();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = timeService.today();
         List<YearMonth> last3Months = new ArrayList<>();
         for (int i = 2; i >= 0; i--) {
             last3Months.add(YearMonth.from(now).minusMonths(i));

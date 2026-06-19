@@ -1,6 +1,7 @@
 package com.saveapenny.report.service.impl;
 
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.report.dto.CashFlowPointResponse;
 import java.util.List;
 import java.util.Set;
@@ -35,16 +36,19 @@ public class ReportServiceImpl implements ReportService {
     private final ReportAccountRepository reportAccountRepository;
     private final NetWorthSnapshotRepository netWorthSnapshotRepository;
     private final ReportMapper reportMapper;
+    private final TimeService timeService;
 
     public ReportServiceImpl(
             ReportTransactionRepository reportTransactionRepository,
             ReportAccountRepository reportAccountRepository,
             NetWorthSnapshotRepository netWorthSnapshotRepository,
-            ReportMapper reportMapper) {
+            ReportMapper reportMapper,
+            TimeService timeService) {
         this.reportTransactionRepository = reportTransactionRepository;
         this.reportAccountRepository = reportAccountRepository;
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
         this.reportMapper = reportMapper;
+        this.timeService = timeService;
     }
 
     @Override
@@ -151,7 +155,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private void validateSnapshotDate(LocalDate snapshotDate) {
-        if (snapshotDate == null || snapshotDate.isAfter(LocalDate.now())) {
+        if (snapshotDate == null || snapshotDate.isAfter(timeService.today())) {
             throw new InvalidNetWorthSnapshotDateException(snapshotDate);
         }
     }

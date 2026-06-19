@@ -1,5 +1,6 @@
 package com.saveapenny.insight.analytics;
 
+import com.saveapenny.config.TimeService;
 import com.saveapenny.insight.config.InsightProperties;
 import com.saveapenny.transaction.dto.TransactionResponse;
 import com.saveapenny.transaction.entity.TransactionType;
@@ -20,16 +21,18 @@ public class AnomalyDetector {
 
     private final TransactionService transactionService;
     private final InsightProperties insightProperties;
+    private final TimeService timeService;
 
-    public AnomalyDetector(TransactionService transactionService, InsightProperties insightProperties) {
+    public AnomalyDetector(TransactionService transactionService, InsightProperties insightProperties, TimeService timeService) {
         this.transactionService = transactionService;
         this.insightProperties = insightProperties;
+        this.timeService = timeService;
     }
 
     public List<InsightCandidate> analyze(UUID userId) {
         List<InsightCandidate> results = new ArrayList<>();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = timeService.today();
         LocalDate ninetyDaysAgo = now.minusDays(90);
 
         List<TransactionResponse> transactions = fetchExpenses(userId, ninetyDaysAgo, now);

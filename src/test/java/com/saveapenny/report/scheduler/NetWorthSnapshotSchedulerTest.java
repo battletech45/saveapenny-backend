@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.config.TimeService;
 import com.saveapenny.report.repository.NetWorthSnapshotRepository;
 import com.saveapenny.report.repository.ReportAccountRepository;
 import com.saveapenny.user.repository.UserRepository;
@@ -38,22 +39,27 @@ class NetWorthSnapshotSchedulerTest {
     private NetWorthSnapshotRepository netWorthSnapshotRepository;
     @Mock
     private PlatformTransactionManager transactionManager;
+    @Mock
+    private TimeService timeService;
 
     private NetWorthSnapshotScheduler scheduler;
 
+    private final LocalDate fixedToday = LocalDate.of(2026, 6, 19);
+    private final LocalDate yesterday = fixedToday.minusDays(1);
+
     @BeforeEach
     void setUp() {
+        when(timeService.today()).thenReturn(fixedToday);
         TransactionStatus transactionStatus = new SimpleTransactionStatus();
         when(transactionManager.getTransaction(any())).thenReturn(transactionStatus);
         doNothing().when(transactionManager).commit(transactionStatus);
-        scheduler = new NetWorthSnapshotScheduler(userRepository, reportAccountRepository, netWorthSnapshotRepository, transactionManager);
+        scheduler = new NetWorthSnapshotScheduler(userRepository, reportAccountRepository, netWorthSnapshotRepository, transactionManager, timeService);
     }
 
     @Test
     void computeDailySnapshots_paginatesAndSavesPerUser() {
         UUID user1 = UUID.randomUUID();
         UUID user2 = UUID.randomUUID();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
 
         when(userRepository.findAllUserIds(PageRequest.of(0, 100)))
                 .thenReturn(new PageImpl<>(List.of(user1), PageRequest.of(0, 100), 101));
@@ -74,7 +80,6 @@ class NetWorthSnapshotSchedulerTest {
     @Test
     void computeDailySnapshots_skipsExistingSnapshot() {
         UUID userId = UUID.randomUUID();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
 
         when(userRepository.findAllUserIds(PageRequest.of(0, 100)))
                 .thenReturn(new PageImpl<>(List.of(userId), PageRequest.of(0, 100), 1));
