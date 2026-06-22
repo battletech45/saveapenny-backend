@@ -56,6 +56,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class GoalServiceImplTest {
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 6, 19);
+
     @Mock
     private GoalRepository goalRepository;
 
@@ -86,7 +88,7 @@ class GoalServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+        lenient().when(timeService.today()).thenReturn(TODAY);
         ReflectionTestUtils.setField(goalMapper, "objectMapper", objectMapper);
 
         userId = UUID.randomUUID();
@@ -99,7 +101,7 @@ class GoalServiceImplTest {
                 .title("House Fund")
                 .targetAmount(new BigDecimal("20000.0000"))
                 .currency("USD")
-                .targetDate(LocalDate.now().plusYears(2))
+                .targetDate(TODAY.plusYears(2))
                 .linkedAccountId(accountId)
                 .status(GoalStatus.ACTIVE)
                 .inputsJson("{\"version\":1,\"type\":\"SAVINGS\",\"values\":{\"targetAmount\":20000}}")
@@ -115,7 +117,7 @@ class GoalServiceImplTest {
                 .title(" House Fund ")
                 .targetAmount(new BigDecimal("20000.0000"))
                 .currency("USD")
-                .targetDate(LocalDate.now().plusYears(2))
+                .targetDate(TODAY.plusYears(2))
                 .linkedAccountId(accountId)
                 .inputs(objectMapper.createObjectNode()
                         .put("version", 1)
@@ -152,7 +154,7 @@ class GoalServiceImplTest {
                 .title("Goal")
                 .targetAmount(BigDecimal.ONE)
                 .currency("USD")
-                .targetDate(LocalDate.now())
+                .targetDate(TODAY)
                 .inputs(objectMapper.createObjectNode()
                         .put("version", 1)
                         .put("type", "SAVINGS")
@@ -170,7 +172,7 @@ class GoalServiceImplTest {
                 .title("Goal")
                 .targetAmount(BigDecimal.ONE)
                 .currency("USD")
-                .targetDate(LocalDate.now().plusMonths(1))
+                .targetDate(TODAY.plusMonths(1))
                 .linkedAccountId(accountId)
                 .inputs(objectMapper.createObjectNode()
                         .put("version", 1)

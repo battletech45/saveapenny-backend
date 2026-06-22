@@ -3,8 +3,6 @@ package com.saveapenny.insight.analytics;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +29,8 @@ import org.springframework.data.domain.PageRequest;
 @ExtendWith(MockitoExtension.class)
 class AnomalyDetectorTest {
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 6, 19);
+
     @Mock
     private TransactionService transactionService;
 
@@ -45,14 +45,14 @@ class AnomalyDetectorTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+        lenient().when(timeService.today()).thenReturn(TODAY);
     }
 
     @Test
     void analyze_returnsAnomalyWhenTransactionIsFarFromMean() {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate ninetyDaysAgo = now.minusDays(90);
 
         when(insightProperties.stddevThreshold()).thenReturn(1.0);
@@ -80,7 +80,7 @@ class AnomalyDetectorTest {
     void analyze_returnsEmptyWhenAllTransactionsAreNormal() {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate ninetyDaysAgo = now.minusDays(90);
 
         when(insightProperties.stddevThreshold()).thenReturn(3.0);
@@ -104,7 +104,7 @@ class AnomalyDetectorTest {
     void analyze_returnsEmptyWhenCategoryHasFewerThanThreeTransactions() {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate ninetyDaysAgo = now.minusDays(90);
 
         TransactionResponse tx1 = tx(categoryId, "100.00", now.minusDays(1));
@@ -124,7 +124,7 @@ class AnomalyDetectorTest {
     void analyze_skipsTransactionsWithNullCategoryId() {
         UUID userId = UUID.randomUUID();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate ninetyDaysAgo = now.minusDays(90);
 
         TransactionResponse tx = TransactionResponse.builder()

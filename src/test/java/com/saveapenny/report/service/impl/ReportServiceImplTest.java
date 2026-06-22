@@ -39,6 +39,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReportServiceImplTest {
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 6, 19);
+
     @Mock
     private ReportTransactionRepository reportTransactionRepository;
     @Mock
@@ -59,7 +61,7 @@ class ReportServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+        lenient().when(timeService.today()).thenReturn(TODAY);
         userId = UUID.randomUUID();
         from = LocalDate.of(2026, 5, 1);
         to = LocalDate.of(2026, 5, 31);
@@ -173,7 +175,7 @@ class ReportServiceImplTest {
 
     @Test
     void getNetWorth_returnsExistingSnapshot_whenFound() {
-        LocalDate snapshotDate = LocalDate.now().minusDays(1);
+        LocalDate snapshotDate = TODAY.minusDays(1);
         NetWorthSnapshot snapshot = NetWorthSnapshot.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
@@ -202,7 +204,7 @@ class ReportServiceImplTest {
 
     @Test
     void getNetWorth_computesAndStoresSnapshot_whenNotFound() {
-        LocalDate snapshotDate = LocalDate.now().minusDays(1);
+        LocalDate snapshotDate = TODAY.minusDays(1);
 
         when(netWorthSnapshotRepository.findByUserIdAndSnapshotDate(userId, snapshotDate))
                 .thenReturn(Optional.empty());
@@ -236,7 +238,7 @@ class ReportServiceImplTest {
     @Test
     void getNetWorth_throws_whenSnapshotDateInFuture() {
         assertThrows(InvalidNetWorthSnapshotDateException.class,
-                () -> reportService.getNetWorth(userId, LocalDate.now().plusDays(1)));
+                () -> reportService.getNetWorth(userId, TODAY.plusDays(1)));
     }
 
     @Test

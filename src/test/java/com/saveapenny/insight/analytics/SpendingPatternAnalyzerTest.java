@@ -28,6 +28,8 @@ import org.springframework.data.domain.PageRequest;
 @ExtendWith(MockitoExtension.class)
 class SpendingPatternAnalyzerTest {
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 6, 19);
+
     @Mock
     private TransactionService transactionService;
 
@@ -39,7 +41,7 @@ class SpendingPatternAnalyzerTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+        lenient().when(timeService.today()).thenReturn(TODAY);
     }
 
     @Test
@@ -47,7 +49,7 @@ class SpendingPatternAnalyzerTest {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate currentStart = now.withDayOfMonth(1);
         LocalDate previousStart = currentStart.minusMonths(1);
         LocalDate previousEnd = currentStart.minusDays(1);
@@ -92,7 +94,7 @@ class SpendingPatternAnalyzerTest {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate currentStart = now.withDayOfMonth(1);
         LocalDate previousStart = currentStart.minusMonths(1);
         LocalDate previousEnd = currentStart.minusDays(1);
@@ -125,7 +127,7 @@ class SpendingPatternAnalyzerTest {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = TODAY;
         LocalDate currentStart = now.withDayOfMonth(1);
         LocalDate previousStart = currentStart.minusMonths(1);
         LocalDate previousEnd = currentStart.minusDays(1);

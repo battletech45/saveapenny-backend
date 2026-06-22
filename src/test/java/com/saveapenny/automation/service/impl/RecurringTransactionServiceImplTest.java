@@ -45,6 +45,8 @@ import org.springframework.data.domain.PageRequest;
 @ExtendWith(MockitoExtension.class)
 class RecurringTransactionServiceImplTest {
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 6, 19);
+
     @Mock
     private RecurringTransactionRepository recurringTransactionRepository;
     @Mock
@@ -70,7 +72,7 @@ class RecurringTransactionServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(timeService.today()).thenReturn(LocalDate.of(2026, 6, 19));
+        lenient().when(timeService.today()).thenReturn(TODAY);
         userId = UUID.randomUUID();
         recurringId = UUID.randomUUID();
         accountId = UUID.randomUUID();
@@ -85,7 +87,7 @@ class RecurringTransactionServiceImplTest {
                 .type(TransactionType.EXPENSE)
                 .amount(new BigDecimal("100.0000"))
                 .frequency(RecurringFrequency.MONTHLY)
-                .nextRunDate(LocalDate.now().plusDays(1))
+                .nextRunDate(TODAY.plusDays(1))
                 .build();
 
         RecurringTransaction entity = RecurringTransaction.builder().build();
@@ -112,7 +114,7 @@ class RecurringTransactionServiceImplTest {
                 .type(TransactionType.TRANSFER)
                 .amount(new BigDecimal("10.0000"))
                 .frequency(RecurringFrequency.WEEKLY)
-                .nextRunDate(LocalDate.now().plusDays(1))
+                .nextRunDate(TODAY.plusDays(1))
                 .build();
 
         assertThrows(InvalidRecurringTransactionTypeException.class, () -> recurringTransactionService.create(userId, request));
@@ -127,7 +129,7 @@ class RecurringTransactionServiceImplTest {
                 .type(TransactionType.EXPENSE)
                 .amount(new BigDecimal("10.0000"))
                 .frequency(RecurringFrequency.WEEKLY)
-                .nextRunDate(LocalDate.now().minusDays(1))
+                .nextRunDate(TODAY.minusDays(1))
                 .build();
 
         assertThrows(InvalidRecurringTransactionNextRunDateException.class, () -> recurringTransactionService.create(userId, request));
@@ -176,7 +178,7 @@ class RecurringTransactionServiceImplTest {
 
     @Test
     void getDueRecurringTransactions_returnsMappedList() {
-        LocalDate runDate = LocalDate.now();
+        LocalDate runDate = TODAY;
         RecurringTransaction due = RecurringTransaction.builder().id(recurringId).build();
         when(recurringTransactionRepository.findAllByStatusAndNextRunDateLessThanEqual(RecurringStatus.ACTIVE, runDate)).thenReturn(List.of(due));
         when(recurringTransactionMapper.toResponse(due)).thenReturn(RecurringTransactionResponse.builder().id(recurringId).build());
@@ -189,7 +191,7 @@ class RecurringTransactionServiceImplTest {
 
     @Test
     void getUpcoming_filtersByCurrentUser() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = TODAY;
         UUID futureRecurringId = UUID.randomUUID();
         RecurringTransaction todayItem = RecurringTransaction.builder()
                 .id(recurringId)
@@ -224,7 +226,7 @@ class RecurringTransactionServiceImplTest {
 
     @Test
     void getUpcoming_doesNotDuplicateEntriesForPastDueRecurringTransactions() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = TODAY;
         RecurringTransaction dailyItem = RecurringTransaction.builder()
                 .id(recurringId)
                 .userId(userId)
@@ -254,7 +256,7 @@ class RecurringTransactionServiceImplTest {
                 .type(TransactionType.INCOME)
                 .amount(new BigDecimal("50.0000"))
                 .frequency(RecurringFrequency.DAILY)
-                .nextRunDate(LocalDate.now().plusDays(1))
+                .nextRunDate(TODAY.plusDays(1))
                 .status(RecurringStatus.ACTIVE)
                 .build();
         RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).userId(userId).status(RecurringStatus.ACTIVE).build();
@@ -279,7 +281,7 @@ class RecurringTransactionServiceImplTest {
                 .type(TransactionType.INCOME)
                 .amount(new BigDecimal("50.0000"))
                 .frequency(RecurringFrequency.DAILY)
-                .nextRunDate(LocalDate.now().plusDays(1))
+                .nextRunDate(TODAY.plusDays(1))
                 .status(RecurringStatus.PAUSED)
                 .build();
         RecurringTransaction recurringTransaction = RecurringTransaction.builder().id(recurringId).userId(userId).status(RecurringStatus.ACTIVE).build();
