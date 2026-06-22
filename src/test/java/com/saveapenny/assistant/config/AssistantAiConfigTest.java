@@ -4,24 +4,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 class AssistantAiConfigTest {
 
     private final AssistantAiConfig config = new AssistantAiConfig();
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @Test
     void assistantChatClient_supportsOpenAiProvider() {
         ChatClient chatClient = config.assistantChatClient(
                 assistantProperties("openai"),
                 "openai-key",
-                RestClient.builder(),
-                WebClient.builder(),
-                ObservationRegistry.NOOP);
+                ObservationRegistry.NOOP,
+                meterRegistry);
 
         assertNotNull(chatClient);
     }
@@ -31,9 +30,8 @@ class AssistantAiConfigTest {
         ChatClient chatClient = config.assistantChatClient(
                 assistantProperties("openrouter"),
                 "",
-                RestClient.builder(),
-                WebClient.builder(),
-                ObservationRegistry.NOOP);
+                ObservationRegistry.NOOP,
+                meterRegistry);
 
         assertNotNull(chatClient);
     }
@@ -54,9 +52,8 @@ class AssistantAiConfigTest {
         assertDoesNotThrow(() -> config.assistantChatClient(
                 properties,
                 "",
-                RestClient.builder(),
-                WebClient.builder(),
-                ObservationRegistry.NOOP));
+                ObservationRegistry.NOOP,
+                meterRegistry));
     }
 
     @Test
@@ -75,9 +72,8 @@ class AssistantAiConfigTest {
         ChatClient chatClient = config.assistantChatClient(
                 properties,
                 "openai-key",
-                RestClient.builder(),
-                WebClient.builder(),
-                ObservationRegistry.NOOP);
+                ObservationRegistry.NOOP,
+                meterRegistry);
 
         assertNotNull(chatClient);
     }
@@ -89,9 +85,8 @@ class AssistantAiConfigTest {
                 () -> config.assistantChatClient(
                         assistantProperties("unsupported"),
                         "openai-key",
-                        RestClient.builder(),
-                        WebClient.builder(),
-                        ObservationRegistry.NOOP));
+                        ObservationRegistry.NOOP,
+                        meterRegistry));
     }
 
     private AssistantProperties assistantProperties(String provider) {
