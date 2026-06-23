@@ -86,6 +86,7 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | `AUDIT_LOG_NOT_FOUND` | Audit entry not found or not owned by the caller |
 | `LINKED_ACCOUNT_NOT_FOUND` | Linked account not found or not owned by the caller |
 | `STOCK_QUOTE_NOT_AVAILABLE` | Stock provider returned no usable data for the requested symbol or indicator |
+| `STOCK_HOLDING_NOT_FOUND` | Stock holding not found or not owned by the caller |
 
 ### Conflict (409)
 
@@ -96,6 +97,7 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | `ACCOUNT_NAME_ALREADY_EXISTS` | Account name conflicts with an existing or soft-deleted account |
 | `BUDGET_ALREADY_EXISTS` | Budget already exists for the given category and period |
 | `IMPORT_ALREADY_RUNNING` | An import is already in progress |
+| `DUPLICATE_STOCK_HOLDING` | A holding for this symbol and purchase date already exists |
 
 ### Rate Limited (429)
 
