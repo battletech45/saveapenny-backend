@@ -61,6 +61,8 @@ public class StockServiceImpl implements StockService {
     private final AlphaVantageClient alphaVantageClient;
     private final StockProperties properties;
 
+    private record TechnicalRequest(String symbol, String interval, String timePeriod, String seriesType) {}
+
     public StockServiceImpl(AlphaVantageClient alphaVantageClient, StockProperties properties) {
         this.alphaVantageClient = alphaVantageClient;
         this.properties = properties;
@@ -68,19 +70,14 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockQuoteResponse getQuote(String symbol) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
 
         var response = alphaVantageClient.fetchQuote(normalized);
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "quote");
         var quote = response.globalQuote();
 
         if (quote == null) {
-            throw new StockQuoteNotAvailableException(
-                    "No quote data returned for symbol: " + normalized);
+            throw noDataReturned("quote", normalized);
         }
 
         return mapToQuoteResponse(quote);
@@ -93,19 +90,14 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockDailySeriesResponse getDailySeries(String symbol, String outputSize) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
         String normalizedOutputSize = normalizeOutputSize(outputSize);
 
         var response = alphaVantageClient.fetchDailySeries(normalized, normalizedOutputSize);
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "daily series");
 
         if (response.metaData() == null || !StringUtils.hasText(response.metaData().symbol())) {
-            throw new StockQuoteNotAvailableException(
-                    "No daily series data returned for symbol: " + normalized);
+            throw noDataReturned("daily series", normalized);
         }
 
         if (response.timeSeries() == null || response.timeSeries().isEmpty()) {
@@ -128,18 +120,13 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockNewsResponse getNewsSentiment(String symbol) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
 
         NewsSentimentResponse response = alphaVantageClient.fetchNewsSentiment(normalized);
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "news sentiment");
 
         if (response.feed() == null) {
-            throw new StockQuoteNotAvailableException(
-                    "No news sentiment data returned for symbol: " + normalized);
+            throw noDataReturned("news sentiment", normalized);
         }
 
         if (response.feed().isEmpty()) {
@@ -163,18 +150,13 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockOverviewResponse getCompanyOverview(String symbol) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
 
         CompanyOverview overview = alphaVantageClient.fetchCompanyOverview(normalized);
         throwIfProviderError(overview.errorMessage(), overview.note(), normalized, "company overview");
 
         if (!StringUtils.hasText(overview.symbol())) {
-            throw new StockQuoteNotAvailableException(
-                    "No company overview data returned for symbol: " + normalized);
+            throw noDataReturned("company overview", normalized);
         }
 
         return mapToOverviewResponse(overview);
@@ -182,18 +164,13 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockIncomeStatementResponse getIncomeStatement(String symbol) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
 
         IncomeStatementResponse response = alphaVantageClient.fetchIncomeStatement(normalized);
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "income statement");
 
         if (!StringUtils.hasText(response.symbol())) {
-            throw new StockQuoteNotAvailableException(
-                    "No income statement data returned for symbol: " + normalized);
+            throw noDataReturned("income statement", normalized);
         }
 
         return StockIncomeStatementResponse.builder()
@@ -205,18 +182,13 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockBalanceSheetResponse getBalanceSheet(String symbol) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
 
         BalanceSheetResponse response = alphaVantageClient.fetchBalanceSheet(normalized);
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "balance sheet");
 
         if (!StringUtils.hasText(response.symbol())) {
-            throw new StockQuoteNotAvailableException(
-                    "No balance sheet data returned for symbol: " + normalized);
+            throw noDataReturned("balance sheet", normalized);
         }
 
         return StockBalanceSheetResponse.builder()
@@ -228,18 +200,13 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockCashFlowResponse getCashFlow(String symbol) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
-
-        String normalized = normalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol);
 
         CashFlowResponse response = alphaVantageClient.fetchCashFlow(normalized);
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "cash flow");
 
         if (!StringUtils.hasText(response.symbol())) {
-            throw new StockQuoteNotAvailableException(
-                    "No cash flow data returned for symbol: " + normalized);
+            throw noDataReturned("cash flow", normalized);
         }
 
         return StockCashFlowResponse.builder()
@@ -251,53 +218,59 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockTechnicalIndicatorResponse getSma(String symbol, String interval, String timePeriod, String seriesType) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
+        TechnicalRequest request = normalizeTechnicalRequest(symbol, interval, timePeriod, seriesType);
 
-        String normalized = normalizeSymbol(symbol);
-        String normalizedInterval = normalizeInterval(interval);
-        String normalizedTimePeriod = normalizeTimePeriod(timePeriod);
-        String normalizedSeriesType = normalizeSeriesType(seriesType);
+        SmaResponse response = alphaVantageClient.fetchSma(
+                request.symbol(), request.interval(), request.timePeriod(), request.seriesType());
+        throwIfProviderError(response.errorMessage(), response.note(), request.symbol(), "SMA");
 
-        SmaResponse response = alphaVantageClient.fetchSma(normalized, normalizedInterval, normalizedTimePeriod, normalizedSeriesType);
-        throwIfProviderError(response.errorMessage(), response.note(), normalized, "SMA");
-
-        return mapToTechnicalIndicatorResponse(normalized, "SMA", response.metaData(), response.dataPoints());
+        return mapToTechnicalIndicatorResponse(request.symbol(), "SMA", response.metaData(), response.dataPoints());
     }
 
     @Override
     public StockTechnicalIndicatorResponse getEma(String symbol, String interval, String timePeriod, String seriesType) {
-        if (!properties.enabled()) {
-            throw new StockDisabledException("Stock market feature is not enabled.");
-        }
+        TechnicalRequest request = normalizeTechnicalRequest(symbol, interval, timePeriod, seriesType);
 
-        String normalized = normalizeSymbol(symbol);
-        String normalizedInterval = normalizeInterval(interval);
-        String normalizedTimePeriod = normalizeTimePeriod(timePeriod);
-        String normalizedSeriesType = normalizeSeriesType(seriesType);
+        EmaResponse response = alphaVantageClient.fetchEma(
+                request.symbol(), request.interval(), request.timePeriod(), request.seriesType());
+        throwIfProviderError(response.errorMessage(), response.note(), request.symbol(), "EMA");
 
-        EmaResponse response = alphaVantageClient.fetchEma(normalized, normalizedInterval, normalizedTimePeriod, normalizedSeriesType);
-        throwIfProviderError(response.errorMessage(), response.note(), normalized, "EMA");
-
-        return mapToTechnicalIndicatorResponse(normalized, "EMA", response.metaData(), response.dataPoints());
+        return mapToTechnicalIndicatorResponse(request.symbol(), "EMA", response.metaData(), response.dataPoints());
     }
 
     @Override
     public StockTechnicalIndicatorResponse getRsi(String symbol, String interval, String timePeriod, String seriesType) {
+        TechnicalRequest request = normalizeTechnicalRequest(symbol, interval, timePeriod, seriesType);
+
+        RsiResponse response = alphaVantageClient.fetchRsi(
+                request.symbol(), request.interval(), request.timePeriod(), request.seriesType());
+        throwIfProviderError(response.errorMessage(), response.note(), request.symbol(), "RSI");
+
+        return mapToTechnicalIndicatorResponse(request.symbol(), "RSI", response.metaData(), response.dataPoints());
+    }
+
+    private void ensureEnabled() {
         if (!properties.enabled()) {
             throw new StockDisabledException("Stock market feature is not enabled.");
         }
+    }
 
-        String normalized = normalizeSymbol(symbol);
-        String normalizedInterval = normalizeInterval(interval);
-        String normalizedTimePeriod = normalizeTimePeriod(timePeriod);
-        String normalizedSeriesType = normalizeSeriesType(seriesType);
+    private String requireEnabledAndNormalizeSymbol(String symbol) {
+        ensureEnabled();
+        return normalizeSymbol(symbol);
+    }
 
-        RsiResponse response = alphaVantageClient.fetchRsi(normalized, normalizedInterval, normalizedTimePeriod, normalizedSeriesType);
-        throwIfProviderError(response.errorMessage(), response.note(), normalized, "RSI");
+    private TechnicalRequest normalizeTechnicalRequest(String symbol, String interval, String timePeriod, String seriesType) {
+        return new TechnicalRequest(
+                requireEnabledAndNormalizeSymbol(symbol),
+                normalizeInterval(interval),
+                normalizeTimePeriod(timePeriod),
+                normalizeSeriesType(seriesType));
+    }
 
-        return mapToTechnicalIndicatorResponse(normalized, "RSI", response.metaData(), response.dataPoints());
+    private StockQuoteNotAvailableException noDataReturned(String operation, String symbol) {
+        return new StockQuoteNotAvailableException(
+                "No " + operation + " data returned for symbol: " + symbol);
     }
 
     private String normalizeSymbol(String symbol) {

@@ -170,7 +170,11 @@ class StockServiceTest {
         when(alphaVantageClient.fetchQuote("IBM"))
                 .thenReturn(new GlobalQuoteResponse(null, "Invalid API call.", null));
 
-        assertThrows(StockClientException.class, () -> enabledService.getQuote("IBM"));
+        StockClientException exception = assertThrows(StockClientException.class, () -> enabledService.getQuote("IBM"));
+
+        assertTrue(exception.getMessage().contains("quote"));
+        assertTrue(exception.getMessage().contains("IBM"));
+        assertTrue(exception.getMessage().contains("Invalid API call."));
     }
 
     @Test
@@ -179,7 +183,10 @@ class StockServiceTest {
                 .thenReturn(new GlobalQuoteResponse(null, null,
                         "Thank you for using Alpha Vantage! Our standard API call frequency is 5 calls per minute and 500 calls per day."));
 
-        assertThrows(StockClientException.class, () -> enabledService.getQuote("IBM"));
+        StockClientException exception = assertThrows(StockClientException.class, () -> enabledService.getQuote("IBM"));
+
+        assertTrue(exception.getMessage().contains("note"));
+        assertTrue(exception.getMessage().contains("IBM"));
     }
 
     @Test
@@ -187,7 +194,12 @@ class StockServiceTest {
         when(alphaVantageClient.fetchQuote("IBM"))
                 .thenReturn(new GlobalQuoteResponse(null, null, null));
 
-        assertThrows(StockQuoteNotAvailableException.class, () -> enabledService.getQuote("IBM"));
+        StockQuoteNotAvailableException exception = assertThrows(
+                StockQuoteNotAvailableException.class,
+                () -> enabledService.getQuote("IBM"));
+
+        assertTrue(exception.getMessage().contains("quote data"));
+        assertTrue(exception.getMessage().contains("IBM"));
     }
 
     @Test
@@ -361,7 +373,12 @@ class StockServiceTest {
         when(alphaVantageClient.fetchNewsSentiment("IBM"))
                 .thenReturn(new NewsSentimentResponse(null, null, "Invalid API call.", null));
 
-        assertThrows(StockClientException.class, () -> enabledService.getNewsSentiment("IBM"));
+        StockClientException exception = assertThrows(
+                StockClientException.class,
+                () -> enabledService.getNewsSentiment("IBM"));
+
+        assertTrue(exception.getMessage().contains("news sentiment"));
+        assertTrue(exception.getMessage().contains("IBM"));
     }
 
     @Test
@@ -378,7 +395,12 @@ class StockServiceTest {
         when(alphaVantageClient.fetchNewsSentiment("IBM"))
                 .thenReturn(new NewsSentimentResponse("0", null, null, null));
 
-        assertThrows(StockQuoteNotAvailableException.class, () -> enabledService.getNewsSentiment("IBM"));
+        StockQuoteNotAvailableException exception = assertThrows(
+                StockQuoteNotAvailableException.class,
+                () -> enabledService.getNewsSentiment("IBM"));
+
+        assertTrue(exception.getMessage().contains("news sentiment data"));
+        assertTrue(exception.getMessage().contains("IBM"));
     }
 
     @Test
@@ -443,7 +465,12 @@ class StockServiceTest {
                 .thenReturn(new CompanyOverview(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
                         "Invalid API call.", null));
 
-        assertThrows(StockClientException.class, () -> enabledService.getCompanyOverview("IBM"));
+        StockClientException exception = assertThrows(
+                StockClientException.class,
+                () -> enabledService.getCompanyOverview("IBM"));
+
+        assertTrue(exception.getMessage().contains("company overview"));
+        assertTrue(exception.getMessage().contains("IBM"));
     }
 
     @Test
@@ -656,8 +683,12 @@ class StockServiceTest {
         when(alphaVantageClient.fetchSma("IBM", "daily", "20", "close"))
                 .thenReturn(new SmaResponse(null, null, "Invalid API call.", null));
 
-        assertThrows(StockClientException.class,
+        StockClientException exception = assertThrows(
+                StockClientException.class,
                 () -> enabledService.getSma("IBM", "daily", "20", "close"));
+
+        assertTrue(exception.getMessage().contains("SMA"));
+        assertTrue(exception.getMessage().contains("IBM"));
     }
 
     @Test
