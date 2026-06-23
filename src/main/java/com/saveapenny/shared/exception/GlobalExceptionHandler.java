@@ -49,6 +49,11 @@ import com.saveapenny.ocr.domain.exception.InvalidOcrFileException;
 import com.saveapenny.ocr.domain.exception.OcrJobNotFoundException;
 import com.saveapenny.ocr.domain.exception.OcrProcessingException;
 import com.saveapenny.shared.api.ApiError;
+import com.saveapenny.stock.exception.InvalidStockSymbolException;
+import com.saveapenny.stock.exception.StockClientException;
+import com.saveapenny.stock.exception.StockDisabledException;
+import com.saveapenny.stock.exception.StockQuoteNotAvailableException;
+import com.saveapenny.stock.exception.StockRateLimitExceededException;
 import com.saveapenny.shared.api.ApiResponse;
 import com.saveapenny.user.exception.InvalidPasswordException;
 import com.saveapenny.user.exception.PasswordReuseNotAllowedException;
@@ -558,6 +563,56 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAssistantChatSessionNotFound(AssistantChatSessionNotFoundException ex) {
         ApiError error = ApiError.builder()
                 .code("ASSISTANT_CHAT_SESSION_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(StockDisabledException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStockDisabled(StockDisabledException ex) {
+        ApiError error = ApiError.builder()
+                .code("STOCK_DISABLED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidStockSymbolException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidStockSymbol(InvalidStockSymbolException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_STOCK_SYMBOL")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(StockRateLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStockRateLimitExceeded(StockRateLimitExceededException ex) {
+        ApiError error = ApiError.builder()
+                .code("STOCK_RATE_LIMIT_EXCEEDED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(StockClientException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStockClient(StockClientException ex) {
+        ApiError error = ApiError.builder()
+                .code("STOCK_PROVIDER_ERROR")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(StockQuoteNotAvailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStockQuoteNotAvailable(StockQuoteNotAvailableException ex) {
+        ApiError error = ApiError.builder()
+                .code("STOCK_QUOTE_NOT_AVAILABLE")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();

@@ -134,3 +134,10 @@ ocr:
   job-timeout-millis: 30000
   max-retries: 2
   debug-logging: false
+
+stock:
+  enabled: ${STOCK_ENABLED:true}
+  api-key: ${ALPHA_VANTAGE_API_KEY:}
+  base-url: https://www.alphavantage.co
+  rate-limit-per-minute: 5
+  rate-limit-per-day: 25
