@@ -7,7 +7,7 @@ SaveAPenny uses a dual-token authentication system: short-lived JWTs for statele
 | Token | Format | Expiry | Revocable | Stored Server-Side |
 |-------|--------|--------|-----------|-------------------|
 | **Access token** | JWT (HS512-signed) | 15 minutes | No (stateless) | No |
-| **Refresh token** | Opaque UUID (v4) | 7 days | Yes | Bcrypt hash |
+| **Refresh token** | Opaque Base64URL string | 7 days | Yes | Stored in database |
 
 ## Endpoints
 
@@ -18,7 +18,7 @@ SaveAPenny uses a dual-token authentication system: short-lived JWTs for statele
 | POST | `/api/v1/auth/refresh` | None | Rotate refresh token, return new pair |
 | POST | `/api/v1/auth/logout` | None | Revoke refresh token |
 
-All auth endpoints are rate-limited (5 POST/min per IP). See [Rate Limiting](rate-limiting.md).
+`POST /api/v1/auth/login` is rate-limited at 5 requests/min per IP. Other `POST /api/v1/*` endpoints use the general API bucket. See [Rate Limiting](rate-limiting.md).
 
 ## Token Lifecycle
 
@@ -26,7 +26,7 @@ All auth endpoints are rate-limited (5 POST/min per IP). See [Rate Limiting](rat
 Register / Login
     │
     ├── accessToken (JWT, 15 min, stateless)
-    └── refreshToken (opaque UUID, 7 days, bcrypt-hashed in DB)
+    └── refreshToken (opaque Base64URL string, 7 days, stored in DB)
               │
               ▼
           Refresh (rotate)
@@ -52,7 +52,7 @@ Password change
   "success": true,
   "data": {
     "accessToken": "<jwt>",
-    "refreshToken": "<opaque-uuid>",
+    "refreshToken": "<opaque-token>",
     "expiresIn": 900,
     "tokenType": "Bearer"
   }
@@ -66,7 +66,7 @@ Password change
   "success": true,
   "data": {
     "accessToken": "<new-jwt>",
-    "refreshToken": "<new-opaque-uuid>",
+    "refreshToken": "<new-opaque-token>",
     "expiresIn": 900,
     "tokenType": "Bearer"
   }
@@ -155,7 +155,7 @@ These endpoints do not require authentication:
 | Decision | Rationale |
 |----------|-----------|
 | Access tokens are not revocable | Stateless verification avoids DB lookup on every request; short expiry limits exposure |
-| Refresh tokens are bcrypt-hashed | Database compromise does not expose usable tokens |
+| Refresh tokens are opaque random strings | Enables lookup and rotation without exposing JWT claims in the token itself |
 | Rotation on every refresh | Limits the window for token theft; stolen tokens are invalidated after first legitimate use |
 | Proactive refresh before expiry | Avoids race conditions from concurrent 401 handling |
 
@@ -164,7 +164,7 @@ These endpoints do not require authentication:
 | File | Purpose |
 |------|---------|
 | `src/main/java/com/saveapenny/auth/service/JwtService.java` | JWT creation, parsing, validation |
-| `src/main/java/com/saveapenny/auth/service/RefreshTokenService.java` | Refresh token generation, hashing, rotation |
+| `src/main/java/com/saveapenny/auth/service/RefreshTokenService.java` | Refresh token generation, validation, rotation |
 | `src/main/java/com/saveapenny/auth/controller/AuthController.java` | REST endpoints for register, login, refresh, logout |
 | `src/main/java/com/saveapenny/config/security/HeaderUserAuthenticationFilter.java` | Extracts JWT from `Authorization` header, sets security context |
 | `src/main/resources/application.yml` | `security.jwt.secret` and `security.jwt.refresh-token-expiry-days` |

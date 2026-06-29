@@ -103,7 +103,7 @@ When the job completes, the response includes:
 | `OCR_JOB_NOT_FOUND` | 404 | Job ID not found or not owned by the caller |
 | `INVALID_OCR_FILE` | 400 | File exceeds size limit or has unsupported format |
 | `OCR_PROCESSING_FAILED` | 400 | Tesseract encountered an unrecoverable error |
-| `OCR_DISABLED` | 503 | OCR feature is not enabled |
+| `INVALID_OCR_FILE` | 400 | OCR is disabled, the file exceeds size limits, or the file format is unsupported |
 
 ## Key Design Decisions
 

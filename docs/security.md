@@ -22,8 +22,8 @@ The application uses a dual-token system:
 
 | Property | Access Token | Refresh Token |
 |----------|-------------|---------------|
-| Format | JWT (HS512-signed) | Opaque UUID (v4) |
-| Storage | Client-side only | Bcrypt hash in database |
+| Format | JWT (HS512-signed) | Opaque Base64URL string |
+| Storage | Client-side only | Stored in database |
 | Expiry | 15 minutes | 7 days |
 | Rotation | Not applicable | Rotated on each refresh |
 | Revocation | Not possible (stateless) | Immediate on logout or password change |
@@ -77,7 +77,7 @@ CORS is configurable via the `cors.allowed-origins` property. When set to an emp
 - No PII is logged
 - Database credentials are configured via environment variables, never hardcoded
 - JWT secret must be at least 64 characters and kept confidential
-- Refresh tokens are stored as bcrypt hashes (never plaintext)
+- Refresh tokens are stored as opaque token values in the database
 
 ## Transport Security
 

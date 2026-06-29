@@ -111,7 +111,6 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | Code | Meaning |
 |------|---------|
 | `ASSISTANT_DISABLED` | Assistant feature is not enabled |
-| `OCR_DISABLED` | OCR feature is not enabled |
 | `STOCK_DISABLED` | Stock feature is disabled or Alpha Vantage API key is missing |
 
 ## 5xx Server Errors

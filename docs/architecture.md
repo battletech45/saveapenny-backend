@@ -2,7 +2,7 @@
 
 ## Overview
 
-SaveAPenny is a Spring Boot 3.5 backend API. Core domain modules follow a layered architecture (controller → service → repository → database), while the OCR module employs hexagonal architecture. The application is organized by domain module. The architecture prioritizes data isolation (user-scoped resources), stateless authentication via dual tokens, and optional AI-powered features that do not affect the core financial domain.
+SaveAPenny is a Spring Boot 4.1 backend API. Core domain modules follow a layered architecture (controller → service → repository → database), while the OCR module employs hexagonal architecture. The application is organized by domain module. The architecture prioritizes data isolation (user-scoped resources), stateless authentication via dual tokens, and optional AI-powered features that do not affect the core financial domain.
 
 ## Module Structure
 
@@ -180,7 +180,7 @@ See [Error Codes](error-codes.md) for the full error catalogue.
 | Token Type | Format | Expiry | Revocable | Stored Server-Side |
 |------------|--------|--------|-----------|-------------------|
 | Access token | JWT (HS512-signed) | 15 minutes | No | No (stateless) |
-| Refresh token | Opaque UUID | 7 days | Yes | Bcrypt hash in DB |
+| Refresh token | Opaque Base64URL string | 7 days | Yes | Stored in DB |
 
 ## Database
 
@@ -238,9 +238,9 @@ MapStruct generates code at compile time with zero runtime overhead and explicit
 
 **Limitation:** State resets on server restart. Idle keys accumulate until restart (no eviction).
 
-### Feature flags for AI/OCR
+### Feature flags for optional capabilities
 
-**Decision:** Optional features disabled by default, enabled via properties.
+**Decision:** Optional capabilities are enabled or disabled via properties, with conservative defaults for AI-driven and scheduled jobs.
 
 **Rationale:** External API keys (OpenAI, OpenRouter) should not be required for the core financial domain. Each optional feature has a clear enablement path with documented prerequisites.
 
@@ -252,6 +252,7 @@ MapStruct generates code at compile time with zero runtime overhead and explicit
 | AI Assistant ("Penny Dog") | Disabled | `ASSISTANT_ENABLED=true` |
 | Financial Insights | Disabled | `insight.enabled` |
 | Goal Progress Checks | Disabled | `goal.progress.enabled` |
+| Stock Market Data | Enabled | `STOCK_ENABLED=true` |
 
 ## Troubleshooting
 
@@ -272,7 +273,7 @@ MapStruct generates code at compile time with zero runtime overhead and explicit
 | `src/main/resources/application-local.yml` | Local dev overrides |
 | `docker-compose.yml` | Local development stack (PostgreSQL + app) |
 | `Dockerfile` | Multi-stage build (Maven → JRE 24) |
-| `pom.xml` | Maven build with Spring Boot 3.5, Java 24 |
+| `pom.xml` | Maven build with Spring Boot 4.1, Java 24 |
 
 ## Related Documents
 

@@ -156,7 +156,7 @@ See `.env.example` for all available settings.
 | [OCR](docs/features/ocr.md) | Receipt processing (enabled by default, requires Tesseract) |
 | [Assistant](docs/features/assistant.md) | AI chat (disabled by default) |
 | [Insights](docs/features/insights.md) | Financial observations (disabled by default) |
-| [Goals](docs/features/goals.md) | Goal tracking and simulation (disabled by default) |
+| [Goals](docs/features/goals.md) | Goal tracking, scenarios, and simulation |
 | [Stocks](docs/features/stocks.md) | Alpha Vantage powered stock market data |
 
 ## Features
@@ -174,14 +174,14 @@ See `.env.example` for all available settings.
 | Notifications | — | [docs/features/notifications.md](docs/features/notifications.md) |
 | OCR Receipt Processing | Tesseract | [docs/features/ocr.md](docs/features/ocr.md) |
 
-### Optional (disabled by default)
+### Optional / Configurable
 
 | Feature | Enable via | Doc |
 |---------|------------|-----|
 | AI Assistant Chat | `ASSISTANT_ENABLED=true` | [docs/features/assistant.md](docs/features/assistant.md) |
-| Goal Tracking & Simulation | `goal.progress.enabled: true` | [docs/features/goals.md](docs/features/goals.md) |
+| Goal Progress Checks | `GOAL_PROGRESS_ENABLED=true` | [docs/features/goals.md](docs/features/goals.md) |
 | Financial Insights | `insight.enabled: true` | [docs/features/insights.md](docs/features/insights.md) |
-| Stock Market Data | `STOCK_ENABLED=true` and `ALPHA_VANTAGE_API_KEY` set | [docs/features/stocks.md](docs/features/stocks.md) |
+| Stock Market Data | `STOCK_ENABLED=true` with `ALPHA_VANTAGE_API_KEY` set for live requests | [docs/features/stocks.md](docs/features/stocks.md) |
 
 ## Project
 

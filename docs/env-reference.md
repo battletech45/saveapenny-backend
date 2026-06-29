@@ -23,7 +23,7 @@ The application loads environment variables from a `.env` file (via `spring.conf
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DB_URL` | `jdbc:postgresql://localhost:5432/saveapenny` | JDBC connection URL |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/saveapenny` | JDBC connection URL |
 | `DB_USERNAME` | — | Database user |
 | `DB_PASSWORD` | — | Database password |
 
@@ -32,7 +32,7 @@ The application loads environment variables from a `.env` file (via `spring.conf
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `JWT_SECRET` | — | HS512 signing key, 64+ characters |
-| `JWT_REFRESH_EXPIRY_DAYS` | `7` | Refresh token validity in days |
+| `SECURITY_JWT_REFRESH_TOKEN_EXPIRY_DAYS` | `7` | Refresh token validity in days |
 
 See [Auth Flow](auth-flow.md) for token lifecycle details.
 

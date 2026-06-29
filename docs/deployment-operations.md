@@ -66,7 +66,7 @@ The Dockerfile uses a multi-stage build:
 | Aspect | Detail |
 |--------|--------|
 | Engine | PostgreSQL 16+ |
-| Migration | Flyway (classpath:db/migration, 18 migrations V1–V18) |
+| Migration | Flyway (classpath:db/migration, 19 migrations V1–V19) |
 | Schema validation | Hibernate `ddl-auto: validate` |
 | Default connection | `localhost:5432/saveapenny` |
 | Migration files | `src/main/resources/db/migration/` |
@@ -111,7 +111,7 @@ The application does not handle TLS natively — all TLS concerns are delegated 
 | Capability | Source | Notes |
 |------------|--------|-------|
 | Health | `GET /actuator/health` | Liveness probe, includes DB health check |
-| JVM metrics | `/actuator/metrics` (if enabled) | Not enabled by default |
+| JVM metrics | `/actuator/metrics` | Enabled and exposed by default |
 | Logs | `logging.level` in `application.yml` | Configured via environment or config file |
 
 ## Deployment Smoke Checks

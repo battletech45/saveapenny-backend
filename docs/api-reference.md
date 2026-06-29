@@ -29,6 +29,12 @@ Public endpoints (no authentication required):
 | GET | `/swagger-ui.html` | Swagger UI |
 | GET | `/swagger-ui/**` | Swagger UI assets |
 
+Authenticated endpoints outside the `/api/v1` prefix:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/admin/metrics` | Aggregated stock, OCR, and goal-progress metrics |
+
 All other endpoints require:
 
 ```text
