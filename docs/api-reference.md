@@ -234,7 +234,57 @@ All stock endpoints are authenticated and return the standard response envelope.
 | `interval` | `/sma`, `/ema`, `/rsi` | No | `daily` | `daily`, `weekly`, or `monthly` |
 | `seriesType` | `/sma`, `/ema`, `/rsi` | No | `close` | `close`, `open`, `high`, or `low` |
 
-See [Stocks](features/stocks.md) for operational details, rate-limit considerations, and error semantics.
+See [Stocks](features/stocks.md) for operational details, rate-limit considerations, error semantics, and holdings management.
+
+## Stock Holdings
+
+All holdings endpoints are authenticated and return the standard response envelope.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/stocks/holdings` | Create a stock holding |
+| GET | `/api/v1/stocks/holdings` | List holdings (paginated, with live P/L) |
+| GET | `/api/v1/stocks/holdings/summary` | Portfolio summary (aggregate P/L) |
+| GET | `/api/v1/stocks/holdings/{holdingId}` | Get single holding |
+| PUT | `/api/v1/stocks/holdings/{holdingId}` | Update a holding |
+| DELETE | `/api/v1/stocks/holdings/{holdingId}` | Delete a holding |
+
+### Create Holding Request
+
+```json
+{
+  "symbol": "IBM",
+  "quantity": "7.14285714",
+  "purchasePrice": "140.00",
+  "currency": "USD",
+  "purchaseDate": "2025-04-25",
+  "notes": "First IBM position"
+}
+```
+
+### Holding Response
+
+```json
+{
+  "id": "...",
+  "symbol": "IBM",
+  "quantity": "7.14285714",
+  "purchasePrice": "140.0000",
+  "currency": "USD",
+  "purchaseDate": "2025-04-25",
+  "notes": "First IBM position",
+  "investedAmount": "1000.00",
+  "currentPrice": "175.42",
+  "currentValue": "1252.96",
+  "profitLoss": "252.96",
+  "profitLossPercent": "25.30",
+  "latestTradingDay": "2026-06-20",
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+See [Stocks](features/stocks.md) for holdings field descriptions and error codes.
 
 ## Recurring Transactions
 

@@ -54,6 +54,9 @@ import com.saveapenny.stock.exception.StockClientException;
 import com.saveapenny.stock.exception.StockDisabledException;
 import com.saveapenny.stock.exception.StockQuoteNotAvailableException;
 import com.saveapenny.stock.exception.StockRateLimitExceededException;
+import com.saveapenny.stockholding.exception.DuplicateHoldingException;
+import com.saveapenny.stockholding.exception.HoldingNotFoundException;
+import com.saveapenny.stockholding.exception.InvalidHoldingSymbolException;
 import com.saveapenny.shared.api.ApiResponse;
 import com.saveapenny.user.exception.InvalidPasswordException;
 import com.saveapenny.user.exception.PasswordReuseNotAllowedException;
@@ -617,6 +620,36 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(HoldingNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHoldingNotFound(HoldingNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("STOCK_HOLDING_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(DuplicateHoldingException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateHolding(DuplicateHoldingException ex) {
+        ApiError error = ApiError.builder()
+                .code("DUPLICATE_STOCK_HOLDING")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidHoldingSymbolException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidHoldingSymbol(InvalidHoldingSymbolException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_STOCK_SYMBOL")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(UserNotFoundException.class)
