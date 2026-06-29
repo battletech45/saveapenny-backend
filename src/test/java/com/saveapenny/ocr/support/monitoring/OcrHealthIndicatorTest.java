@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.saveapenny.config.OcrProperties;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeChecker;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeStatus;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.Status;
@@ -18,7 +19,7 @@ class OcrHealthIndicatorTest {
     void health_reportsDisabledState() {
         OcrHealthIndicator indicator = new OcrHealthIndicator(
                 new OcrProperties(false, "/tmp", "eng", 3, 1024, 1000, 1, false),
-                new OcrMetrics(),
+                new OcrMetrics(new SimpleMeterRegistry()),
                 mock(OcrRuntimeChecker.class));
 
         Health health = indicator.health();
@@ -33,12 +34,12 @@ class OcrHealthIndicatorTest {
         OcrRuntimeChecker checker = mock(OcrRuntimeChecker.class);
         when(checker.check()).thenReturn(new OcrRuntimeStatus(true, true, false, "tur", "/opt/homebrew/share/tessdata", "native load failed"));
 
-        OcrMetrics metrics = new OcrMetrics();
+        OcrMetrics metrics = new OcrMetrics(new SimpleMeterRegistry());
         metrics.markSuccess();
         metrics.markFailure();
 
         OcrHealthIndicator indicator = new OcrHealthIndicator(
-                new OcrProperties(true, "/opt/homebrew/share/tessdata", "tur", 3, 1024, 1000, 1, false),
+                new OcrProperties(true, "/opt/homebrew/share/tessdata", "eng", 3, 1024, 1000, 1, false),
                 metrics,
                 checker);
 

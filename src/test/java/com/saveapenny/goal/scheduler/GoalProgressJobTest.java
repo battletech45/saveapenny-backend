@@ -17,6 +17,8 @@ import com.saveapenny.goal.repository.GoalRepository;
 import com.saveapenny.goal.service.GoalProgressCalculator;
 import com.saveapenny.goal.service.GoalProgressReport;
 import com.saveapenny.goal.service.GoalProgressReport.ProgressStatus;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -45,6 +47,8 @@ class GoalProgressJobTest {
     @Mock
     private GoalOffTrackNotifier goalOffTrackNotifier;
 
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     @Captor
     private ArgumentCaptor<GoalProgressReport> reportCaptor;
 
@@ -61,7 +65,7 @@ class GoalProgressJobTest {
 
     @BeforeEach
     void setUp() {
-        job = new GoalProgressJob(goalProgressProperties, goalRepository, goalProgressCalculator, goalOffTrackNotifier, fixedClock);
+        job = new GoalProgressJob(goalProgressProperties, goalRepository, goalProgressCalculator, goalOffTrackNotifier, fixedClock, meterRegistry);
 
         goalId = UUID.randomUUID();
         userId = UUID.randomUUID();
@@ -84,6 +88,13 @@ class GoalProgressJobTest {
 
         verify(goalProgressCalculator).calculate(userId, goalId, LocalDate.now(fixedClock));
         verify(goalOffTrackNotifier).notifyIfTransitionedToOffTrack(userId, goalId, newReport(ProgressStatus.ON_TRACK, 0));
+        assertEquals(1.0, meterRegistry.find("goal.progress.job.runs")
+                .tags("outcome", "on_track")
+                .counter()
+                .count());
+        assertEquals(1L, meterRegistry.find("goal.progress.job.duration")
+                .timer()
+                .count());
     }
 
     @Test
@@ -146,6 +157,13 @@ class GoalProgressJobTest {
         job.evaluateAllActiveGoals();
 
         verify(goalOffTrackNotifier, never()).notifyIfTransitionedToOffTrack(any(), any(), any());
+        assertEquals(1.0, meterRegistry.find("goal.progress.job.runs")
+                .tags("outcome", "error")
+                .counter()
+                .count());
+        assertEquals(1.0, meterRegistry.find("goal.progress.job.failures")
+                .counter()
+                .count());
     }
 
     @Test

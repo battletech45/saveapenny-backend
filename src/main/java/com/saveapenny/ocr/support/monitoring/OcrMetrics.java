@@ -1,27 +1,45 @@
 package com.saveapenny.ocr.support.monitoring;
 
-import java.util.concurrent.atomic.AtomicLong;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OcrMetrics {
 
-    private final AtomicLong successCount = new AtomicLong();
-    private final AtomicLong failureCount = new AtomicLong();
+    private final Counter successCounter;
+    private final Counter failureCounter;
+    private final Timer processingTimer;
+
+    public OcrMetrics(MeterRegistry meterRegistry) {
+        this.successCounter = meterRegistry.counter("ocr.job.results", "result", "success");
+        this.failureCounter = meterRegistry.counter("ocr.job.results", "result", "failure");
+        this.processingTimer = meterRegistry.timer("ocr.job.duration");
+    }
 
     public void markSuccess() {
-        successCount.incrementAndGet();
+        successCounter.increment();
     }
 
     public void markFailure() {
-        failureCount.incrementAndGet();
+        failureCounter.increment();
+    }
+
+    public void recordDuration(long nanos) {
+        processingTimer.record(nanos, TimeUnit.NANOSECONDS);
     }
 
     public long successCount() {
-        return successCount.get();
+        return (long) successCounter.count();
     }
 
     public long failureCount() {
-        return failureCount.get();
+        return (long) failureCounter.count();
+    }
+
+    public long completedCount() {
+        return successCount() + failureCount();
     }
 }

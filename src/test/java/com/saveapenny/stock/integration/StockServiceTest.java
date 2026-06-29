@@ -45,7 +45,10 @@ import com.saveapenny.stock.exception.StockClientException;
 import com.saveapenny.stock.exception.StockDisabledException;
 import com.saveapenny.stock.exception.StockQuoteNotAvailableException;
 import com.saveapenny.stock.infrastructure.AlphaVantageClient;
+import com.saveapenny.stock.service.StockService;
 import com.saveapenny.stock.service.impl.StockServiceImpl;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -63,6 +66,8 @@ class StockServiceTest {
     @Mock
     private AlphaVantageClient alphaVantageClient;
 
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     private StockProperties enabledProperties;
     private StockProperties disabledProperties;
     private StockServiceImpl enabledService;
@@ -72,8 +77,8 @@ class StockServiceTest {
     void setUp() {
         enabledProperties = new StockProperties(true, "demo-key", "https://www.alphavantage.co", 5, 25);
         disabledProperties = new StockProperties(false, "", "https://www.alphavantage.co", 5, 25);
-        enabledService = new StockServiceImpl(alphaVantageClient, enabledProperties);
-        disabledService = new StockServiceImpl(alphaVantageClient, disabledProperties);
+        enabledService = new StockServiceImpl(alphaVantageClient, enabledProperties, meterRegistry);
+        disabledService = new StockServiceImpl(alphaVantageClient, disabledProperties, meterRegistry);
     }
 
     @Test
@@ -128,6 +133,19 @@ class StockServiceTest {
     }
 
     @Test
+    void invalidSymbolIncrementsFailureMetricForOperation() {
+        assertThrows(InvalidStockSymbolException.class, () -> enabledService.getQuote("IBM@"));
+
+        double failures = meterRegistry.find("stock.provider.failures")
+                .tags("provider", "alphavantage", "operation", "quote", "result", "failure",
+                        "error_type", InvalidStockSymbolException.class.getSimpleName())
+                .counter()
+                .count();
+
+        assertEquals(1.0, failures);
+    }
+
+    @Test
     void mapsProviderQuoteToApiResponse() {
         var providerQuote = new GlobalQuote("IBM", "175.0000", "177.0000", "174.5000", "176.3000",
                 "5000000", "2025-06-20", "174.9000", "1.4000", "0.8008%");
@@ -147,6 +165,15 @@ class StockServiceTest {
         assertEquals(new BigDecimal("174.9000"), result.getPreviousClose());
         assertEquals(new BigDecimal("1.4000"), result.getChange());
         assertEquals(new BigDecimal("0.8008"), result.getChangePercent());
+
+        assertEquals(1.0, meterRegistry.find("stock.provider.requests")
+                .tags("provider", "alphavantage", "operation", "quote")
+                .counter()
+                .count());
+        assertEquals(1L, meterRegistry.find("stock.provider.duration")
+                .tags("provider", "alphavantage", "operation", "quote")
+                .timer()
+                .count());
     }
 
     @Test
@@ -187,6 +214,10 @@ class StockServiceTest {
 
         assertTrue(exception.getMessage().contains("note"));
         assertTrue(exception.getMessage().contains("IBM"));
+        assertEquals(1.0, meterRegistry.find("stock.rate_limit.rejections")
+                .tags("provider", "alphavantage", "operation", "quote", "result", "rate_limited")
+                .counter()
+                .count());
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.saveapenny.config.security;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,9 +46,29 @@ class SecurityConfigTest {
     void protectedEndpoint_returns401_withCorrectEnvelope() throws Exception {
         mockMvc.perform(get("/api/v1/protected/test"))
                 .andExpect(status().isUnauthorized())
+                .andExpect(header().exists("X-Request-Id"))
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("ACCESS_DENIED"))
                 .andExpect(jsonPath("$.error.message").value("Unauthorized."));
+    }
+
+    @Test
+    void protectedEndpoint_reusesSafeRequestIdHeader() throws Exception {
+        mockMvc.perform(get("/api/v1/protected/test").header("X-Request-Id", "req-123_ABC.def"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Request-Id", "req-123_ABC.def"));
+    }
+
+    @Test
+    void protectedEndpoint_replacesUnsafeRequestIdHeader() throws Exception {
+        mockMvc.perform(get("/api/v1/protected/test").header("X-Request-Id", "a".repeat(65)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().exists("X-Request-Id"))
+                .andExpect(result -> {
+                    String requestId = result.getResponse().getHeader("X-Request-Id");
+                    org.junit.jupiter.api.Assertions.assertNotNull(requestId);
+                    org.junit.jupiter.api.Assertions.assertEquals(36, requestId.length());
+                });
     }
 
     @RestController

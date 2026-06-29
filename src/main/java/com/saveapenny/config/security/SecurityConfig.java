@@ -22,8 +22,14 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 public class SecurityConfig {
 
     @Bean
+    public RequestCorrelationFilter requestCorrelationFilter() {
+        return new RequestCorrelationFilter();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
+            RequestCorrelationFilter requestCorrelationFilter,
             RateLimitingFilter rateLimitingFilter,
             HeaderUserAuthenticationFilter headerUserAuthenticationFilter,
             ObjectMapper objectMapper)
@@ -47,7 +53,8 @@ public class SecurityConfig {
                                 writeUnauthorizedResponse(response, objectMapper, "Unauthorized."))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeUnauthorizedResponse(response, objectMapper, accessDeniedException.getMessage())))
-                .addFilterBefore(headerUserAuthenticationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterBefore(requestCorrelationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterAfter(headerUserAuthenticationFilter, RequestCorrelationFilter.class)
                 .addFilterAfter(rateLimitingFilter, HeaderUserAuthenticationFilter.class);
 
         return http.build();

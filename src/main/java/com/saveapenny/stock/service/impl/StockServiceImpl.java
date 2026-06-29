@@ -46,7 +46,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 public class StockServiceImpl implements StockService {
@@ -57,22 +62,40 @@ public class StockServiceImpl implements StockService {
     private static final Pattern INTERVAL_PATTERN = Pattern.compile("^(daily|weekly|monthly)$");
     private static final Pattern TIME_PERIOD_PATTERN = Pattern.compile("^[1-9]\\d*$");
     private static final Pattern SERIES_TYPE_PATTERN = Pattern.compile("^(close|open|high|low)$");
+    private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
+    private static final String PROVIDER = "alphavantage";
 
     private final AlphaVantageClient alphaVantageClient;
     private final StockProperties properties;
+    private final MeterRegistry meterRegistry;
 
     private record TechnicalRequest(String symbol, String interval, String timePeriod, String seriesType) {}
 
-    public StockServiceImpl(AlphaVantageClient alphaVantageClient, StockProperties properties) {
+    public StockServiceImpl(AlphaVantageClient alphaVantageClient, StockProperties properties, MeterRegistry meterRegistry) {
         this.alphaVantageClient = alphaVantageClient;
         this.properties = properties;
+        this.meterRegistry = meterRegistry;
+    }
+
+    private <T> T timeProviderCall(String operation, Supplier<T> call) {
+        meterRegistry.counter("stock.provider.requests", "provider", PROVIDER, "operation", operation).increment();
+        Timer.Sample sample = Timer.start(meterRegistry);
+        try {
+            T result = call.get();
+            sample.stop(meterRegistry.timer("stock.provider.duration", "provider", PROVIDER, "operation", operation));
+            return result;
+        } catch (Exception e) {
+            sample.stop(meterRegistry.timer("stock.provider.duration", "provider", PROVIDER, "operation", operation));
+            recordProviderFailure(operation, e.getClass().getSimpleName());
+            throw e;
+        }
     }
 
     @Override
     public StockQuoteResponse getQuote(String symbol) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "quote");
 
-        var response = alphaVantageClient.fetchQuote(normalized);
+        var response = timeProviderCall("quote", () -> alphaVantageClient.fetchQuote(normalized));
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "quote");
         var quote = response.globalQuote();
 
@@ -90,10 +113,10 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockDailySeriesResponse getDailySeries(String symbol, String outputSize) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "daily");
         String normalizedOutputSize = normalizeOutputSize(outputSize);
 
-        var response = alphaVantageClient.fetchDailySeries(normalized, normalizedOutputSize);
+        var response = timeProviderCall("daily_series", () -> alphaVantageClient.fetchDailySeries(normalized, normalizedOutputSize));
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "daily series");
 
         if (response.metaData() == null || !StringUtils.hasText(response.metaData().symbol())) {
@@ -120,9 +143,9 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockNewsResponse getNewsSentiment(String symbol) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "news");
 
-        NewsSentimentResponse response = alphaVantageClient.fetchNewsSentiment(normalized);
+        NewsSentimentResponse response = timeProviderCall("news_sentiment", () -> alphaVantageClient.fetchNewsSentiment(normalized));
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "news sentiment");
 
         if (response.feed() == null) {
@@ -150,9 +173,9 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockOverviewResponse getCompanyOverview(String symbol) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "overview");
 
-        CompanyOverview overview = alphaVantageClient.fetchCompanyOverview(normalized);
+        CompanyOverview overview = timeProviderCall("company_overview", () -> alphaVantageClient.fetchCompanyOverview(normalized));
         throwIfProviderError(overview.errorMessage(), overview.note(), normalized, "company overview");
 
         if (!StringUtils.hasText(overview.symbol())) {
@@ -164,9 +187,9 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockIncomeStatementResponse getIncomeStatement(String symbol) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "income_statement");
 
-        IncomeStatementResponse response = alphaVantageClient.fetchIncomeStatement(normalized);
+        IncomeStatementResponse response = timeProviderCall("income_statement", () -> alphaVantageClient.fetchIncomeStatement(normalized));
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "income statement");
 
         if (!StringUtils.hasText(response.symbol())) {
@@ -182,9 +205,9 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockBalanceSheetResponse getBalanceSheet(String symbol) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "balance_sheet");
 
-        BalanceSheetResponse response = alphaVantageClient.fetchBalanceSheet(normalized);
+        BalanceSheetResponse response = timeProviderCall("balance_sheet", () -> alphaVantageClient.fetchBalanceSheet(normalized));
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "balance sheet");
 
         if (!StringUtils.hasText(response.symbol())) {
@@ -200,9 +223,9 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockCashFlowResponse getCashFlow(String symbol) {
-        String normalized = requireEnabledAndNormalizeSymbol(symbol);
+        String normalized = requireEnabledAndNormalizeSymbol(symbol, "cash_flow");
 
-        CashFlowResponse response = alphaVantageClient.fetchCashFlow(normalized);
+        CashFlowResponse response = timeProviderCall("cash_flow", () -> alphaVantageClient.fetchCashFlow(normalized));
         throwIfProviderError(response.errorMessage(), response.note(), normalized, "cash flow");
 
         if (!StringUtils.hasText(response.symbol())) {
@@ -218,10 +241,10 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockTechnicalIndicatorResponse getSma(String symbol, String interval, String timePeriod, String seriesType) {
-        TechnicalRequest request = normalizeTechnicalRequest(symbol, interval, timePeriod, seriesType);
+        TechnicalRequest request = normalizeTechnicalRequest("sma", symbol, interval, timePeriod, seriesType);
 
-        SmaResponse response = alphaVantageClient.fetchSma(
-                request.symbol(), request.interval(), request.timePeriod(), request.seriesType());
+        SmaResponse response = timeProviderCall("sma", () -> alphaVantageClient.fetchSma(
+                request.symbol(), request.interval(), request.timePeriod(), request.seriesType()));
         throwIfProviderError(response.errorMessage(), response.note(), request.symbol(), "SMA");
 
         return mapToTechnicalIndicatorResponse(request.symbol(), "SMA", response.metaData(), response.dataPoints());
@@ -229,10 +252,10 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockTechnicalIndicatorResponse getEma(String symbol, String interval, String timePeriod, String seriesType) {
-        TechnicalRequest request = normalizeTechnicalRequest(symbol, interval, timePeriod, seriesType);
+        TechnicalRequest request = normalizeTechnicalRequest("ema", symbol, interval, timePeriod, seriesType);
 
-        EmaResponse response = alphaVantageClient.fetchEma(
-                request.symbol(), request.interval(), request.timePeriod(), request.seriesType());
+        EmaResponse response = timeProviderCall("ema", () -> alphaVantageClient.fetchEma(
+                request.symbol(), request.interval(), request.timePeriod(), request.seriesType()));
         throwIfProviderError(response.errorMessage(), response.note(), request.symbol(), "EMA");
 
         return mapToTechnicalIndicatorResponse(request.symbol(), "EMA", response.metaData(), response.dataPoints());
@@ -240,10 +263,10 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public StockTechnicalIndicatorResponse getRsi(String symbol, String interval, String timePeriod, String seriesType) {
-        TechnicalRequest request = normalizeTechnicalRequest(symbol, interval, timePeriod, seriesType);
+        TechnicalRequest request = normalizeTechnicalRequest("rsi", symbol, interval, timePeriod, seriesType);
 
-        RsiResponse response = alphaVantageClient.fetchRsi(
-                request.symbol(), request.interval(), request.timePeriod(), request.seriesType());
+        RsiResponse response = timeProviderCall("rsi", () -> alphaVantageClient.fetchRsi(
+                request.symbol(), request.interval(), request.timePeriod(), request.seriesType()));
         throwIfProviderError(response.errorMessage(), response.note(), request.symbol(), "RSI");
 
         return mapToTechnicalIndicatorResponse(request.symbol(), "RSI", response.metaData(), response.dataPoints());
@@ -255,37 +278,43 @@ public class StockServiceImpl implements StockService {
         }
     }
 
-    private String requireEnabledAndNormalizeSymbol(String symbol) {
+    private String requireEnabledAndNormalizeSymbol(String symbol, String operation) {
         ensureEnabled();
-        return normalizeSymbol(symbol);
+        return normalizeSymbol(symbol, operation);
     }
 
-    private TechnicalRequest normalizeTechnicalRequest(String symbol, String interval, String timePeriod, String seriesType) {
+    private TechnicalRequest normalizeTechnicalRequest(
+            String operation, String symbol, String interval, String timePeriod, String seriesType) {
         return new TechnicalRequest(
-                requireEnabledAndNormalizeSymbol(symbol),
+                requireEnabledAndNormalizeSymbol(symbol, operation),
                 normalizeInterval(interval),
                 normalizeTimePeriod(timePeriod),
                 normalizeSeriesType(seriesType));
     }
 
     private StockQuoteNotAvailableException noDataReturned(String operation, String symbol) {
+        recordProviderFailure(operation, "no_data");
+        log.warn("stock_provider_no_data provider={} operation={} symbol={} result=failure", PROVIDER, operation, symbol);
         return new StockQuoteNotAvailableException(
                 "No " + operation + " data returned for symbol: " + symbol);
     }
 
-    private String normalizeSymbol(String symbol) {
+    private String normalizeSymbol(String symbol, String operation) {
         if (!StringUtils.hasText(symbol)) {
+            recordProviderFailure(operation, InvalidStockSymbolException.class.getSimpleName());
             throw new InvalidStockSymbolException("Symbol must not be blank");
         }
 
         String trimmed = symbol.trim().toUpperCase();
 
         if (trimmed.length() > MAX_SYMBOL_LENGTH) {
+            recordProviderFailure(operation, InvalidStockSymbolException.class.getSimpleName());
             throw new InvalidStockSymbolException(
                     "Symbol must not exceed " + MAX_SYMBOL_LENGTH + " characters");
         }
 
         if (!SYMBOL_PATTERN.matcher(trimmed).matches()) {
+            recordProviderFailure(operation, InvalidStockSymbolException.class.getSimpleName());
             throw new InvalidStockSymbolException(
                     "Symbol contains invalid characters. Allowed: A-Z, 0-9, dot, hyphen");
         }
@@ -355,14 +384,40 @@ public class StockServiceImpl implements StockService {
 
     private void throwIfProviderError(String errorMessage, String note, String symbol, String operation) {
         if (StringUtils.hasText(errorMessage)) {
+            recordProviderFailure(operation, "provider_error");
+            log.warn("stock_provider_error provider={} operation={} symbol={} result=failure message={}",
+                    PROVIDER, operation, symbol, errorMessage);
             throw new StockClientException(
                     "Alpha Vantage returned an error for " + operation + " and symbol " + symbol + ": " + errorMessage);
         }
 
         if (StringUtils.hasText(note)) {
+            if (isRateLimitNote(note)) {
+                meterRegistry.counter("stock.rate_limit.rejections",
+                        "provider", PROVIDER, "operation", operation, "result", "rate_limited").increment();
+            }
+            recordProviderFailure(operation, "provider_note");
+            log.warn("stock_provider_note provider={} operation={} symbol={} result={} note={}",
+                    PROVIDER, operation, symbol, isRateLimitNote(note) ? "rate_limited" : "failure", note);
             throw new StockClientException(
                     "Alpha Vantage returned a note for " + operation + " and symbol " + symbol + ": " + note);
         }
+    }
+
+    private void recordProviderFailure(String operation, String errorType) {
+        meterRegistry.counter(
+                        "stock.provider.failures",
+                        "provider", PROVIDER,
+                        "operation", operation,
+                        "result", "failure",
+                        "error_type", errorType)
+                .increment();
+    }
+
+    private boolean isRateLimitNote(String note) {
+        String lower = note.toLowerCase();
+        return lower.contains("api call frequency") || lower.contains("call frequency")
+                || (lower.contains("thank you") && lower.contains("api"));
     }
 
     private StockQuoteResponse mapToQuoteResponse(GlobalQuote quote) {

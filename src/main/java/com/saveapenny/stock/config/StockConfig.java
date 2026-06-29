@@ -5,6 +5,7 @@ import com.saveapenny.stock.infrastructure.AlphaVantageClient;
 import com.saveapenny.stock.infrastructure.RateLimitTracker;
 import com.saveapenny.stock.service.StockService;
 import com.saveapenny.stock.service.impl.StockServiceImpl;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -30,7 +31,7 @@ public class StockConfig {
     }
 
     @Bean
-    public StockService stockService(AlphaVantageClient alphaVantageClient, StockProperties properties) {
-        return new StockServiceImpl(alphaVantageClient, properties);
+    public StockService stockService(AlphaVantageClient alphaVantageClient, StockProperties properties, MeterRegistry meterRegistry) {
+        return new StockServiceImpl(alphaVantageClient, properties, meterRegistry);
     }
 }

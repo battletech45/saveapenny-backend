@@ -2,6 +2,7 @@ package com.saveapenny.ocr.support.monitoring;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,13 +12,14 @@ class OcrMetricsTest {
 
     @BeforeEach
     void setUp() {
-        metrics = new OcrMetrics();
+        metrics = new OcrMetrics(new SimpleMeterRegistry());
     }
 
     @Test
     void initialCountsAreZero() {
         assertEquals(0, metrics.successCount());
         assertEquals(0, metrics.failureCount());
+        assertEquals(0, metrics.completedCount());
     }
 
     @Test
@@ -43,5 +45,6 @@ class OcrMetricsTest {
 
         assertEquals(3, metrics.successCount());
         assertEquals(1, metrics.failureCount());
+        assertEquals(4, metrics.completedCount());
     }
 }

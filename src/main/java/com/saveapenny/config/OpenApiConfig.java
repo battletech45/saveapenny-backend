@@ -53,6 +53,7 @@ public class OpenApiConfig {
                 .addTagsItem(new Tag().name("Automation").description("Recurring transaction schedules and runs."))
                 .addTagsItem(new Tag().name("Notifications").description("Notification channels and delivery endpoints."))
                 .addTagsItem(new Tag().name("Audit").description("Read audit trail events and history."))
+                .addTagsItem(new Tag().name("Admin").description("Administrative observability and metrics endpoints."))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH_SCHEME))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_AUTH_SCHEME, new SecurityScheme()

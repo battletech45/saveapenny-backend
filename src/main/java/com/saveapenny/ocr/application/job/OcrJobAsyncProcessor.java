@@ -54,17 +54,23 @@ public class OcrJobAsyncProcessor {
             job.setErrorMessage(null);
             job.setStatus(OcrJobStatus.COMPLETED);
             ocrJobRepository.save(job);
+            long elapsed = System.nanoTime() - startedAt;
             ocrMetrics.markSuccess();
-            log.info("OCR job {} completed in {} ms", job.getId(), elapsedMillis(startedAt));
+            ocrMetrics.recordDuration(elapsed);
+            log.info("ocr_job_completed jobId={} result=success durationMs={}",
+                    job.getId(), TimeUnit.NANOSECONDS.toMillis(elapsed));
             if (ocrProperties.debugLogging()) {
-                log.debug("OCR job {} rawText={}", job.getId(), mask(rawText));
+                log.debug("ocr_job_raw_text jobId={} rawText={}", job.getId(), mask(rawText));
             }
         } catch (Throwable ex) {
             job.setStatus(OcrJobStatus.FAILED);
             job.setErrorMessage(truncate(resolveMessage(ex), 240));
             ocrJobRepository.save(job);
+            long elapsed = System.nanoTime() - startedAt;
             ocrMetrics.markFailure();
-            log.warn("OCR job {} failed in {} ms: {}", job.getId(), elapsedMillis(startedAt), resolveMessage(ex));
+            ocrMetrics.recordDuration(elapsed);
+            log.warn("ocr_job_failed jobId={} result=failure durationMs={} message={}",
+                    job.getId(), TimeUnit.NANOSECONDS.toMillis(elapsed), resolveMessage(ex));
         }
     }
 
@@ -88,7 +94,7 @@ public class OcrJobAsyncProcessor {
             if (!isTransient(last) || attempt == attempts) {
                 break;
             }
-            log.info("Retrying OCR extraction attempt {}/{}", attempt + 1, attempts);
+            log.info("ocr_job_retry attempt={} maxAttempts={}", attempt + 1, attempts);
         }
         throw last == null ? new OcrProcessingException("OCR failed") : last;
     }
@@ -100,10 +106,6 @@ public class OcrJobAsyncProcessor {
         }
         String normalized = message.toLowerCase();
         return normalized.contains("timeout") || normalized.contains("tempor") || normalized.contains("unable to read");
-    }
-
-    private long elapsedMillis(long startedAtNanos) {
-        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAtNanos);
     }
 
     private String mask(String text) {
