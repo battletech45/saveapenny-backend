@@ -7,6 +7,8 @@ import com.saveapenny.notification.dto.UnreadNotificationCountResponse;
 import com.saveapenny.notification.dto.UpdateNotificationRequest;
 import com.saveapenny.notification.service.NotificationService;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,14 +57,14 @@ public class NotificationController {
     @Operation(
             summary = "List notifications",
             description = "Returns paginated notifications. Optionally filter by read/unread state. Pagination query params: page, size, sort.")
-    public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<NotificationResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Parameter(description = "Optional read-state filter.", example = "false")
             @RequestParam(required = false) Boolean read,
             @ParameterObject
             Pageable pageable) {
         Page<NotificationResponse> response = notificationService.getAll(getCurrentUserId(principal), read, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{notificationId}")

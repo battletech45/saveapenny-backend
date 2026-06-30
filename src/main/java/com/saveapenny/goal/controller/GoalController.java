@@ -13,6 +13,8 @@ import com.saveapenny.goal.entity.GoalStatus;
 import com.saveapenny.goal.entity.GoalType;
 import com.saveapenny.goal.service.GoalService;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -58,13 +60,13 @@ public class GoalController {
 
     @GetMapping
     @Operation(summary = "List goals", description = "Returns paginated goals with optional status and type filters.")
-    public ResponseEntity<ApiResponse<Page<GoalResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<GoalResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @RequestParam(required = false) GoalStatus status,
             @RequestParam(required = false) GoalType type,
             @ParameterObject Pageable pageable) {
         Page<GoalResponse> response = goalService.getAll(getCurrentUserId(principal), status, type, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{goalId}")
@@ -119,12 +121,12 @@ public class GoalController {
     }
 
     @GetMapping("/{goalId}/runs")
-    public ResponseEntity<ApiResponse<Page<GoalRunResponse>>> listRuns(
+    public ResponseEntity<ApiResponse<PagedResponse<GoalRunResponse>>> listRuns(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID goalId,
             @ParameterObject Pageable pageable) {
         Page<GoalRunResponse> response = goalService.listRuns(getCurrentUserId(principal), goalId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     private UUID getCurrentUserId(CurrentUserPrincipal principal) {

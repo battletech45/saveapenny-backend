@@ -8,6 +8,8 @@ import com.saveapenny.automation.dto.UpdateRecurringTransactionRequest;
 import com.saveapenny.automation.service.RecurringTransactionService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -56,12 +58,12 @@ public class RecurringTransactionController {
     @Operation(
             summary = "List recurring transactions",
             description = "Returns paginated recurring transaction schedules. Pagination query params: page, size, sort.")
-    public ResponseEntity<ApiResponse<Page<RecurringTransactionResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<RecurringTransactionResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @ParameterObject
             Pageable pageable) {
         Page<RecurringTransactionResponse> response = recurringTransactionService.getAll(getCurrentUserId(principal), pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{recurringTransactionId}")
@@ -110,13 +112,13 @@ public class RecurringTransactionController {
     }
 
     @GetMapping("/{recurringTransactionId}/history")
-    public ResponseEntity<ApiResponse<Page<RecurringExecutionHistoryResponse>>> getHistory(
+    public ResponseEntity<ApiResponse<PagedResponse<RecurringExecutionHistoryResponse>>> getHistory(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID recurringTransactionId,
             @ParameterObject Pageable pageable) {
         Page<RecurringExecutionHistoryResponse> response = recurringTransactionService.getHistory(
                 getCurrentUserId(principal), recurringTransactionId, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/upcoming")

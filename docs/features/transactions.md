@@ -61,10 +61,14 @@ Both transactions share the same amount and currency. Source and destination cur
 |--------|------|-------------|
 | POST | `/api/v1/transactions` | Create an income or expense |
 | POST | `/api/v1/transactions/transfer` | Transfer between owned accounts |
-| GET | `/api/v1/transactions` | List transactions (paginated, filterable) |
+| GET | `/api/v1/transactions` | List transactions (shared paginated response, filterable) |
 | GET | `/api/v1/transactions/{id}` | Get transaction details |
 | PUT | `/api/v1/transactions/{id}` | Update a transaction |
 | DELETE | `/api/v1/transactions/{id}` | Delete a transaction |
+
+## List Response Shape
+
+`GET /api/v1/transactions` returns the shared pagination contract from [API Reference](../api-reference.md). Transaction records are returned in `items`.
 
 ## Query Filters
 

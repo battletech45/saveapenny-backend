@@ -7,6 +7,8 @@ import com.saveapenny.audit.entity.AuditEntityType;
 import com.saveapenny.audit.service.AuditLogService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,7 +67,7 @@ public class AuditLogController {
                     Example:
                     /api/v1/audits?entityType=TRANSACTION&from=2026-06-01T00:00:00Z&to=2026-06-01T23:59:59Z&page=0&size=20&sort=createdAt,desc
                     """)
-    public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<AuditLogResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Parameter(description = "Optional entity type filter.", example = "TRANSACTION")
             @RequestParam(required = false) AuditEntityType entityType,
@@ -85,7 +87,7 @@ public class AuditLogController {
                 .build();
 
         Page<AuditLogResponse> response = auditLogService.getAll(getCurrentUserId(principal), filter, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{auditLogId}")

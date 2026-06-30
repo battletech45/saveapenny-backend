@@ -171,7 +171,7 @@ class StockHoldingControllerTest {
                         .header("Authorization", "Bearer token-2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].symbol").value("IBM"));
+                .andExpect(jsonPath("$.data.items[0].symbol").value("IBM"));
     }
 
     @Test

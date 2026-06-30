@@ -4,6 +4,8 @@
 
 SaveAPenny is an API-first backend. Most users and integrators work through Swagger UI, Postman, or direct HTTP calls. The typical usage order follows the financial workflow: authenticate → create accounts → record transactions → create budgets → review reports.
 
+For paginated list endpoints, the API now uses one shared response contract with `items`, `page`, `size`, `totalItems`, `totalPages`, `hasNext`, and `hasPrevious`. See [API Reference](api-reference.md).
+
 ## Authentication
 
 All business endpoints require an `Authorization: Bearer <accessToken>` header. Public auth endpoints:

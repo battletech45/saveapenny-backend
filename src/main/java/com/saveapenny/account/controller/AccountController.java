@@ -6,6 +6,8 @@ import com.saveapenny.account.dto.UpdateAccountRequest;
 import com.saveapenny.account.service.AccountService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
@@ -51,12 +53,12 @@ public class AccountController {
     @Operation(
             summary = "List accounts",
             description = "Returns paginated accounts for the current user. Pagination query params: page, size, sort (example: sort=name,asc).")
-    public ResponseEntity<ApiResponse<Page<AccountResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<AccountResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @ParameterObject
             Pageable pageable) {
         Page<AccountResponse> response = accountService.getAll(getCurrentUserId(principal), pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{accountId}")

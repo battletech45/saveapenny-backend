@@ -80,7 +80,7 @@ class TransactionFlowIntegrationTest extends TestcontainersIntegrationTest {
         mockMvc.perform(get("/api/v1/transactions")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content[0].id").exists());
+                .andExpect(jsonPath("$.data.items[0].id").exists());
 
         String updateBody = """
                 {

@@ -32,8 +32,12 @@ Audit logs track changes to key resources for accountability, debugging, and com
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/audits` | Create an audit entry manually |
-| GET | `/api/v1/audits` | List audit logs (paginated, filterable) |
+| GET | `/api/v1/audits` | List audit logs (shared paginated response, filterable) |
 | GET | `/api/v1/audits/{id}` | Get audit entry details |
+
+## List Response Shape
+
+`GET /api/v1/audits` returns the shared pagination contract from [API Reference](../api-reference.md). Audit entries are returned in `items`.
 
 ## Query Filters
 

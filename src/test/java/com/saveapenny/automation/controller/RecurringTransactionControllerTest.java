@@ -107,7 +107,7 @@ class RecurringTransactionControllerTest {
                         .header("Authorization", "Bearer token-a2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].amount").value(100.0));
+                .andExpect(jsonPath("$.data.items[0].amount").value(100.0));
     }
 
     @Test

@@ -124,7 +124,7 @@ class GoalControllerTest {
                         .header("Authorization", "Bearer token-2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].title").value("Emergency Fund"));
+                .andExpect(jsonPath("$.data.items[0].title").value("Emergency Fund"));
     }
 
     @Test
@@ -310,7 +310,7 @@ class GoalControllerTest {
                         .header("Authorization", "Bearer token-9"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].feasibility").value("ON_TRACK"));
+                .andExpect(jsonPath("$.data.items[0].feasibility").value("ON_TRACK"));
     }
 
     @Test

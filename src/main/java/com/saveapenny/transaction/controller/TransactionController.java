@@ -2,6 +2,8 @@ package com.saveapenny.transaction.controller;
 
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -67,7 +69,7 @@ public class TransactionController {
     @Operation(
             summary = "Search transactions",
             description = "Returns paginated transactions with optional filters by date range, type, account, category, amount range, and keyword. Pagination query params: page, size, sort.")
-    public ResponseEntity<ApiResponse<Page<TransactionResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<TransactionResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Parameter(description = "Optional start date (ISO-8601).", example = "2026-06-01")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -98,7 +100,7 @@ public class TransactionController {
                 maxAmount,
                 keyword,
                 pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{transactionId}")

@@ -2,11 +2,11 @@ package com.saveapenny.insight.controller;
 
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.insight.dto.GenerateInsightsRequest;
-import com.saveapenny.insight.dto.InsightListResponse;
 import com.saveapenny.insight.dto.InsightResponse;
 import com.saveapenny.insight.entity.InsightType;
 import com.saveapenny.insight.service.InsightService;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class InsightController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<InsightListResponse>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<InsightResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @RequestParam(required = false) InsightType type,
             @RequestParam(required = false) String severity,
@@ -51,7 +51,7 @@ public class InsightController {
             @RequestParam(defaultValue = "desc") String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        InsightListResponse response = insightService.getAll(getUserId(principal), type, severity, isRead, pageable);
+        PagedResponse<InsightResponse> response = insightService.getAll(getUserId(principal), type, severity, isRead, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

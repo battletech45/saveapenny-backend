@@ -21,7 +21,7 @@ Goals provide financial planning and simulation for savings, debt payoff, purcha
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/goals` | Create a goal |
-| GET | `/api/v1/goals` | List goals |
+| GET | `/api/v1/goals` | List goals (shared paginated response) |
 | GET | `/api/v1/goals/{goalId}` | Get goal details |
 | PATCH | `/api/v1/goals/{goalId}` | Update goal fields |
 | DELETE | `/api/v1/goals/{goalId}` | Delete a goal |
@@ -33,9 +33,17 @@ Goals provide financial planning and simulation for savings, debt payoff, purcha
 |--------|------|-------------|
 | POST | `/api/v1/goals/{goalId}/scenarios` | Create a scenario |
 | GET | `/api/v1/goals/{goalId}/scenarios` | List scenarios |
-| GET | `/api/v1/goals/{goalId}/runs` | List simulation run history |
+| GET | `/api/v1/goals/{goalId}/runs` | List simulation run history (shared paginated response) |
 | POST | `/api/v1/goals/{goalId}/scenarios/compare` | Compare multiple scenarios |
 | POST | `/api/v1/goals/{goalId}/what-if` | What-if analysis |
+
+## Paginated Goal Responses
+
+The two paginated goal endpoints below use the shared pagination contract from [API Reference](../api-reference.md):
+- `GET /api/v1/goals`
+- `GET /api/v1/goals/{goalId}/runs`
+
+Returned resources are exposed in `items`.
 
 ### Simulation
 

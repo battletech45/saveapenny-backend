@@ -82,11 +82,15 @@ Holdings allow users to track their stock purchases and view real-time profit/lo
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/stocks/holdings` | Create a stock holding |
-| GET | `/api/v1/stocks/holdings` | List holdings (paginated, with live P/L) |
+| GET | `/api/v1/stocks/holdings` | List holdings (shared paginated response, with live P/L) |
 | GET | `/api/v1/stocks/holdings/summary` | Portfolio summary (aggregate P/L) |
 | GET | `/api/v1/stocks/holdings/{holdingId}` | Get single holding |
 | PUT | `/api/v1/stocks/holdings/{holdingId}` | Update a holding |
 | DELETE | `/api/v1/stocks/holdings/{holdingId}` | Delete a holding |
+
+### Holdings List Response Shape
+
+`GET /api/v1/stocks/holdings` returns the shared pagination contract from [API Reference](../api-reference.md). Holding records are returned in `items`.
 
 ### Create Holding Request
 

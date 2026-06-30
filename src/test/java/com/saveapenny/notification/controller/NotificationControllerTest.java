@@ -105,7 +105,7 @@ class NotificationControllerTest {
                         .header("Authorization", "Bearer token-n2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].title").value("System"));
+                .andExpect(jsonPath("$.data.items[0].title").value("System"));
     }
 
     @Test

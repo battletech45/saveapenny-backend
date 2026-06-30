@@ -26,12 +26,16 @@ Notifications expose user-facing status changes and alerts. They are user-scoped
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/notifications` | Create a notification (system use) |
-| GET | `/api/v1/notifications` | List notifications (paginated, sorted by recency) |
+| GET | `/api/v1/notifications` | List notifications (shared paginated response, sorted by recency) |
 | GET | `/api/v1/notifications/{id}` | Get notification details |
 | PUT | `/api/v1/notifications/{id}` | Update a notification |
 | DELETE | `/api/v1/notifications/{id}` | Delete a notification |
 | GET | `/api/v1/notifications/unread-count` | Get count of unread notifications |
 | PATCH | `/api/v1/notifications/mark-all-read` | Mark all as read for the current user |
+
+## List Response Shape
+
+`GET /api/v1/notifications` returns the shared pagination contract from [API Reference](../api-reference.md). Notification records are returned in `items`.
 
 ## Unread Count
 

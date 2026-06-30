@@ -1,7 +1,6 @@
 package com.saveapenny.insight.service.impl;
 
 import com.saveapenny.insight.dto.GenerateInsightsRequest;
-import com.saveapenny.insight.dto.InsightListResponse;
 import com.saveapenny.insight.dto.InsightResponse;
 import com.saveapenny.insight.entity.InsightEntity;
 import com.saveapenny.insight.entity.InsightType;
@@ -10,6 +9,8 @@ import com.saveapenny.insight.exception.InsightNotFoundException;
 import com.saveapenny.insight.mapper.InsightMapper;
 import com.saveapenny.insight.repository.InsightRepository;
 import com.saveapenny.insight.service.InsightService;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,7 +36,7 @@ public class InsightServiceImpl implements InsightService {
 
     @Override
     @Transactional(readOnly = true)
-    public InsightListResponse getAll(UUID currentUserId, InsightType type, String severity, Boolean isRead, Pageable pageable) {
+    public PagedResponse<InsightResponse> getAll(UUID currentUserId, InsightType type, String severity, Boolean isRead, Pageable pageable) {
         Page<InsightEntity> page;
 
         if (type != null && severity != null && isRead != null) {
@@ -56,13 +57,7 @@ public class InsightServiceImpl implements InsightService {
             page = insightRepository.findAllByUserId(currentUserId, pageable);
         }
 
-        return InsightListResponse.builder()
-                .insights(page.getContent().stream().map(insightMapper::toResponse).toList())
-                .page(page.getNumber())
-                .size(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .build();
+        return PagedResponses.from(page.map(insightMapper::toResponse));
     }
 
     @Override

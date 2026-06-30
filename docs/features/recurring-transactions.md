@@ -66,14 +66,22 @@ Optional metadata for UI display and grouping:
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/automations/recurring-transactions` | Create |
-| GET | `/api/v1/automations/recurring-transactions` | List (paginated) |
+| GET | `/api/v1/automations/recurring-transactions` | List (shared paginated response) |
 | GET | `/api/v1/automations/recurring-transactions/{id}` | Get details |
 | PUT | `/api/v1/automations/recurring-transactions/{id}` | Update |
 | DELETE | `/api/v1/automations/recurring-transactions/{id}` | Soft-delete (transitions to `EXPIRED`) |
 | PATCH | `/api/v1/automations/recurring-transactions/{id}/pause` | Pause (`ACTIVE → PAUSED`) |
 | PATCH | `/api/v1/automations/recurring-transactions/{id}/resume` | Resume (`PAUSED → ACTIVE`) |
-| GET | `/api/v1/automations/recurring-transactions/{id}/history` | Execution history |
+| GET | `/api/v1/automations/recurring-transactions/{id}/history` | Execution history (shared paginated response) |
 | GET | `/api/v1/automations/recurring-transactions/upcoming?limit=10` | Upcoming projections |
+
+## List Response Shape
+
+Both list endpoints below use the shared pagination contract from [API Reference](../api-reference.md):
+- `GET /api/v1/automations/recurring-transactions`
+- `GET /api/v1/automations/recurring-transactions/{id}/history`
+
+Returned records are exposed in `items`.
 
 ## Execution History
 

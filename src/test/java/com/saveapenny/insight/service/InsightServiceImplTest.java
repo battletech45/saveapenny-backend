@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.insight.dto.GenerateInsightsRequest;
-import com.saveapenny.insight.dto.InsightListResponse;
 import com.saveapenny.insight.dto.InsightResponse;
 import com.saveapenny.insight.entity.InsightEntity;
 import com.saveapenny.insight.entity.InsightType;
@@ -17,6 +16,7 @@ import com.saveapenny.insight.mapper.InsightMapper;
 import com.saveapenny.insight.repository.InsightRepository;
 import com.saveapenny.insight.service.impl.InsightGenerationPipeline;
 import com.saveapenny.insight.service.impl.InsightServiceImpl;
+import com.saveapenny.shared.api.PagedResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -77,11 +77,11 @@ class InsightServiceImplTest {
         when(insightRepository.findAllByUserId(userId, PageRequest.of(0, 20)))
                 .thenReturn(page);
 
-        InsightListResponse response = insightService.getAll(userId, null, null, null, PageRequest.of(0, 20));
+        PagedResponse<InsightResponse> response = insightService.getAll(userId, null, null, null, PageRequest.of(0, 20));
 
         assertNotNull(response);
-        assertEquals(1, response.getInsights().size());
-        assertEquals(insightId, response.getInsights().getFirst().getId());
+        assertEquals(1, response.items().size());
+        assertEquals(insightId, response.items().getFirst().getId());
     }
 
     @Test
@@ -145,10 +145,10 @@ class InsightServiceImplTest {
         when(insightRepository.findAllByUserIdAndSeverity(userId, "INFO", PageRequest.of(0, 20)))
                 .thenReturn(page);
 
-        InsightListResponse response = insightService.getAll(userId, null, "INFO", null, PageRequest.of(0, 20));
+        PagedResponse<InsightResponse> response = insightService.getAll(userId, null, "INFO", null, PageRequest.of(0, 20));
 
         assertNotNull(response);
-        assertEquals(1, response.getInsights().size());
+        assertEquals(1, response.items().size());
     }
 
     @Test
@@ -157,10 +157,10 @@ class InsightServiceImplTest {
         when(insightRepository.findAllByUserIdAndRead(userId, false, PageRequest.of(0, 20)))
                 .thenReturn(page);
 
-        InsightListResponse response = insightService.getAll(userId, null, null, false, PageRequest.of(0, 20));
+        PagedResponse<InsightResponse> response = insightService.getAll(userId, null, null, false, PageRequest.of(0, 20));
 
         assertNotNull(response);
-        assertEquals(1, response.getInsights().size());
+        assertEquals(1, response.items().size());
     }
 
     @Test
@@ -170,11 +170,11 @@ class InsightServiceImplTest {
                 userId, InsightType.SPENDING_PATTERN, "INFO", false, PageRequest.of(0, 20)))
                 .thenReturn(page);
 
-        InsightListResponse response = insightService.getAll(
+        PagedResponse<InsightResponse> response = insightService.getAll(
                 userId, InsightType.SPENDING_PATTERN, "INFO", false, PageRequest.of(0, 20));
 
         assertNotNull(response);
-        assertEquals(1, response.getInsights().size());
+        assertEquals(1, response.items().size());
     }
 
     @Test
@@ -183,9 +183,9 @@ class InsightServiceImplTest {
         when(insightRepository.findAllByUserIdAndType(userId, InsightType.SPENDING_PATTERN, PageRequest.of(0, 20)))
                 .thenReturn(page);
 
-        InsightListResponse response = insightService.getAll(userId, InsightType.SPENDING_PATTERN, null, null, PageRequest.of(0, 20));
+        PagedResponse<InsightResponse> response = insightService.getAll(userId, InsightType.SPENDING_PATTERN, null, null, PageRequest.of(0, 20));
 
         assertNotNull(response);
-        assertEquals(1, response.getInsights().size());
+        assertEquals(1, response.items().size());
     }
 }

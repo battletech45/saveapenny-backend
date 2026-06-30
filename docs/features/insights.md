@@ -60,11 +60,15 @@ When `insight.ai-enhanced=true`, the rule-based candidates are sent through an L
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/insights` | List insights (paginated) |
+| GET | `/api/v1/insights` | List insights (shared paginated response) |
 | GET | `/api/v1/insights/{id}` | Get insight details |
 | PATCH | `/api/v1/insights/{id}/read` | Mark as read |
 | PATCH | `/api/v1/insights/{id}/dismiss` | Dismiss an insight |
 | POST | `/api/v1/insights/generate` | Trigger on-demand generation |
+
+## List Response Shape
+
+`GET /api/v1/insights` now uses the same shared pagination contract as other list-heavy endpoints. Insight records are returned in `items`, with pagination metadata in `page`, `size`, `totalItems`, `totalPages`, `hasNext`, and `hasPrevious`.
 
 ## Configuration
 

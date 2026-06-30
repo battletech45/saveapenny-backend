@@ -5,6 +5,8 @@ import com.saveapenny.budget.entity.BudgetPeriod;
 import com.saveapenny.budget.service.BudgetService;
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,14 +56,14 @@ public class BudgetController {
     @Operation(
             summary = "List budgets",
             description = "Returns paginated budgets. Optionally filter by period. Pagination query params: page, size, sort.")
-    public ResponseEntity<ApiResponse<Page<BudgetResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<BudgetResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Parameter(description = "Optional budget period filter.", example = "MONTHLY")
             @RequestParam(required = false) BudgetPeriod period,
             @ParameterObject
             Pageable pageable) {
         Page<BudgetResponse> response = budgetService.getAll(getCurrentUserId(principal), period, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/{budgetId}")

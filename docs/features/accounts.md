@@ -1,4 +1,4 @@
-w# Accounts
+# Accounts
 
 ## Overview
 
@@ -56,10 +56,14 @@ An account is considered **used** if any of these are true:
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/accounts` | Create an account |
-| GET | `/api/v1/accounts` | List accounts (paginated, sorted) |
+| GET | `/api/v1/accounts` | List accounts (shared paginated response, sorted) |
 | GET | `/api/v1/accounts/{id}` | Get account details |
 | PUT | `/api/v1/accounts/{id}` | Update account name |
 | DELETE | `/api/v1/accounts/{id}` | Soft-delete an account |
+
+## List Response Shape
+
+`GET /api/v1/accounts` returns the shared pagination contract described in [API Reference](../api-reference.md): `items`, `page`, `size`, `totalItems`, `totalPages`, `hasNext`, and `hasPrevious`.
 
 ## Typical Workflow
 

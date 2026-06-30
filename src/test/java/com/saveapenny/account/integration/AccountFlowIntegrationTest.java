@@ -53,7 +53,7 @@ class AccountFlowIntegrationTest extends IntegrationTestBase {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].name").value("Wallet"));
+                .andExpect(jsonPath("$.data.items[0].name").value("Wallet"));
 
         String updateBody = """
                 {

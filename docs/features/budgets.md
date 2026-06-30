@@ -43,12 +43,16 @@ Spent amount is calculated from transactions matching the category within the bu
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/budgets` | Create a budget |
-| GET | `/api/v1/budgets` | List budgets (paginated) |
+| GET | `/api/v1/budgets` | List budgets (shared paginated response) |
 | GET | `/api/v1/budgets/{id}` | Get budget details |
 | GET | `/api/v1/budgets/{id}/status` | Get spending status vs limit |
 | PUT | `/api/v1/budgets/{id}` | Update budget limit or period |
 | DELETE | `/api/v1/budgets/{id}` | Delete a budget |
 | DELETE | `/api/v1/budgets/batch` | Delete multiple budgets |
+
+## List Response Shape
+
+`GET /api/v1/budgets` returns the shared pagination contract from [API Reference](../api-reference.md). Budget resources are returned in `items`.
 
 ## Rules
 

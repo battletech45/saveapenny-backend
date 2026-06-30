@@ -2,6 +2,8 @@ package com.saveapenny.stockholding.controller;
 
 import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.shared.api.PagedResponse;
+import com.saveapenny.shared.api.PagedResponses;
 import com.saveapenny.stockholding.dto.CreateHoldingRequest;
 import com.saveapenny.stockholding.dto.HoldingResponse;
 import com.saveapenny.stockholding.dto.HoldingSummaryResponse;
@@ -50,11 +52,11 @@ public class StockHoldingController {
 
     @GetMapping
     @Operation(summary = "List stock holdings", description = "Returns paginated holdings with live profit/loss data.")
-    public ResponseEntity<ApiResponse<Page<HoldingResponse>>> getAll(
+    public ResponseEntity<ApiResponse<PagedResponse<HoldingResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @ParameterObject Pageable pageable) {
         Page<HoldingResponse> response = stockHoldingService.getAll(principal.userId(), pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponses.from(response)));
     }
 
     @GetMapping("/summary")

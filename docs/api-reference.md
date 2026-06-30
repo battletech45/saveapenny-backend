@@ -33,7 +33,7 @@ Authenticated endpoints outside the `/api/v1` prefix:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/admin/metrics` | Aggregated stock, OCR, and goal-progress metrics |
+| GET | `/admin/metrics` | Aggregated stock, OCR, and goal-progress metrics (returns raw `Map<String, Object>`, **not** wrapped in `ApiResponse`) |
 
 All other endpoints require:
 
@@ -78,6 +78,44 @@ Error:
 | Date-times | ISO-8601 with timezone (e.g., `2026-06-09T12:00:00Z`) |
 | Currencies | ISO-4217 3-letter codes (e.g., `USD`, `EUR`, `TRY`) |
 | Pagination | Spring-style: `page`, `size`, `sort` parameters |
+
+## Shared Pagination Response
+
+All paginated endpoints now return one shared payload shape inside `ApiResponse<T>`.
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {}
+    ],
+    "page": 0,
+    "size": 20,
+    "totalItems": 125,
+    "totalPages": 7,
+    "hasNext": true,
+    "hasPrevious": false
+  },
+  "error": null,
+  "timestamp": "2026-06-29T12:00:00Z"
+}
+```
+
+| Field | Type | Meaning |
+|------|------|---------|
+| `items` | Array | Results for the current page |
+| `page` | Integer | Zero-based page index |
+| `size` | Integer | Requested page size |
+| `totalItems` | Integer/Long | Total matching records across all pages |
+| `totalPages` | Integer | Total available pages |
+| `hasNext` | Boolean | Whether another page exists after the current one |
+| `hasPrevious` | Boolean | Whether a page exists before the current one |
+
+Notes:
+- `items` is always an array, never `null`
+- `page` remains zero-based to match request parameters
+- framework-specific `Page` fields such as `content`, `pageable`, `sort`, `first`, and `last` are not part of the public contract
 
 ## Authentication Endpoints
 
@@ -137,7 +175,7 @@ Error:
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/accounts` | Create an account |
-| GET | `/api/v1/accounts` | List accounts (paginated) |
+| GET | `/api/v1/accounts` | List accounts (`PagedResponse<AccountResponse>`) |
 | GET | `/api/v1/accounts/{accountId}` | Get account details |
 | PUT | `/api/v1/accounts/{accountId}` | Update account name |
 | DELETE | `/api/v1/accounts/{accountId}` | Soft-delete an account |
@@ -162,7 +200,7 @@ See [Categories](features/categories.md) for system vs. user category rules.
 |--------|------|-------------|
 | POST | `/api/v1/transactions` | Create an income or expense |
 | POST | `/api/v1/transactions/transfer` | Transfer between owned accounts |
-| GET | `/api/v1/transactions` | List transactions (paginated, filterable) |
+| GET | `/api/v1/transactions` | List transactions (`PagedResponse<TransactionResponse>`, filterable) |
 | GET | `/api/v1/transactions/{transactionId}` | Get transaction details |
 | PUT | `/api/v1/transactions/{transactionId}` | Update a transaction |
 | DELETE | `/api/v1/transactions/{transactionId}` | Delete a transaction |
@@ -192,7 +230,7 @@ See [Transactions](features/transactions.md) for balance impact and transfer beh
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/budgets` | Create a budget |
-| GET | `/api/v1/budgets` | List budgets (paginated) |
+| GET | `/api/v1/budgets` | List budgets (`PagedResponse<BudgetResponse>`) |
 | GET | `/api/v1/budgets/{budgetId}` | Get budget details |
 | GET | `/api/v1/budgets/{budgetId}/status` | Get spending status |
 | PUT | `/api/v1/budgets/{budgetId}` | Update budget |
@@ -249,7 +287,7 @@ All holdings endpoints are authenticated and return the standard response envelo
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/stocks/holdings` | Create a stock holding |
-| GET | `/api/v1/stocks/holdings` | List holdings (paginated, with live P/L) |
+| GET | `/api/v1/stocks/holdings` | List holdings (`PagedResponse<HoldingResponse>`, with live P/L) |
 | GET | `/api/v1/stocks/holdings/summary` | Portfolio summary (aggregate P/L) |
 | GET | `/api/v1/stocks/holdings/{holdingId}` | Get single holding |
 | PUT | `/api/v1/stocks/holdings/{holdingId}` | Update a holding |
@@ -297,13 +335,13 @@ See [Stocks](features/stocks.md) for holdings field descriptions and error codes
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/automations/recurring-transactions` | Create |
-| GET | `/api/v1/automations/recurring-transactions` | List (paginated) |
+| GET | `/api/v1/automations/recurring-transactions` | List (`PagedResponse<RecurringTransactionResponse>`) |
 | GET | `/api/v1/automations/recurring-transactions/{id}` | Get details |
 | PUT | `/api/v1/automations/recurring-transactions/{id}` | Update |
 | DELETE | `/api/v1/automations/recurring-transactions/{id}` | Soft-delete (→ EXPIRED) |
 | PATCH | `/api/v1/automations/recurring-transactions/{id}/pause` | Pause |
 | PATCH | `/api/v1/automations/recurring-transactions/{id}/resume` | Resume |
-| GET | `/api/v1/automations/recurring-transactions/{id}/history` | Execution history |
+| GET | `/api/v1/automations/recurring-transactions/{id}/history` | Execution history (`PagedResponse<RecurringExecutionHistoryResponse>`) |
 | GET | `/api/v1/automations/recurring-transactions/upcoming?limit=10` | Upcoming projections |
 
 See [Recurring Transactions](features/recurring-transactions.md) for lifecycle and classification.
@@ -313,7 +351,7 @@ See [Recurring Transactions](features/recurring-transactions.md) for lifecycle a
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/notifications` | Create a notification |
-| GET | `/api/v1/notifications` | List notifications (paginated) |
+| GET | `/api/v1/notifications` | List notifications (`PagedResponse<NotificationResponse>`) |
 | GET | `/api/v1/notifications/{notificationId}` | Get notification details |
 | PUT | `/api/v1/notifications/{notificationId}` | Update a notification |
 | DELETE | `/api/v1/notifications/{notificationId}` | Delete a notification |
@@ -346,7 +384,7 @@ See [OCR](features/ocr.md) for configuration and performance characteristics.
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/audits` | Create an audit entry |
-| GET | `/api/v1/audits` | List audit logs (paginated, filterable) |
+| GET | `/api/v1/audits` | List audit logs (`PagedResponse<AuditLogResponse>`, filterable) |
 | GET | `/api/v1/audits/{auditLogId}` | Get audit entry details |
 
 See [Audit Logs](features/audit-logs.md) for tracked resources and query filters.
@@ -363,7 +401,7 @@ See [Assistant](features/assistant.md) for capabilities and example questions.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/insights` | List insights (paginated) |
+| GET | `/api/v1/insights` | List insights (`PagedResponse<InsightResponse>`) |
 | GET | `/api/v1/insights/{id}` | Get insight details |
 | PATCH | `/api/v1/insights/{id}/read` | Mark as read |
 | PATCH | `/api/v1/insights/{id}/dismiss` | Dismiss an insight |
@@ -378,7 +416,7 @@ See [Insights](features/insights.md) for detection methods and configuration.
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/goals` | Create a goal |
-| GET | `/api/v1/goals` | List goals |
+| GET | `/api/v1/goals` | List goals (`PagedResponse<GoalResponse>`) |
 | GET | `/api/v1/goals/{goalId}` | Get goal details |
 | PATCH | `/api/v1/goals/{goalId}` | Update goal fields |
 | DELETE | `/api/v1/goals/{goalId}` | Delete a goal |
@@ -390,7 +428,7 @@ See [Insights](features/insights.md) for detection methods and configuration.
 |--------|------|-------------|
 | POST | `/api/v1/goals/{goalId}/scenarios` | Create a scenario |
 | GET | `/api/v1/goals/{goalId}/scenarios` | List scenarios |
-| GET | `/api/v1/goals/{goalId}/runs` | List simulation run history |
+| GET | `/api/v1/goals/{goalId}/runs` | List simulation run history (`PagedResponse<GoalRunResponse>`) |
 | POST | `/api/v1/goals/{goalId}/scenarios/compare` | Compare scenarios |
 | POST | `/api/v1/goals/{goalId}/what-if` | What-if analysis |
 
@@ -420,7 +458,7 @@ curl -X GET "http://localhost:8080/api/v1/accounts?page=0&size=20&sort=name,asc"
 | 404 | `*_NOT_FOUND` | Resource does not exist or is not owned by the caller |
 | 409 | `*_ALREADY_EXISTS` | Duplicate resource or conflicting request |
 | 429 | `RATE_LIMITED` | Too many requests |
-| 503 | `*_DISABLED` | Feature is not enabled (assistant, OCR) |
+| 503 | `*_DISABLED` | Feature is not enabled (assistant, OCR, stock market) |
 
 See [Error Codes](error-codes.md) for the complete error catalogue.
 

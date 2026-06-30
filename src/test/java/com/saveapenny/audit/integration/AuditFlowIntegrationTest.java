@@ -75,7 +75,7 @@ class AuditFlowIntegrationTest {
                         .param("entityType", "ACCOUNT"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].id").value(auditLogId));
+                .andExpect(jsonPath("$.data.items[0].id").value(auditLogId));
 
         mockMvc.perform(get("/api/v1/audits/{auditLogId}", auditLogId)
                         .header("Authorization", "Bearer " + tokenA))
