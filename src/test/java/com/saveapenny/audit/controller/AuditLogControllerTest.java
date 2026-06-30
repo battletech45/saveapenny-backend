@@ -115,7 +115,7 @@ class AuditLogControllerTest {
                         .param("entityType", "BUDGET"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].entityType").value("BUDGET"));
+                .andExpect(jsonPath("$.data.items[0].entityType").value("BUDGET"));
     }
 
     @Test

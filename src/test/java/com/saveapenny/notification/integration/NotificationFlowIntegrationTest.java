@@ -74,7 +74,7 @@ class NotificationFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].id").value(notificationId));
+                .andExpect(jsonPath("$.data.items[0].id").value(notificationId));
 
         mockMvc.perform(get("/api/v1/notifications/unread-count")
                         .header("Authorization", "Bearer " + token))

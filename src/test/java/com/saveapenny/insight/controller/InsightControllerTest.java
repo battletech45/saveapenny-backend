@@ -15,11 +15,11 @@ import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
 import com.saveapenny.config.security.SecurityConfig;
-import com.saveapenny.insight.dto.InsightListResponse;
 import com.saveapenny.insight.dto.InsightResponse;
 import com.saveapenny.insight.entity.InsightType;
 import com.saveapenny.insight.exception.InsightNotFoundException;
 import com.saveapenny.insight.service.InsightService;
+import com.saveapenny.shared.api.PagedResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -81,13 +81,14 @@ class InsightControllerTest {
                 .generatedAt(OffsetDateTime.now())
                 .build();
 
-        InsightListResponse listResponse = InsightListResponse.builder()
-                .insights(List.of(insight))
-                .page(0)
-                .size(20)
-                .totalElements(1)
-                .totalPages(1)
-                .build();
+        PagedResponse<InsightResponse> listResponse = new PagedResponse<>(
+                List.of(insight),
+                0,
+                20,
+                1,
+                1,
+                false,
+                false);
 
         when(insightService.getAll(eq(userId), eq(null), eq(null), eq(null), any(Pageable.class)))
                 .thenReturn(listResponse);
@@ -96,8 +97,8 @@ class InsightControllerTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.insights").isArray())
-                .andExpect(jsonPath("$.data.totalElements").value(1));
+                .andExpect(jsonPath("$.data.items").isArray())
+                .andExpect(jsonPath("$.data.totalItems").value(1));
     }
 
     @Test

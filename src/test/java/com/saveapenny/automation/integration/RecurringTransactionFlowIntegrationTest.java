@@ -115,7 +115,7 @@ class RecurringTransactionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content.length()").value(1));
+                .andExpect(jsonPath("$.data.items.length()").value(1));
 
         executionService.processDueRecurringTransactions(LocalDate.parse(today));
 
@@ -159,9 +159,9 @@ class RecurringTransactionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content.length()").value(1))
-                .andExpect(jsonPath("$.data.content[0].scheduledDate").value(today))
-                .andExpect(jsonPath("$.data.content[0].status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].scheduledDate").value(today))
+                .andExpect(jsonPath("$.data.items[0].status").value("SUCCESS"));
 
         assertThat(executionHistoryRepository.findAll().stream()
                 .filter(item -> item.getRecurringTransactionId().toString().equals(recurringId))

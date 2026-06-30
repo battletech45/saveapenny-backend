@@ -102,7 +102,7 @@ class AccountControllerTest {
                         .header("Authorization", "Bearer token-2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].name").value("Wallet"));
+                .andExpect(jsonPath("$.data.items[0].name").value("Wallet"));
     }
 
     @Test

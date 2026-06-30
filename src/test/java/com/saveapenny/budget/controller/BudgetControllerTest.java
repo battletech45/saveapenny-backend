@@ -107,7 +107,7 @@ class BudgetControllerTest {
                         .header("Authorization", "Bearer token-2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].amount").value(400.0));
+                .andExpect(jsonPath("$.data.items[0].amount").value(400.0));
     }
 
     @Test

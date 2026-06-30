@@ -131,7 +131,7 @@ class TransactionControllerTest {
                         .header("Authorization", "Bearer token-3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].type").value("EXPENSE"));
+                .andExpect(jsonPath("$.data.items[0].type").value("EXPENSE"));
     }
 
     @Test

@@ -115,9 +115,9 @@ class ImportFlowIntegrationTest extends TestcontainersIntegrationTest {
         mockMvc.perform(get("/api/v1/transactions")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content.length()").value(1))
-                .andExpect(jsonPath("$.data.content[0].description").value("Lunch"))
-                .andExpect(jsonPath("$.data.content[0].amount").value(10.5));
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].description").value("Lunch"))
+                .andExpect(jsonPath("$.data.items[0].amount").value(10.5));
 
         assertEquals(1, transactionRepository.count());
         Account account = accountRepository.findById(UUID.fromString(accountId)).orElseThrow();

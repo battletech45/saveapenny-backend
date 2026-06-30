@@ -87,7 +87,7 @@ class GoalFlowIntegrationTest {
         mockMvc.perform(get("/api/v1/goals")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content[0].id").value(goalId));
+                .andExpect(jsonPath("$.data.items[0].id").value(goalId));
 
         mockMvc.perform(get("/api/v1/goals/{goalId}", goalId)
                         .header("Authorization", "Bearer " + token))
@@ -129,7 +129,7 @@ class GoalFlowIntegrationTest {
         mockMvc.perform(get("/api/v1/goals/{goalId}/runs", goalId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content.length()").value(0));
+                .andExpect(jsonPath("$.data.items.length()").value(0));
 
         String updateBody = """
                 {

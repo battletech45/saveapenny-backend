@@ -128,7 +128,7 @@ class BudgetFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].id").value(budgetId));
+                .andExpect(jsonPath("$.data.items[0].id").value(budgetId));
 
         mockMvc.perform(get("/api/v1/budgets/{budgetId}/status", budgetId)
                         .header("Authorization", "Bearer " + token))

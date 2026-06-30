@@ -55,7 +55,7 @@ class InsightFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.insights").isArray());
+                .andExpect(jsonPath("$.data.items").isArray());
 
         mockMvc.perform(post("/api/v1/insights/generate")
                         .header("Authorization", "Bearer " + token)

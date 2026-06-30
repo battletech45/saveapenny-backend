@@ -114,7 +114,7 @@ class GoalScenarioExplorationIntegrationTest {
         mockMvc.perform(get("/api/v1/goals/{goalId}/runs", goalId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.content.length()").value(0));
+                .andExpect(jsonPath("$.data.items.length()").value(0));
     }
 
     private String registerAndGetToken(String email, String fullName) throws Exception {

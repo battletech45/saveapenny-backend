@@ -103,12 +103,12 @@ class InsightIntegrationTest {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.insights").isArray())
-                    .andExpect(jsonPath("$.data.totalElements").value(generatedCount))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.totalItems").value(generatedCount))
                     .andReturn();
 
             JsonNode listJson = objectMapper.readTree(listResult.getResponse().getContentAsString());
-            JsonNode insights = listJson.path("data").path("insights");
+            JsonNode insights = listJson.path("data").path("items");
 
             boolean hasSpendingPattern = false;
             boolean hasAnomaly = false;
@@ -162,7 +162,7 @@ class InsightIntegrationTest {
                     .andReturn();
 
             JsonNode listJson = objectMapper.readTree(listResult.getResponse().getContentAsString());
-            JsonNode insights = listJson.path("data").path("insights");
+            JsonNode insights = listJson.path("data").path("items");
 
             for (JsonNode insight : insights) {
                 String id = insight.path("id").asText();
@@ -200,7 +200,7 @@ class InsightIntegrationTest {
                     .andReturn();
 
             int firstCount = objectMapper.readTree(firstList.getResponse().getContentAsString())
-                    .path("data").path("totalElements").asInt();
+                    .path("data").path("totalItems").asInt();
 
             MvcResult genAgain = mockMvc.perform(post("/api/v1/insights/generate")
                             .header("Authorization", "Bearer " + token)
@@ -218,7 +218,7 @@ class InsightIntegrationTest {
                     .andReturn();
 
             int secondCount = objectMapper.readTree(secondList.getResponse().getContentAsString())
-                    .path("data").path("totalElements").asInt();
+                    .path("data").path("totalItems").asInt();
 
             org.assertj.core.api.Assertions.assertThat(secondGenerated)
                     .as("Repeated generation should create 0 new insights due to dedup")
@@ -240,17 +240,17 @@ class InsightIntegrationTest {
                             .param("type", "RECOMMENDATION")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.insights").isArray())
+                    .andExpect(jsonPath("$.data.items").isArray())
                     .andReturn();
 
             JsonNode listJson = objectMapper.readTree(listResult.getResponse().getContentAsString());
-            int totalElements = listJson.path("data").path("totalElements").asInt();
+            int totalElements = listJson.path("data").path("totalItems").asInt();
 
             org.assertj.core.api.Assertions.assertThat(totalElements)
                     .as("Should have at least 1 RECOMMENDATION insight for budget")
                     .isGreaterThanOrEqualTo(1);
 
-            for (JsonNode insight : listJson.path("data").path("insights")) {
+            for (JsonNode insight : listJson.path("data").path("items")) {
                 String title = insight.path("title").asText().toLowerCase();
                 boolean relatesToBudget = title.contains("budget");
                 org.assertj.core.api.Assertions.assertThat(relatesToBudget)
@@ -346,10 +346,10 @@ class InsightIntegrationTest {
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.insights").isArray())
+                    .andExpect(jsonPath("$.data.items").isArray())
                     .andExpect(jsonPath("$.data.page").isNumber())
                     .andExpect(jsonPath("$.data.size").isNumber())
-                    .andExpect(jsonPath("$.data.totalElements").isNumber())
+                    .andExpect(jsonPath("$.data.totalItems").isNumber())
                     .andExpect(jsonPath("$.data.totalPages").isNumber());
         }
 
@@ -360,11 +360,11 @@ class InsightIntegrationTest {
                             .param("type", "ANOMALY")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.insights").isArray())
+                    .andExpect(jsonPath("$.data.items").isArray())
                     .andReturn();
 
             JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-            for (JsonNode insight : json.path("data").path("insights")) {
+            for (JsonNode insight : json.path("data").path("items")) {
                 org.assertj.core.api.Assertions.assertThat(insight.path("type").asText())
                         .isEqualTo("ANOMALY");
             }
@@ -380,12 +380,12 @@ class InsightIntegrationTest {
                     .andReturn();
 
             JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-            int total = json.path("data").path("totalElements").asInt();
+            int total = json.path("data").path("totalItems").asInt();
             org.assertj.core.api.Assertions.assertThat(total)
                     .as("Should have at least 1 CRITICAL insight from exceeded budget")
                     .isGreaterThanOrEqualTo(1);
 
-            for (JsonNode insight : json.path("data").path("insights")) {
+            for (JsonNode insight : json.path("data").path("items")) {
                 org.assertj.core.api.Assertions.assertThat(insight.path("severity").asText())
                         .isEqualTo("CRITICAL");
             }
@@ -401,7 +401,7 @@ class InsightIntegrationTest {
                     .andReturn();
 
             int unreadCount = objectMapper.readTree(unreadResult.getResponse().getContentAsString())
-                    .path("data").path("totalElements").asInt();
+                    .path("data").path("totalItems").asInt();
 
             org.assertj.core.api.Assertions.assertThat(unreadCount)
                     .as("All insights should start as unread")
@@ -533,7 +533,7 @@ class InsightIntegrationTest {
                     .andReturn();
 
             JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-            return json.path("data").path("insights").get(0).path("id").asText();
+            return json.path("data").path("items").get(0).path("id").asText();
         }
     }
 
@@ -582,7 +582,7 @@ class InsightIntegrationTest {
             mockMvc.perform(get("/api/v1/insights")
                             .header("Authorization", "Bearer " + token2))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.totalElements").value(0));
+                    .andExpect(jsonPath("$.data.totalItems").value(0));
         }
     }
 
