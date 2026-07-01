@@ -47,7 +47,7 @@ class TrendAnalyzerTest {
     void analyze_returnsIncreasingTrendWhenSpendingRises() {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        YearMonth thisMonth = YearMonth.from(LocalDate.now());
+        YearMonth thisMonth = YearMonth.from(timeService.today());
         YearMonth monthMinus1 = thisMonth.minusMonths(1);
         YearMonth monthMinus2 = thisMonth.minusMonths(2);
 
@@ -78,7 +78,7 @@ class TrendAnalyzerTest {
     void analyze_returnsDecreasingTrendWhenSpendingDrops() {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        YearMonth thisMonth = YearMonth.from(LocalDate.now());
+        YearMonth thisMonth = YearMonth.from(timeService.today());
         YearMonth monthMinus1 = thisMonth.minusMonths(1);
         YearMonth monthMinus2 = thisMonth.minusMonths(2);
 
@@ -109,7 +109,7 @@ class TrendAnalyzerTest {
     void analyze_returnsEmptyWhenSpendingIsFlat() {
         UUID userId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
-        YearMonth thisMonth = YearMonth.from(LocalDate.now());
+        YearMonth thisMonth = YearMonth.from(timeService.today());
         YearMonth monthMinus1 = thisMonth.minusMonths(1);
         YearMonth monthMinus2 = thisMonth.minusMonths(2);
 

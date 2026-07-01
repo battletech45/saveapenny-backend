@@ -129,7 +129,7 @@ class InsightIntegrationTest {
             }
 
             org.assertj.core.api.Assertions.assertThat(hasSpendingPattern)
-                    .as("Spending pattern should be detected from May-to-June increase in Food")
+                    .as("Spending pattern should be detected from June-to-July increase in Food")
                     .isTrue();
             org.assertj.core.api.Assertions.assertThat(hasAnomaly)
                     .as("Anomaly should be detected from the $50000 transaction in Food")
@@ -274,18 +274,18 @@ class InsightIntegrationTest {
         }
 
         private void seedHistoricalFoodTransactions() throws Exception {
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-04-05", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-04-15", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-05-05", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-05-15", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-05-25", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-06-02", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-06-05", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-06-07", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-05-05", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-05-15", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-06-05", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-06-15", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-06-25", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-07-01", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-07-05", "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-07-07", "Weekly groceries");
         }
 
         private void seedAnomalousTransaction() throws Exception {
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "50000.00", "2026-06-08", "Large purchase");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "50000.00", "2026-07-01", "Large purchase");
         }
 
         private void seedEntertainmentBudgetAndTransactions() throws Exception {
@@ -294,8 +294,8 @@ class InsightIntegrationTest {
                       "categoryId":"%s",
                       "amount":200.0000,
                       "period":"MONTHLY",
-                      "startDate":"2026-06-01",
-                      "endDate":"2026-06-30"
+                      "startDate":"2026-07-01",
+                      "endDate":"2026-07-31"
                     }
                     """.formatted(entertainmentCategoryId);
 
@@ -305,10 +305,10 @@ class InsightIntegrationTest {
                             .content(budgetBody))
                     .andExpect(status().isCreated());
 
-            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-06-03",
+            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-07-03",
                     "Movie tickets");
-            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-06-06", "Concert");
-            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-06-09",
+            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-07-06", "Concert");
+            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-07-09",
                     "Streaming service");
         }
     }

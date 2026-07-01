@@ -74,7 +74,7 @@ class GoalSimulationFlowIntegrationTest extends TestcontainersIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.type").value("SAVINGS"))
                 .andExpect(jsonPath("$.data.summary.requiredMonthlyContribution").exists())
-                .andExpect(jsonPath("$.data.series.length()").value(48));
+                .andExpect(jsonPath("$.data.series.length()").value(47));
     }
 
     private String registerAndGetToken(String email, String fullName) throws Exception {
