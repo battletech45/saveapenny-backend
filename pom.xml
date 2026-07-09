@@ -82,10 +82,22 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-restclient</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-jackson</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webclient</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-jackson</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -101,6 +113,10 @@
                 <exclusion>
                     <groupId>tools.jackson.core</groupId>
                     <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-jackson</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -238,6 +254,42 @@
                 <configuration>
                     <jvmArguments>--enable-native-access=ALL-UNNAMED</jvmArguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-jackson3-on-runtime-classpath</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>org.springframework.boot:spring-boot-starter-jackson:*:*:compile</exclude>
+                                        <exclude>org.springframework.boot:spring-boot-starter-jackson:*:*:runtime</exclude>
+                                        <exclude>org.springframework.boot:spring-boot-jackson:*:*:compile</exclude>
+                                        <exclude>org.springframework.boot:spring-boot-jackson:*:*:runtime</exclude>
+                                    </excludes>
+                                    <message>
+                                        Jackson 3 (tools.jackson / spring-boot-starter-jackson) leaked onto the
+                                        runtime classpath. This app's DTOs use classic Jackson 2
+                                        (com.fasterxml.jackson.databind) types such as JsonNode; if Spring's
+                                        Jackson 3 HttpMessageConverter wins bean resolution instead of the
+                                        Jackson 2 one, any request binding JSON into a JsonNode-typed field
+                                        (e.g. CreateGoalRequest.inputs) fails with a 500
+                                        InvalidDefinitionException. Exclude spring-boot-starter-jackson from
+                                        whatever dependency reintroduced it.
+                                    </message>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
