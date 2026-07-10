@@ -26,7 +26,7 @@
         <springdoc.version>3.0.3</springdoc.version>
         <tess4j.version>5.19.0</tess4j.version>
         <testcontainers.version>1.21.4</testcontainers.version>
-        <rest-assured.version>6.0.0</rest-assured.version>
+        <rest-assured.version>6.0.1</rest-assured.version>
         <jacoco.version>0.8.15</jacoco.version>
     </properties>
 
