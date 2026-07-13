@@ -98,7 +98,9 @@ class InsightControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items").isArray())
-                .andExpect(jsonPath("$.data.totalItems").value(1));
+                .andExpect(jsonPath("$.data.insights").isArray())
+                .andExpect(jsonPath("$.data.totalItems").value(1))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
     }
 
     @Test
@@ -149,7 +151,8 @@ class InsightControllerTest {
         mockMvc.perform(patch("/api/v1/insights/{id}/read", insightId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.read").value(true));
+                .andExpect(jsonPath("$.data.read").value(true))
+                .andExpect(jsonPath("$.data.isRead").value(true));
     }
 
     @Test

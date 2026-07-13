@@ -1,5 +1,6 @@
 package com.saveapenny.shared.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record PagedResponse<T>(
@@ -11,4 +12,14 @@ public record PagedResponse<T>(
         boolean hasNext,
         boolean hasPrevious
 ) {
+
+    @JsonProperty("insights")
+    public List<T> insights() {
+        return items;
+    }
+
+    @JsonProperty("totalElements")
+    public long totalElements() {
+        return totalItems;
+    }
 }

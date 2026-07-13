@@ -1,5 +1,6 @@
 package com.saveapenny.insight.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.saveapenny.insight.entity.InsightType;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -28,4 +29,14 @@ public class InsightResponse {
     private Boolean dismissed;
     private OffsetDateTime generatedAt;
     private OffsetDateTime createdAt;
+
+    @JsonProperty("read")
+    public Boolean getRead() {
+        return read;
+    }
+
+    @JsonProperty("isRead")
+    public Boolean getIsRead() {
+        return read;
+    }
 }
