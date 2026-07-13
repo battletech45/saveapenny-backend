@@ -8,9 +8,6 @@ import com.saveapenny.insight.analytics.TrendAnalyzer;
 import com.saveapenny.insight.config.InsightProperties;
 import com.saveapenny.insight.entity.InsightEntity;
 import com.saveapenny.insight.repository.InsightRepository;
-import com.saveapenny.notification.dto.CreateNotificationRequest;
-import com.saveapenny.notification.entity.NotificationType;
-import com.saveapenny.notification.service.NotificationService;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +27,7 @@ public class InsightGenerationPipeline {
     private final CategoryInsightAnalyzer categoryInsightAnalyzer;
     private final AiEnhancementService aiEnhancementService;
     private final InsightRepository insightRepository;
-    private final NotificationService notificationService;
+    private final InsightNotificationService insightNotificationService;
     private final InsightProperties insightProperties;
 
     public InsightGenerationPipeline(
@@ -40,7 +37,7 @@ public class InsightGenerationPipeline {
             CategoryInsightAnalyzer categoryInsightAnalyzer,
             AiEnhancementService aiEnhancementService,
             InsightRepository insightRepository,
-            NotificationService notificationService,
+            InsightNotificationService insightNotificationService,
             InsightProperties insightProperties) {
         this.spendingPatternAnalyzer = spendingPatternAnalyzer;
         this.anomalyDetector = anomalyDetector;
@@ -48,7 +45,7 @@ public class InsightGenerationPipeline {
         this.categoryInsightAnalyzer = categoryInsightAnalyzer;
         this.aiEnhancementService = aiEnhancementService;
         this.insightRepository = insightRepository;
-        this.notificationService = notificationService;
+        this.insightNotificationService = insightNotificationService;
         this.insightProperties = insightProperties;
     }
 
@@ -117,11 +114,7 @@ public class InsightGenerationPipeline {
 
     private void createNotification(UUID userId, InsightCandidate candidate) {
         try {
-            notificationService.create(userId, CreateNotificationRequest.builder()
-                    .type(NotificationType.INSIGHT_GENERATED)
-                    .title(candidate.title())
-                    .message(candidate.summary())
-                    .build());
+            insightNotificationService.createInsightGeneratedNotification(userId, candidate);
         } catch (RuntimeException ex) {
             log.warn("Failed to create notification for insight of user {}", userId, ex);
         }

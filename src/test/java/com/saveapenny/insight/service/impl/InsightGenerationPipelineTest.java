@@ -2,6 +2,7 @@ package com.saveapenny.insight.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,9 +17,6 @@ import com.saveapenny.insight.config.InsightProperties;
 import com.saveapenny.insight.entity.InsightEntity;
 import com.saveapenny.insight.entity.InsightType;
 import com.saveapenny.insight.repository.InsightRepository;
-import com.saveapenny.notification.dto.CreateNotificationRequest;
-import com.saveapenny.notification.service.NotificationService;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,16 +49,13 @@ class InsightGenerationPipelineTest {
     private InsightRepository insightRepository;
 
     @Mock
-    private NotificationService notificationService;
+    private InsightNotificationService insightNotificationService;
 
     @Mock
     private InsightProperties insightProperties;
 
     @Captor
     private ArgumentCaptor<InsightEntity> entityCaptor;
-
-    @Captor
-    private ArgumentCaptor<CreateNotificationRequest> notificationCaptor;
 
     private InsightGenerationPipeline pipeline;
 
@@ -71,7 +66,7 @@ class InsightGenerationPipelineTest {
         pipeline = new InsightGenerationPipeline(
                 spendingPatternAnalyzer, anomalyDetector, trendAnalyzer,
                 categoryInsightAnalyzer, aiEnhancementService,
-                insightRepository, notificationService, insightProperties);
+                insightRepository, insightNotificationService, insightProperties);
         userId = UUID.randomUUID();
     }
 
@@ -94,7 +89,7 @@ class InsightGenerationPipelineTest {
 
         assertEquals(1, count);
         verify(insightRepository).save(any(InsightEntity.class));
-        verify(notificationService).create(any(), any(CreateNotificationRequest.class));
+        verify(insightNotificationService).createInsightGeneratedNotification(userId, warning);
     }
 
     @Test
@@ -114,7 +109,7 @@ class InsightGenerationPipelineTest {
 
         pipeline.execute(userId);
 
-        verify(notificationService, never()).create(any(), any());
+        verify(insightNotificationService, never()).createInsightGeneratedNotification(any(), any());
     }
 
     @Test
@@ -136,7 +131,7 @@ class InsightGenerationPipelineTest {
 
         assertEquals(0, count);
         verify(insightRepository, never()).save(any());
-        verify(notificationService, never()).create(any(), any());
+        verify(insightNotificationService, never()).createInsightGeneratedNotification(any(), any());
     }
 
     @Test
@@ -178,8 +173,9 @@ class InsightGenerationPipelineTest {
         when(insightProperties.deduplicationWindowDays()).thenReturn(7);
         when(insightRepository.existsByUserIdAndTypeAndTitleAndGeneratedAtAfter(
                 any(), any(), any(), any())).thenReturn(false);
-        when(notificationService.create(any(), any()))
-                .thenThrow(new RuntimeException("DB down"));
+        doThrow(new RuntimeException("DB down"))
+                .when(insightNotificationService)
+                .createInsightGeneratedNotification(any(), any());
 
         int count = pipeline.execute(userId);
 
