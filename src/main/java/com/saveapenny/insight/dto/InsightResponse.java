@@ -2,6 +2,7 @@ package com.saveapenny.insight.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.saveapenny.insight.entity.InsightType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,7 @@ public class InsightResponse {
         return read;
     }
 
+    @Schema(hidden = true)
     @JsonProperty("isRead")
     public Boolean getIsRead() {
         return read;
