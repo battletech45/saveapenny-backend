@@ -26,6 +26,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,7 @@ public class AssistantServiceImpl implements AssistantService {
     private final AssistantChatMessageRepository assistantChatMessageRepository;
 
     public AssistantServiceImpl(
-            ObjectProvider<ChatClient> chatClientProvider,
+            @Qualifier("assistantChatClient") ObjectProvider<ChatClient> chatClientProvider,
             AssistantProperties assistantProperties,
             FinancePromptBuilder financePromptBuilder,
             SpringAiMcpToolAdapter springAiMcpToolAdapter,

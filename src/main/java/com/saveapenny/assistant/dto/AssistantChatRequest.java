@@ -24,6 +24,5 @@ public class AssistantChatRequest {
     @Size(max = 4000)
     private String message;
 
-    @Valid
-    private List<AssistantMessageDto> history;
+    private List<@Valid AssistantMessageDto> history;
 }
