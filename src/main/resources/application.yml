@@ -87,7 +87,7 @@ springdoc:
 assistant:
   enabled: ${ASSISTANT_ENABLED:false}
   max-history: 8
-  model: ${ASSISTANT_MODEL:poolside/laguna-xs.2:free}
+  model: ${ASSISTANT_MODEL:cohere/north-mini-code:free}
   provider: ${ASSISTANT_AI_PROVIDER:openrouter}
   openrouter-api-key: ${OPENROUTER_API_KEY:}
   openrouter-base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
@@ -126,7 +126,7 @@ insight:
   stddev-threshold: 3.0
   max-amount-ratio: 0.5
   ai-enhanced: false
-  model: ${INSIGHT_MODEL:poolside/laguna-xs.2:free}
+  model: ${INSIGHT_MODEL:cohere/north-mini-code:free}
   provider: ${INSIGHT_AI_PROVIDER:openrouter}
   openrouter-api-key: ${OPENROUTER_API_KEY:}
   openrouter-base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
