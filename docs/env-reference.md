@@ -57,9 +57,11 @@ See [Rate Limiting](rate-limiting.md) for algorithm details and client best prac
 |----------|---------|-------------|
 | `ASSISTANT_ENABLED` | `false` | Enable the AI assistant |
 | `ASSISTANT_AI_PROVIDER` | `openrouter` | Provider: `openrouter` or `openai` |
-| `ASSISTANT_MODEL` | `poolside/laguna-xs.2:free` | AI model identifier |
+| `ASSISTANT_MODEL` | `cohere/north-mini-code:free` | AI model identifier |
 | `OPENROUTER_API_KEY` | — | OpenRouter API key |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api` | OpenRouter base URL |
+| `OPENROUTER_SITE_URL` | — | Optional `HTTP-Referer` sent to OpenRouter for attribution |
+| `OPENROUTER_APP_NAME` | `SaveAPenny` | Optional `X-Title` sent to OpenRouter for attribution |
 | `OPENAI_API_KEY` | — | OpenAI API key (when using OpenAI provider) |
 
 See [Assistant](features/assistant.md) for feature details.
@@ -148,6 +150,7 @@ Additional insight properties in `application.yml`:
 | `insight.stddev-threshold` | `3.0` | Anomaly detection sensitivity |
 | `insight.max-amount-ratio` | `0.5` | Max ratio for amount comparisons |
 | `insight.ai-enhanced` | `false` | Rewrite insight text with AI after rule-based generation |
+| `insight.cron` | `0 30 6 * * *` | Schedule for the daily insight-generation job |
 
 See [Insights](features/insights.md) for feature details.
 
@@ -164,8 +167,17 @@ Additional goal properties in `application.yml`:
 | `goal.progress.off-track-ratio` | `0.10` | Threshold for OFF_TRACK status |
 | `goal.progress.at-risk-ratio` | `0.05` | Threshold for AT_RISK status |
 | `goal.progress.off-track-persistence-months` | `2` | Months before OFF_TRACK notification |
+| `goal.progress.cron` | `0 0 6 * * *` | Schedule for the daily goal progress job |
 
 See [Goals](features/goals.md) for feature details.
+
+## Automation (Recurring Transactions)
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `automation.recurring.cron` | `0 */5 * * * *` | Schedule for processing due recurring transactions |
+
+See [Recurring Transactions](features/recurring-transactions.md) for feature details.
 
 ## Docker Compose
 

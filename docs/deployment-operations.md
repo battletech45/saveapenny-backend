@@ -66,7 +66,7 @@ The Dockerfile uses a multi-stage build:
 | Aspect | Detail |
 |--------|--------|
 | Engine | PostgreSQL 16+ |
-| Migration | Flyway (classpath:db/migration, 19 migrations V1–V19) |
+| Migration | Flyway (classpath:db/migration, 20 migrations V1–V20) |
 | Schema validation | Hibernate `ddl-auto: validate` |
 | Default connection | `localhost:5432/saveapenny` |
 | Migration files | `src/main/resources/db/migration/` |

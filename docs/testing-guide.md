@@ -33,7 +33,7 @@ mvn package -DskipTests
 | Unit | No | No | Milliseconds | `.../service/impl/*Test.java`, `.../mapper/*Test.java` |
 | Slice (`@WebMvcTest`) | Web layer only | No | ~100ms | `.../controller/*Test.java` |
 | Repository (`@DataJpaTest`) | JPA only | No | ~30ms | `.../repository/*Test.java` |
-| Integration (`@SpringBootTest`) | Full | No (H2) | Seconds | `.../integration/*IntegrationTest.java` |
+| Integration (`@SpringBootTest`) | Full | Mostly H2; a few use Testcontainers (`TestcontainersIntegrationTest`, `TransactionFlowIntegrationTest`, `FullFlowIntegrationTest`, `ImportFlowIntegrationTest`, `ReportFlowIntegrationTest`, `GoalSimulationFlowIntegrationTest`) | Seconds | `.../integration/*IntegrationTest.java` |
 | Golden Image | Web + JPA | No (H2) | Seconds | `.../ocr/.../OcrGoldenImageRegressionTest.java` |
 
 ### Unit Tests
