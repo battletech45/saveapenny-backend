@@ -33,12 +33,16 @@ com.saveapenny/
 ├── report/                            # Monthly summaries, net worth
 ├── imports/                           # CSV import with preview/confirm
 ├── ocr/                               # Tesseract-based receipt OCR (hexagonal: domain/application/infrastructure/interfaces/support)
+├── stock/                             # Read-through Alpha Vantage market data
+├── stockholding/                      # User stock holdings CRUD + portfolio summary
 ├── notification/                      # User-facing notifications
 ├── audit/                             # Entity change tracking
 ├── assistant/                         # AI chat ("Penny Dog")
 ├── insight/                           # Automated financial insights (includes analytics/, scheduler/, config/ sub-packages)
 ├── goal/                              # Financial goal simulation
 ├── mcp/                               # MCP tool infrastructure
+├── analytics/                         # Firebase/GA4 Measurement Protocol event publishing (not to be confused with insight/analytics/ above, which is unrelated anomaly-detection logic)
+├── admin/                             # Admin-only metrics endpoint
 └── shared/                            # ApiResponse, GlobalExceptionHandler
     ├── api/                           # ApiResponse / ApiError envelope
     └── exception/                     # GlobalExceptionHandler

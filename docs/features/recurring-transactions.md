@@ -94,7 +94,7 @@ The `history` endpoint returns per-run records with:
 | `failureReason` | Error details (if failed) |
 | `runDate` | The date the run was attempted |
 
-The scheduler is **idempotent** — it skips dates that already have a `SUCCESS` history entry.
+The scheduler is **idempotent** — it skips dates that already have a `SUCCESS` history entry. It runs on `automation.recurring.cron` (default `0 */5 * * * *`, every 5 minutes); there is no top-level `automation:` block in `application.yml` today, so this is only overridable via the `AUTOMATION_RECURRING_CRON` environment variable (Spring's relaxed binding), not a documented yml default.
 
 ## Upcoming Preview
 

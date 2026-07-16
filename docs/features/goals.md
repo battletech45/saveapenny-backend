@@ -154,6 +154,14 @@ Scenarios let you compare alternate assumptions for the same goal. Common use ca
 | `ACHIEVED` | Goal target has been met |
 | `ABANDONED` | Goal is no longer being pursued |
 
+## Scheduled Progress Checks
+
+`GoalProgressJob` runs daily (default cron `0 0 6 * * *`, configurable via `goal.progress.cron`) and evaluates every `ACTIVE` goal's projected status (`ON_TRACK`, `AT_RISK`, `OFF_TRACK`, `ACHIEVED`, `NO_PROJECTION`). It's disabled by default (`goal.progress.enabled: false` / `GOAL_PROGRESS_ENABLED`).
+
+When a goal's projection crosses into `OFF_TRACK` for `goal.progress.off-track-persistence-months` consecutive runs (default `2`), `GoalOffTrackNotifier` creates a `GOAL_OFF_TRACK` notification (deduplicated against existing unread notifications for the same goal). This projected status is separate from the persisted `Goal Statuses` below — the job never writes `ACHIEVED` back to the goal itself; only an explicit status-update call does that.
+
+See [env-reference.md](../env-reference.md#goals) for all `goal.progress.*` properties.
+
 ## Warnings
 
 Simulations may include warnings:
