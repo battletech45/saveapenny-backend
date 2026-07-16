@@ -147,3 +147,15 @@ stock:
   base-url: https://www.alphavantage.co
   rate-limit-per-minute: 5
   rate-limit-per-day: 25
+
+firebase:
+  analytics:
+    enabled: ${FIREBASE_ANALYTICS_ENABLED:false}
+    android-app-id: ${FIREBASE_ANDROID_APP_ID:}
+    android-api-secret: ${FIREBASE_ANDROID_API_SECRET:}
+    ios-app-id: ${FIREBASE_IOS_APP_ID:}
+    ios-api-secret: ${FIREBASE_IOS_API_SECRET:}
+    endpoint: ${FIREBASE_ANALYTICS_ENDPOINT:https://www.google-analytics.com/mp/collect}
+    debug-endpoint: ${FIREBASE_ANALYTICS_DEBUG_ENDPOINT:https://www.google-analytics.com/debug/mp/collect}
+    validate-only: ${FIREBASE_ANALYTICS_VALIDATE_ONLY:false}
+    timeout-millis: ${FIREBASE_ANALYTICS_TIMEOUT_MS:2000}
