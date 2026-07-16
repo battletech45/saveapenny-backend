@@ -1,5 +1,7 @@
 package com.saveapenny.budget.service.impl;
 
+import com.saveapenny.analytics.dto.AnalyticsEvent;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.budget.dto.BudgetResponse;
 import com.saveapenny.budget.dto.BudgetStatusResponse;
 import com.saveapenny.budget.dto.CreateBudgetRequest;
@@ -43,16 +45,19 @@ public class BudgetServiceImpl implements BudgetService {
     private final BudgetMapper budgetMapper;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
+    private final AnalyticsEventPublisher analyticsEventPublisher;
 
     public BudgetServiceImpl(
             BudgetRepository budgetRepository,
             BudgetMapper budgetMapper,
             CategoryRepository categoryRepository,
-            TransactionRepository transactionRepository) {
+            TransactionRepository transactionRepository,
+            AnalyticsEventPublisher analyticsEventPublisher) {
         this.budgetRepository = budgetRepository;
         this.budgetMapper = budgetMapper;
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
+        this.analyticsEventPublisher = analyticsEventPublisher;
     }
 
     @Override
@@ -240,6 +245,16 @@ public class BudgetServiceImpl implements BudgetService {
         BigDecimal budgetAmount = nullSafeAmount(budget.getAmount());
         BigDecimal remainingAmount = budgetAmount.subtract(spentAmount);
         BigDecimal usagePercentage = calculateUsagePercentage(spentAmount, budgetAmount);
+        String status = resolveStatus(usagePercentage);
+
+        if ("EXCEEDED".equals(status)) {
+            analyticsEventPublisher.publish(new AnalyticsEvent(
+                    "budget_exceeded",
+                    Map.of(
+                            "budget_id", budget.getId().toString(),
+                            "category_id", budget.getCategoryId().toString(),
+                            "usage_percentage", usagePercentage.doubleValue())));
+        }
 
         return BudgetStatusResponse.builder()
                 .category(categoryName)
@@ -247,7 +262,7 @@ public class BudgetServiceImpl implements BudgetService {
                 .spentAmount(spentAmount)
                 .remainingAmount(remainingAmount)
                 .usagePercentage(usagePercentage)
-                .status(resolveStatus(usagePercentage))
+                .status(status)
                 .build();
     }
 

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.config.OcrProperties;
 import com.saveapenny.ocr.application.port.in.OcrService;
 import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
@@ -25,11 +26,13 @@ class OcrJobAsyncProcessorTest {
         OcrJobRepository repository = org.mockito.Mockito.mock(OcrJobRepository.class);
         OcrService ocrService = org.mockito.Mockito.mock(OcrService.class);
         OcrMetrics metrics = org.mockito.Mockito.mock(OcrMetrics.class);
+        AnalyticsEventPublisher analyticsEventPublisher = org.mockito.Mockito.mock(AnalyticsEventPublisher.class);
         OcrJobAsyncProcessor processor = new OcrJobAsyncProcessor(
                 repository,
                 ocrService,
                 new OcrProperties(true, "/tmp", "eng", 3, 1024, 1000, 0, false),
-                metrics);
+                metrics,
+                analyticsEventPublisher);
 
         UUID jobId = UUID.randomUUID();
         OcrJob job = OcrJob.builder()

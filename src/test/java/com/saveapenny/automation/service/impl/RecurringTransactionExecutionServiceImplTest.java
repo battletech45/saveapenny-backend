@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.entity.Account;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.automation.entity.RecurringExecutionHistory;
 import com.saveapenny.automation.entity.RecurringExecutionStatus;
 import com.saveapenny.automation.entity.RecurringFrequency;
@@ -53,6 +54,9 @@ class RecurringTransactionExecutionServiceImplTest {
 
     @Mock
     private AutomationDistributedLockService lockService;
+
+    @Mock
+    private AnalyticsEventPublisher analyticsEventPublisher;
 
     @Captor
     private ArgumentCaptor<RecurringTransaction> recurringTransactionCaptor;

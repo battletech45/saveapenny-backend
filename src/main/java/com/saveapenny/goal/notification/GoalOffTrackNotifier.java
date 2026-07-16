@@ -1,5 +1,7 @@
 package com.saveapenny.goal.notification;
 
+import com.saveapenny.analytics.dto.AnalyticsEvent;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.goal.config.GoalProgressProperties;
 import com.saveapenny.goal.dto.GoalDetailResponse;
 import com.saveapenny.goal.service.GoalProgressReport;
@@ -13,6 +15,7 @@ import com.saveapenny.notification.service.NotificationService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -27,16 +30,19 @@ public class GoalOffTrackNotifier {
     private final NotificationService notificationService;
     private final GoalService goalService;
     private final GoalProgressProperties properties;
+    private final AnalyticsEventPublisher analyticsEventPublisher;
 
     public GoalOffTrackNotifier(
             NotificationRepository notificationRepository,
             NotificationService notificationService,
             GoalService goalService,
-            GoalProgressProperties properties) {
+            GoalProgressProperties properties,
+            AnalyticsEventPublisher analyticsEventPublisher) {
         this.notificationRepository = notificationRepository;
         this.notificationService = notificationService;
         this.goalService = goalService;
         this.properties = properties;
+        this.analyticsEventPublisher = analyticsEventPublisher;
     }
 
     public Optional<NotificationResponse> notifyIfTransitionedToOffTrack(UUID userId, UUID goalId, GoalProgressReport report) {
@@ -58,7 +64,11 @@ public class GoalOffTrackNotifier {
                 .title(TITLE_PREFIX + goal.getTitle())
                 .message(buildMessage(goal, report))
                 .build();
-        return Optional.of(notificationService.create(userId, request));
+        NotificationResponse notification = notificationService.create(userId, request);
+        analyticsEventPublisher.publish(new AnalyticsEvent(
+                "goal_off_track",
+                Map.of("goal_id", goalId.toString(), "off_track_months", report.offTrackForMonthsCount())));
+        return Optional.of(notification);
     }
 
     private String buildMessage(GoalDetailResponse goal, GoalProgressReport report) {

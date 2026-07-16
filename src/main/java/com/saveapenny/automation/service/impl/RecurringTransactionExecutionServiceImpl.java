@@ -2,6 +2,8 @@ package com.saveapenny.automation.service.impl;
 
 import com.saveapenny.account.entity.Account;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.analytics.dto.AnalyticsEvent;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.automation.entity.RecurringExecutionHistory;
 import com.saveapenny.automation.entity.RecurringExecutionStatus;
 import com.saveapenny.automation.entity.RecurringFrequency;
@@ -17,6 +19,7 @@ import com.saveapenny.transaction.service.TransactionService;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +38,7 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
     private final AccountRepository accountRepository;
     private final AutomationDistributedLockService lockService;
     private final TimeService timeService;
+    private final AnalyticsEventPublisher analyticsEventPublisher;
 
     public RecurringTransactionExecutionServiceImpl(
             RecurringTransactionRepository recurringTransactionRepository,
@@ -42,13 +46,15 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
             TransactionService transactionService,
             AccountRepository accountRepository,
             AutomationDistributedLockService lockService,
-            TimeService timeService) {
+            TimeService timeService,
+            AnalyticsEventPublisher analyticsEventPublisher) {
         this.recurringTransactionRepository = recurringTransactionRepository;
         this.executionHistoryRepository = executionHistoryRepository;
         this.transactionService = transactionService;
         this.accountRepository = accountRepository;
         this.lockService = lockService;
         this.timeService = timeService;
+        this.analyticsEventPublisher = analyticsEventPublisher;
     }
 
     @Override
@@ -129,6 +135,11 @@ public class RecurringTransactionExecutionServiceImpl implements RecurringTransa
 
             recordHistory(recurringTransaction, currentRun, RecurringExecutionStatus.SUCCESS,
                     transactionResponse.getId(), null);
+            analyticsEventPublisher.publish(new AnalyticsEvent(
+                    "automation_rule_triggered",
+                    Map.of(
+                            "recurring_transaction_id", recurringTransaction.getId().toString(),
+                            "type", recurringTransaction.getType().name())));
             return true;
         } catch (RuntimeException ex) {
             recordHistory(recurringTransaction, currentRun, RecurringExecutionStatus.FAILED,

@@ -1,6 +1,8 @@
 package com.saveapenny.report.service.impl;
 
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.analytics.dto.AnalyticsEvent;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.config.TimeService;
 import com.saveapenny.report.dto.CashFlowPointResponse;
 import java.util.List;
@@ -21,6 +23,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,18 +40,21 @@ public class ReportServiceImpl implements ReportService {
     private final NetWorthSnapshotRepository netWorthSnapshotRepository;
     private final ReportMapper reportMapper;
     private final TimeService timeService;
+    private final AnalyticsEventPublisher analyticsEventPublisher;
 
     public ReportServiceImpl(
             ReportTransactionRepository reportTransactionRepository,
             ReportAccountRepository reportAccountRepository,
             NetWorthSnapshotRepository netWorthSnapshotRepository,
             ReportMapper reportMapper,
-            TimeService timeService) {
+            TimeService timeService,
+            AnalyticsEventPublisher analyticsEventPublisher) {
         this.reportTransactionRepository = reportTransactionRepository;
         this.reportAccountRepository = reportAccountRepository;
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
         this.reportMapper = reportMapper;
         this.timeService = timeService;
+        this.analyticsEventPublisher = analyticsEventPublisher;
     }
 
     @Override
@@ -78,6 +84,9 @@ public class ReportServiceImpl implements ReportService {
                         summary.getTotalIncome(),
                         summary.getTotalExpense(),
                         summary.getNetSavings()));
+        analyticsEventPublisher.publish(new AnalyticsEvent(
+                "report_generated",
+                Map.of("report_type", "monthly_summary_csv")));
         return csv.getBytes(StandardCharsets.UTF_8);
     }
 

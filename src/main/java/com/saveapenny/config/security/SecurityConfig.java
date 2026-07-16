@@ -1,6 +1,7 @@
 package com.saveapenny.config.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.analytics.AnalyticsClientIdFilter;
 import com.saveapenny.shared.api.ApiError;
 import com.saveapenny.shared.api.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,9 +28,15 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AnalyticsClientIdFilter analyticsClientIdFilter() {
+        return new AnalyticsClientIdFilter();
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             RequestCorrelationFilter requestCorrelationFilter,
+            AnalyticsClientIdFilter analyticsClientIdFilter,
             RateLimitingFilter rateLimitingFilter,
             HeaderUserAuthenticationFilter headerUserAuthenticationFilter,
             ObjectMapper objectMapper)
@@ -54,6 +61,7 @@ public class SecurityConfig {
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeUnauthorizedResponse(response, objectMapper, accessDeniedException.getMessage())))
                 .addFilterBefore(requestCorrelationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterBefore(analyticsClientIdFilter, RequestCorrelationFilter.class)
                 .addFilterAfter(headerUserAuthenticationFilter, RequestCorrelationFilter.class)
                 .addFilterAfter(rateLimitingFilter, HeaderUserAuthenticationFilter.class);
 

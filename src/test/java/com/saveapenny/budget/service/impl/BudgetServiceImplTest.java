@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.budget.dto.BudgetResponse;
 import com.saveapenny.budget.dto.BudgetStatusResponse;
 import com.saveapenny.budget.dto.CreateBudgetRequest;
@@ -51,6 +52,8 @@ class BudgetServiceImplTest {
     private CategoryRepository categoryRepository;
     @Mock
     private TransactionRepository transactionRepository;
+    @Mock
+    private AnalyticsEventPublisher analyticsEventPublisher;
 
     @InjectMocks
     private BudgetServiceImpl budgetService;

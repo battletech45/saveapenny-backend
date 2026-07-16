@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.goal.config.GoalProgressProperties;
 import com.saveapenny.goal.dto.GoalDetailResponse;
 import com.saveapenny.goal.service.GoalProgressReport;
@@ -38,6 +39,8 @@ class GoalOffTrackNotifierTest {
     private NotificationService notificationService;
     @Mock
     private GoalService goalService;
+    @Mock
+    private AnalyticsEventPublisher analyticsEventPublisher;
 
     @org.mockito.Captor
     private ArgumentCaptor<CreateNotificationRequest> requestCaptor;
@@ -120,7 +123,8 @@ class GoalOffTrackNotifierTest {
                 notificationRepository,
                 notificationService,
                 goalService,
-                new GoalProgressProperties(true, new BigDecimal("0.10"), new BigDecimal("0.05"), 2, "0 0 6 * * *"));
+                new GoalProgressProperties(true, new BigDecimal("0.10"), new BigDecimal("0.05"), 2, "0 0 6 * * *"),
+                analyticsEventPublisher);
     }
 
     private GoalDetailResponse goal(UUID goalId) {

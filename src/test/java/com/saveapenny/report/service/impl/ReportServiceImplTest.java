@@ -7,6 +7,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.config.TimeService;
 import com.saveapenny.report.dto.CashFlowPointResponse;
 import java.util.List;
@@ -51,6 +52,8 @@ class ReportServiceImplTest {
     private ReportMapper reportMapper;
     @Mock
     private TimeService timeService;
+    @Mock
+    private AnalyticsEventPublisher analyticsEventPublisher;
 
     @InjectMocks
     private ReportServiceImpl reportService;

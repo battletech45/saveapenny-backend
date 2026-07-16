@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.config.TimeService;
 import com.saveapenny.goal.dto.CreateGoalRequest;
 import com.saveapenny.goal.dto.CreateScenarioRequest;
@@ -72,6 +73,9 @@ class GoalServiceImplTest {
 
     @Mock
     private TimeService timeService;
+
+    @Mock
+    private AnalyticsEventPublisher analyticsEventPublisher;
 
     @Spy
     private GoalMapper goalMapper = Mappers.getMapper(GoalMapper.class);

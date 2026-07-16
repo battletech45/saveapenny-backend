@@ -2,6 +2,8 @@ package com.saveapenny.goal.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.analytics.dto.AnalyticsEvent;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.config.TimeService;
 import com.saveapenny.goal.dto.CreateGoalRequest;
 import com.saveapenny.goal.dto.CreateScenarioRequest;
@@ -29,6 +31,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +50,7 @@ public class GoalServiceImpl implements GoalService {
     private final AccountRepository accountRepository;
     private final GoalMapper goalMapper;
     private final TimeService timeService;
+    private final AnalyticsEventPublisher analyticsEventPublisher;
 
     public GoalServiceImpl(
             GoalRepository goalRepository,
@@ -54,13 +58,15 @@ public class GoalServiceImpl implements GoalService {
             GoalRunRepository goalRunRepository,
             AccountRepository accountRepository,
             GoalMapper goalMapper,
-            TimeService timeService) {
+            TimeService timeService,
+            AnalyticsEventPublisher analyticsEventPublisher) {
         this.goalRepository = goalRepository;
         this.scenarioRepository = scenarioRepository;
         this.goalRunRepository = goalRunRepository;
         this.accountRepository = accountRepository;
         this.goalMapper = goalMapper;
         this.timeService = timeService;
+        this.analyticsEventPublisher = analyticsEventPublisher;
     }
 
     @Override
@@ -220,7 +226,13 @@ public class GoalServiceImpl implements GoalService {
             throw new InvalidGoalStatusTransitionException(goalId, goal.getStatus(), status);
         }
         goal.setStatus(status);
-        return goalMapper.toResponse(goalRepository.save(goal));
+        GoalResponse response = goalMapper.toResponse(goalRepository.save(goal));
+        if (status == GoalStatus.ACHIEVED) {
+            analyticsEventPublisher.publish(new AnalyticsEvent(
+                    "goal_achieved",
+                    Map.of("goal_id", goalId.toString(), "goal_type", goal.getType().name())));
+        }
+        return response;
     }
 
     private GoalEntity findOwnedGoal(UUID currentUserId, UUID goalId) {

@@ -104,6 +104,33 @@ Notes:
 
 See [Stocks](features/stocks.md) for feature details.
 
+## Firebase Analytics
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FIREBASE_ANALYTICS_ENABLED` | `false` | Enable server-side event dispatch to Firebase/GA4 |
+| `FIREBASE_ANDROID_APP_ID` | — | Firebase App ID for the Android app, required when enabled |
+| `FIREBASE_ANDROID_API_SECRET` | — | Measurement Protocol API secret for the Android data stream, required when enabled |
+| `FIREBASE_IOS_APP_ID` | — | Firebase App ID for the iOS app, required when enabled |
+| `FIREBASE_IOS_API_SECRET` | — | Measurement Protocol API secret for the iOS data stream, required when enabled |
+| `FIREBASE_ANALYTICS_VALIDATE_ONLY` | `false` | Route events to the DebugView endpoint instead of recording them; use in staging |
+
+Additional analytics properties in `application.yml`:
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `firebase.analytics.endpoint` | `https://www.google-analytics.com/mp/collect` | Production Measurement Protocol endpoint |
+| `firebase.analytics.debug-endpoint` | `https://www.google-analytics.com/debug/mp/collect` | DebugView validation endpoint |
+| `firebase.analytics.timeout-millis` | `2000` | HTTP timeout; failures are logged and swallowed, never surfaced to the caller |
+
+Notes:
+
+- When disabled (default), a no-op publisher is wired in and no HTTP calls are made.
+- Two separate Firebase apps (Android/iOS) require two separate credential pairs — a single App ID can't be used for both. The client must send `X-Client-Platform: android` or `X-Client-Platform: ios` so the backend picks the right pair; requests without it (e.g. events fired from scheduled jobs with no HTTP context) are dropped rather than sent under the wrong platform's credentials.
+- Correlates to the mobile app's Firebase Installations ID via the `X-Analytics-Client-Id` request header.
+
+See [Firebase Analytics](features/firebase-analytics.md) for feature details.
+
 ## Insights
 
 | Variable | Default | Description |
