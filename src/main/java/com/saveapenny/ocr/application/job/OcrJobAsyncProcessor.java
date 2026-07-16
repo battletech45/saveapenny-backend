@@ -1,5 +1,7 @@
 package com.saveapenny.ocr.application.job;
 
+import com.saveapenny.analytics.dto.AnalyticsEvent;
+import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.ocr.application.port.in.OcrService;
 import com.saveapenny.ocr.application.port.in.OcrUploadPayload;
 import com.saveapenny.ocr.domain.exception.OcrProcessingException;
@@ -8,6 +10,7 @@ import com.saveapenny.ocr.domain.model.OcrJobStatus;
 import com.saveapenny.ocr.infrastructure.persistence.repository.OcrJobRepository;
 import com.saveapenny.ocr.support.monitoring.OcrMetrics;
 import com.saveapenny.config.OcrProperties;
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.UUID;
@@ -25,16 +28,19 @@ public class OcrJobAsyncProcessor {
     private final OcrService ocrService;
     private final OcrProperties ocrProperties;
     private final OcrMetrics ocrMetrics;
+    private final AnalyticsEventPublisher analyticsEventPublisher;
 
     public OcrJobAsyncProcessor(
             OcrJobRepository ocrJobRepository,
             OcrService ocrService,
             OcrProperties ocrProperties,
-            OcrMetrics ocrMetrics) {
+            OcrMetrics ocrMetrics,
+            AnalyticsEventPublisher analyticsEventPublisher) {
         this.ocrJobRepository = ocrJobRepository;
         this.ocrService = ocrService;
         this.ocrProperties = ocrProperties;
         this.ocrMetrics = ocrMetrics;
+        this.analyticsEventPublisher = analyticsEventPublisher;
     }
 
     @Async("ocrTaskExecutor")
@@ -54,6 +60,9 @@ public class OcrJobAsyncProcessor {
             job.setErrorMessage(null);
             job.setStatus(OcrJobStatus.COMPLETED);
             ocrJobRepository.save(job);
+            analyticsEventPublisher.publish(new AnalyticsEvent(
+                    "receipt_import_completed",
+                    Map.of("job_id", job.getId().toString())));
             long elapsed = System.nanoTime() - startedAt;
             ocrMetrics.markSuccess();
             ocrMetrics.recordDuration(elapsed);
