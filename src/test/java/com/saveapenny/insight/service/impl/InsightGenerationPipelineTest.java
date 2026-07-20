@@ -2,6 +2,7 @@ package com.saveapenny.insight.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -89,7 +90,7 @@ class InsightGenerationPipelineTest {
 
         assertEquals(1, count);
         verify(insightRepository).save(any(InsightEntity.class));
-        verify(insightNotificationService).createInsightGeneratedNotification(userId, warning);
+        verify(insightNotificationService).createInsightGeneratedNotification(eq(userId), any(UUID.class), eq(warning));
     }
 
     @Test
@@ -109,7 +110,7 @@ class InsightGenerationPipelineTest {
 
         pipeline.execute(userId);
 
-        verify(insightNotificationService, never()).createInsightGeneratedNotification(any(), any());
+        verify(insightNotificationService, never()).createInsightGeneratedNotification(any(), any(), any());
     }
 
     @Test
@@ -131,7 +132,7 @@ class InsightGenerationPipelineTest {
 
         assertEquals(0, count);
         verify(insightRepository, never()).save(any());
-        verify(insightNotificationService, never()).createInsightGeneratedNotification(any(), any());
+        verify(insightNotificationService, never()).createInsightGeneratedNotification(any(), any(), any());
     }
 
     @Test
@@ -175,7 +176,7 @@ class InsightGenerationPipelineTest {
                 any(), any(), any(), any())).thenReturn(false);
         doThrow(new RuntimeException("DB down"))
                 .when(insightNotificationService)
-                .createInsightGeneratedNotification(any(), any());
+                .createInsightGeneratedNotification(any(), any(), any());
 
         int count = pipeline.execute(userId);
 
