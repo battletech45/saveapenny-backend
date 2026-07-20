@@ -61,6 +61,19 @@ curl -X PATCH "http://localhost:8080/api/v1/notifications/mark-all-read" \
 
 Sets all unread notifications for the current user to `read = true`.
 
+## Push Delivery (FCM)
+
+Every notification created via `NotificationService.create()` also triggers a push attempt to all of that user's registered devices (see `POST/DELETE /api/v1/users/me/device-tokens`). Delivery is via FCM HTTP v1, gated by `push.fcm.enabled` (default `false`) — see [Environment Reference](../env-reference.md#push-notifications-fcm).
+
+The FCM `data` payload sent to the device is:
+
+| Key | Value |
+|-----|-------|
+| `type` | The notification's `type` (e.g. `GOAL_OFF_TRACK`) |
+| `<metadata key>` | Each top-level scalar field from the notification's `metadata`, stringified (e.g. `goalId`) |
+
+Mobile clients route a tapped push using the `type` key the same way they'd resolve a `NotificationResponse.type` from the list endpoint.
+
 ## Error Codes
 
 | Code | HTTP | When |
@@ -81,4 +94,7 @@ Sets all unread notifications for the current user to `read = true`.
 |------|---------|
 | `src/main/java/com/saveapenny/notification/entity/Notification.java` | JPA entity |
 | `src/main/java/com/saveapenny/notification/controller/NotificationController.java` | REST endpoints |
-| `src/main/java/com/saveapenny/notification/service/impl/NotificationServiceImpl.java` | Business logic |
+| `src/main/java/com/saveapenny/notification/service/impl/NotificationServiceImpl.java` | Business logic; triggers push after create |
+| `src/main/java/com/saveapenny/push/controller/DeviceTokenController.java` | Device token register/unregister endpoints |
+| `src/main/java/com/saveapenny/push/service/impl/FcmPushNotificationSender.java` | FCM HTTP v1 push delivery |
+| `src/main/java/com/saveapenny/push/service/GoogleServiceAccountTokenProvider.java` | Service-account OAuth2 token exchange for FCM |
