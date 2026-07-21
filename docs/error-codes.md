@@ -35,6 +35,9 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 |------|---------|---------|
 | `ACCESS_DENIED` | — | Authenticated but insufficient permissions |
 | `AUDIT_LOG_ACCESS_DENIED` | — | Attempt to access another user's audit log |
+| `PLUS_REQUIRED` | — | Feature is enabled but requires an active Plus subscription |
+| `FREE_PLAN_LIMIT_REACHED` | — | Free-tier usage cap reached (active budgets or active goals) |
+| `REPORT_HISTORY_LIMIT_REACHED` | — | Report date range extends earlier than the Free plan's 3-month history window |
 
 ### Validation (400)
 
@@ -112,6 +115,7 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 |------|---------|
 | `ASSISTANT_DISABLED` | Assistant feature is not enabled |
 | `STOCK_DISABLED` | Stock feature is disabled or Alpha Vantage API key is missing |
+| `REVENUECAT_DISABLED` | RevenueCat integration is disabled or the secret API key is missing |
 
 ## 5xx Server Errors
 
@@ -121,6 +125,7 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | `ASSISTANT_PROCESSING_FAILED` | 502 | AI provider returned an error or response could not be parsed |
 | `INSIGHT_GENERATION_FAILED` | 500 | Insight generation job failed |
 | `STOCK_PROVIDER_ERROR` | 502 | Alpha Vantage returned an error or note response, or the transport failed |
+| `REVENUECAT_PROVIDER_ERROR` | 502 | RevenueCat returned an error or the transport failed |
 
 ## Validation Details Format
 

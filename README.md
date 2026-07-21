@@ -158,6 +158,7 @@ See `.env.example` for all available settings.
 | [Insights](docs/features/insights.md) | Financial observations (disabled by default) |
 | [Goals](docs/features/goals.md) | Goal tracking, scenarios, and simulation |
 | [Stocks](docs/features/stocks.md) | Alpha Vantage powered stock market data |
+| [Billing](docs/features/billing.md) | RevenueCat subscriptions, entitlement, plan enforcement |
 
 ## Features
 
@@ -182,6 +183,7 @@ See `.env.example` for all available settings.
 | Goal Progress Checks | `GOAL_PROGRESS_ENABLED=true` | [docs/features/goals.md](docs/features/goals.md) |
 | Financial Insights | `insight.enabled: true` | [docs/features/insights.md](docs/features/insights.md) |
 | Stock Market Data | `STOCK_ENABLED=true` with `ALPHA_VANTAGE_API_KEY` set for live requests | [docs/features/stocks.md](docs/features/stocks.md) |
+| Billing (RevenueCat) | `REVENUECAT_ENABLED=true` with `REVENUECAT_SECRET_API_KEY` set | [docs/features/billing.md](docs/features/billing.md) |
 
 ## Project
 
