@@ -190,6 +190,16 @@ Emitted via the existing `com.saveapenny.analytics` module (see [Firebase Analyt
 - Integration: existing flow tests across `stock`, `insight`, `ocr`, `imports`, `automation`, `goal` were updated to seed a Plus entitlement via a new `IntegrationTestBase.grantPlusEntitlement(token)` helper, since those tests exercise now-gated endpoints for reasons unrelated to billing itself.
 - Migration: verified against a real Postgres 15 container (Flyway `V22` applies cleanly on top of `V1`-`V20`; Hibernate schema validation passes) and against a real local dev database that already had `integration/firebase-messaging`'s `V21` applied.
 
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Pull-only, no webhook receiver | RevenueCat webhooks require a paid dashboard plan this project isn't on; the backend re-fetches on `/sync` instead |
+| Re-fetch from RevenueCat rather than trust client-reported state | The client's local `CustomerInfo` can be spoofed/tampered on a jailbroken device; the backend is the enforcement authority, not the Flutter SDK |
+| Local lazy-expiry (`BillingEntitlement.effectiveStatus`) | Without webhooks, a cached row can go stale between syncs; a pure time comparison downgrades expired rows without needing another RevenueCat call |
+| `appUserId` = backend user UUID | Keeps RevenueCat's subscriber identity in lockstep with our own auth, with no separate identity-linking step needed |
+| Entitlement snapshot table separate from `users` | Renewals, cancellations, and plan history need their own lifecycle independent of the user record |
+
 ## Related Documents
 
 - [Environment Variables](../env-reference.md) — `REVENUECAT_*` configuration
@@ -197,3 +207,14 @@ Emitted via the existing `com.saveapenny.analytics` module (see [Firebase Analyt
 - [API Reference](../api-reference.md) — Endpoint list and conventions
 - [Architecture](../architecture.md) — Module structure
 - Cross-repo plan: `saveapenny-app/docs/MONETIZATION_IMPLEMENTATION_PLAN.md`
+
+## Referenced Files
+
+| File | Purpose |
+|------|---------|
+| `src/main/java/com/saveapenny/billing/controller/BillingController.java` | REST endpoints |
+| `src/main/java/com/saveapenny/billing/service/impl/BillingEntitlementServiceImpl.java` | Entitlement resolution and sync |
+| `src/main/java/com/saveapenny/billing/service/impl/BillingAccessServiceImpl.java` | Plan enforcement — feature gates and usage caps |
+| `src/main/java/com/saveapenny/billing/service/RevenueCatEntitlementResolver.java` | Maps RevenueCat subscriber state to `ResolvedEntitlement` |
+| `src/main/java/com/saveapenny/billing/infrastructure/RevenueCatClient.java` | `GET /subscribers/{app_user_id}` transport client |
+| `src/main/java/com/saveapenny/billing/entity/BillingEntitlement.java` | Canonical entitlement snapshot entity |
