@@ -49,6 +49,7 @@ class StockFlowIntegrationTest extends IntegrationTestBase {
     void ensureAuthToken() throws Exception {
         if (authToken == null) {
             authToken = register("stock.flow." + UUID.randomUUID() + "@example.com", "Stock Flow");
+            grantPlusEntitlement(authToken);
         }
     }
 

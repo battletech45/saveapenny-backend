@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.insight.dto.GenerateInsightsRequest;
 import com.saveapenny.insight.dto.InsightResponse;
 import com.saveapenny.insight.entity.InsightEntity;
@@ -44,6 +45,9 @@ class InsightServiceImplTest {
 
     @Mock
     private InsightGenerationPipeline insightGenerationPipeline;
+
+    @Mock
+    private BillingAccessService billingAccessService;
 
     @InjectMocks
     private InsightServiceImpl insightService;

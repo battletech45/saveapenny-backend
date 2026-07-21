@@ -41,6 +41,7 @@ class ImportFlowIntegrationTest extends TestcontainersIntegrationTest {
     @Test
     void previewConfirmAndStatusFlow_persistsTransactionsAndUpdatesBalances() throws Exception {
         String token = register("imports.flow@example.com", "Imports Flow");
+        grantPlusEntitlement(token);
 
         String accountId = extractField(mockMvc.perform(post("/api/v1/accounts")
                         .header("Authorization", "Bearer " + token)
@@ -127,6 +128,7 @@ class ImportFlowIntegrationTest extends TestcontainersIntegrationTest {
     @Test
     void preview_returnsBadRequest_forInvalidFile() throws Exception {
         String token = register("imports.invalid@example.com", "Imports Invalid");
+        grantPlusEntitlement(token);
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
