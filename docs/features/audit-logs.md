@@ -90,4 +90,4 @@ curl -X GET "http://localhost:8080/api/v1/audits?entityType=TRANSACTION&page=0&s
 |------|---------|
 | `src/main/java/com/saveapenny/audit/entity/AuditLog.java` | JPA entity |
 | `src/main/java/com/saveapenny/audit/controller/AuditLogController.java` | REST endpoints |
-| `src/main/java/com/saveapenny/audit/service/impl/AuditServiceImpl.java` | Audit event creation and query logic |
+| `src/main/java/com/saveapenny/audit/service/impl/AuditLogServiceImpl.java` | Audit event creation and query logic |
