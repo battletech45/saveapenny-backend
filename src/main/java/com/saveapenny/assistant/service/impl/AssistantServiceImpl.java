@@ -15,6 +15,8 @@ import com.saveapenny.assistant.repository.AssistantChatMessageRepository;
 import com.saveapenny.assistant.repository.AssistantChatSessionRepository;
 import com.saveapenny.assistant.service.AssistantService;
 import com.saveapenny.assistant.tool.AssistantToolContextHolder;
+import com.saveapenny.billing.exception.PlusRequiredException;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.mcp.adapter.springai.SpringAiMcpToolAdapter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +48,7 @@ public class AssistantServiceImpl implements AssistantService {
     private final AssistantToolContextHolder assistantToolContextHolder;
     private final AssistantChatSessionRepository assistantChatSessionRepository;
     private final AssistantChatMessageRepository assistantChatMessageRepository;
+    private final BillingAccessService billingAccessService;
 
     public AssistantServiceImpl(
             @Qualifier("assistantChatClient") ObjectProvider<ChatClient> chatClientProvider,
@@ -54,7 +57,8 @@ public class AssistantServiceImpl implements AssistantService {
             SpringAiMcpToolAdapter springAiMcpToolAdapter,
             AssistantToolContextHolder assistantToolContextHolder,
             AssistantChatSessionRepository assistantChatSessionRepository,
-            AssistantChatMessageRepository assistantChatMessageRepository) {
+            AssistantChatMessageRepository assistantChatMessageRepository,
+            BillingAccessService billingAccessService) {
         this.chatClientProvider = chatClientProvider;
         this.assistantProperties = assistantProperties;
         this.financePromptBuilder = financePromptBuilder;
@@ -62,6 +66,7 @@ public class AssistantServiceImpl implements AssistantService {
         this.assistantToolContextHolder = assistantToolContextHolder;
         this.assistantChatSessionRepository = assistantChatSessionRepository;
         this.assistantChatMessageRepository = assistantChatMessageRepository;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
@@ -69,6 +74,7 @@ public class AssistantServiceImpl implements AssistantService {
         if (!assistantProperties.enabled()) {
             throw new AssistantDisabledException();
         }
+        billingAccessService.requireFeature(userId, "assistant");
 
         try {
             AssistantChatSession session = resolveSession(userId, request);

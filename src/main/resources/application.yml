@@ -148,6 +148,12 @@ stock:
   rate-limit-per-minute: 5
   rate-limit-per-day: 25
 
+revenuecat:
+  enabled: ${REVENUECAT_ENABLED:false}
+  secret-api-key: ${REVENUECAT_SECRET_API_KEY:}
+  base-url: ${REVENUECAT_BASE_URL:https://api.revenuecat.com/v1}
+  entitlement-identifier: ${REVENUECAT_ENTITLEMENT_IDENTIFIER:Save A Penny Pro}
+
 firebase:
   analytics:
     enabled: ${FIREBASE_ANALYTICS_ENABLED:false}

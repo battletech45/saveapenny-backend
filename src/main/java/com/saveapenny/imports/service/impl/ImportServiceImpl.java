@@ -14,6 +14,7 @@ import com.saveapenny.imports.mapper.ImportMapper;
 import com.saveapenny.imports.repository.ImportRepository;
 import com.saveapenny.imports.repository.ImportRowRepository;
 import com.saveapenny.imports.service.ImportService;
+import com.saveapenny.billing.service.BillingAccessService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,22 +37,26 @@ public class ImportServiceImpl implements ImportService {
     private final ImportMapper importMapper;
     private final ImportAsyncJobService importAsyncJobService;
     private final ImportRowParser importRowParser;
+    private final BillingAccessService billingAccessService;
 
     public ImportServiceImpl(
             ImportRepository importRepository,
             ImportRowRepository importRowRepository,
             ImportMapper importMapper,
             ImportAsyncJobService importAsyncJobService,
-            ImportRowParser importRowParser) {
+            ImportRowParser importRowParser,
+            BillingAccessService billingAccessService) {
         this.importRepository = importRepository;
         this.importRowRepository = importRowRepository;
         this.importMapper = importMapper;
         this.importAsyncJobService = importAsyncJobService;
         this.importRowParser = importRowParser;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
     public ImportPreviewResponse preview(UUID currentUserId, MultipartFile file) {
+        billingAccessService.requireFeature(currentUserId, "csvImport");
         validateUpload(file);
 
         Import importEntity = Import.builder()

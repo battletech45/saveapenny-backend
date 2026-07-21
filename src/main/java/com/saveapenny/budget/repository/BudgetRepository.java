@@ -39,4 +39,6 @@ public interface BudgetRepository extends JpaRepository<Budget, UUID> {
             LocalDate startDate,
             LocalDate endDate,
             UUID id);
+
+    long countByUserIdAndEndDateGreaterThanEqual(UUID userId, LocalDate date);
 }

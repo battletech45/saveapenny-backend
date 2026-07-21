@@ -15,6 +15,7 @@ import com.saveapenny.ocr.infrastructure.persistence.repository.OcrJobRepository
 import com.saveapenny.ocr.interfaces.http.dto.OcrJobStatusResponse;
 import com.saveapenny.ocr.interfaces.http.dto.OcrParseDiagnosticsResponse;
 import com.saveapenny.ocr.interfaces.http.dto.OcrSubmitResponse;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.config.OcrProperties;
 import java.util.ArrayList;
 import java.io.IOException;
@@ -39,6 +40,7 @@ public class OcrJobServiceImpl implements OcrJobService {
     private final OcrAnalysisService ocrAnalysisService;
     private final OcrJobAsyncProcessor ocrJobAsyncProcessor;
     private final TransactionTemplate transactionTemplate;
+    private final BillingAccessService billingAccessService;
 
     public OcrJobServiceImpl(
             OcrProperties ocrProperties,
@@ -46,17 +48,20 @@ public class OcrJobServiceImpl implements OcrJobService {
             OcrJobMapper ocrJobMapper,
             OcrAnalysisService ocrAnalysisService,
             OcrJobAsyncProcessor ocrJobAsyncProcessor,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            BillingAccessService billingAccessService) {
         this.ocrProperties = ocrProperties;
         this.ocrJobRepository = ocrJobRepository;
         this.ocrJobMapper = ocrJobMapper;
         this.ocrAnalysisService = ocrAnalysisService;
         this.ocrJobAsyncProcessor = ocrJobAsyncProcessor;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
     public OcrSubmitResponse createJob(UUID currentUserId, MultipartFile file) {
+        billingAccessService.requireFeature(currentUserId, "ocr");
         validateUpload(file);
 
         OcrJob saved = transactionTemplate.execute(status -> {

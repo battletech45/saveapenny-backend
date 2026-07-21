@@ -3,6 +3,7 @@ package com.saveapenny.goal.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.goal.dto.GoalDetailResponse;
 import com.saveapenny.goal.dto.GoalRunResponse;
 import com.saveapenny.goal.dto.ScenarioResponse;
@@ -48,19 +49,22 @@ public class GoalSimulationServiceImpl implements GoalSimulationService {
     private final ObjectMapper objectMapper;
     private final Clock assistantClock;
     private final SimulationEngine simulationEngine;
+    private final BillingAccessService billingAccessService;
 
     public GoalSimulationServiceImpl(
             GoalService goalService,
             GoalContextProvider goalContextProvider,
             GoalPromptParser goalPromptParser,
             ObjectMapper objectMapper,
-            Clock assistantClock) {
+            Clock assistantClock,
+            BillingAccessService billingAccessService) {
         this.goalService = goalService;
         this.goalContextProvider = goalContextProvider;
         this.goalPromptParser = goalPromptParser;
         this.objectMapper = objectMapper;
         this.assistantClock = assistantClock;
         this.simulationEngine = SimulationEngine.defaultEngine();
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
@@ -179,6 +183,7 @@ public class GoalSimulationServiceImpl implements GoalSimulationService {
 
     @Override
     public GoalWhatIfResponse whatIf(UUID currentUserId, UUID goalId, WhatIfRequest request) {
+        billingAccessService.requireFeature(currentUserId, "goalWhatIf");
         GoalDetailResponse goal = goalService.getById(currentUserId, goalId);
         GoalContextSnapshot context = goalContextProvider.getContext(currentUserId);
         JsonNode overrides = request.getOverrides();
