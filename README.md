@@ -184,6 +184,7 @@ See `.env.example` for all available settings.
 | Financial Insights | `insight.enabled: true` | [docs/features/insights.md](docs/features/insights.md) |
 | Stock Market Data | `STOCK_ENABLED=true` with `ALPHA_VANTAGE_API_KEY` set for live requests | [docs/features/stocks.md](docs/features/stocks.md) |
 | Billing (RevenueCat) | `REVENUECAT_ENABLED=true` with `REVENUECAT_SECRET_API_KEY` set | [docs/features/billing.md](docs/features/billing.md) |
+| Firebase Analytics | `FIREBASE_ANALYTICS_ENABLED=true` with app id/API secret set | [docs/features/firebase-analytics.md](docs/features/firebase-analytics.md) |
 
 ## Project
 
