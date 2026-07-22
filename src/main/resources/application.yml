@@ -165,3 +165,13 @@ firebase:
     debug-endpoint: ${FIREBASE_ANALYTICS_DEBUG_ENDPOINT:https://www.google-analytics.com/debug/mp/collect}
     validate-only: ${FIREBASE_ANALYTICS_VALIDATE_ONLY:false}
     timeout-millis: ${FIREBASE_ANALYTICS_TIMEOUT_MS:2000}
+
+push:
+  fcm:
+    enabled: ${PUSH_FCM_ENABLED:false}
+    project-id: ${PUSH_FCM_PROJECT_ID:}
+    client-email: ${PUSH_FCM_CLIENT_EMAIL:}
+    private-key: ${PUSH_FCM_PRIVATE_KEY:}
+    token-uri: ${PUSH_FCM_TOKEN_URI:https://oauth2.googleapis.com/token}
+    fcm-endpoint-template: ${PUSH_FCM_ENDPOINT_TEMPLATE:https://fcm.googleapis.com/v1/projects/%s/messages:send}
+    timeout-millis: ${PUSH_FCM_TIMEOUT_MS:5000}

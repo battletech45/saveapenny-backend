@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.goal.config.GoalProgressProperties;
 import com.saveapenny.goal.dto.GoalDetailResponse;
@@ -90,6 +91,20 @@ class GoalOffTrackNotifierTest {
     }
 
     @Test
+    void notifyIfTransitionedToOffTrack_attachesGoalIdToMetadata() {
+        UUID userId = UUID.randomUUID();
+        UUID goalId = UUID.randomUUID();
+        when(goalService.getById(userId, goalId)).thenReturn(goal(goalId));
+        when(notificationRepository.findAllByUserIdAndTypeAndReadFalse(userId, NotificationType.GOAL_OFF_TRACK)).thenReturn(List.of());
+        when(notificationService.create(any(), any())).thenReturn(NotificationResponse.builder().id(UUID.randomUUID()).build());
+
+        notifier().notifyIfTransitionedToOffTrack(userId, goalId, offTrackReport(goalId, 2));
+
+        verify(notificationService).create(any(), requestCaptor.capture());
+        assertEquals(goalId.toString(), requestCaptor.getValue().getMetadata().get("goalId").asText());
+    }
+
+    @Test
     void notifyIfTransitionedToOffTrack_skipsWhenStillBelowThreshold() {
         UUID userId = UUID.randomUUID();
         UUID goalId = UUID.randomUUID();
@@ -124,7 +139,8 @@ class GoalOffTrackNotifierTest {
                 notificationService,
                 goalService,
                 new GoalProgressProperties(true, new BigDecimal("0.10"), new BigDecimal("0.05"), 2, "0 0 6 * * *"),
-                analyticsEventPublisher);
+                analyticsEventPublisher,
+                new ObjectMapper());
     }
 
     private GoalDetailResponse goal(UUID goalId) {

@@ -1,5 +1,6 @@
 package com.saveapenny.goal.notification;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.analytics.dto.AnalyticsEvent;
 import com.saveapenny.analytics.service.AnalyticsEventPublisher;
 import com.saveapenny.goal.config.GoalProgressProperties;
@@ -31,18 +32,21 @@ public class GoalOffTrackNotifier {
     private final GoalService goalService;
     private final GoalProgressProperties properties;
     private final AnalyticsEventPublisher analyticsEventPublisher;
+    private final ObjectMapper objectMapper;
 
     public GoalOffTrackNotifier(
             NotificationRepository notificationRepository,
             NotificationService notificationService,
             GoalService goalService,
             GoalProgressProperties properties,
-            AnalyticsEventPublisher analyticsEventPublisher) {
+            AnalyticsEventPublisher analyticsEventPublisher,
+            ObjectMapper objectMapper) {
         this.notificationRepository = notificationRepository;
         this.notificationService = notificationService;
         this.goalService = goalService;
         this.properties = properties;
         this.analyticsEventPublisher = analyticsEventPublisher;
+        this.objectMapper = objectMapper;
     }
 
     public Optional<NotificationResponse> notifyIfTransitionedToOffTrack(UUID userId, UUID goalId, GoalProgressReport report) {
@@ -63,6 +67,7 @@ public class GoalOffTrackNotifier {
                 .type(NotificationType.GOAL_OFF_TRACK)
                 .title(TITLE_PREFIX + goal.getTitle())
                 .message(buildMessage(goal, report))
+                .metadata(objectMapper.createObjectNode().put("goalId", goalId.toString()))
                 .build();
         NotificationResponse notification = notificationService.create(userId, request);
         analyticsEventPublisher.publish(new AnalyticsEvent(

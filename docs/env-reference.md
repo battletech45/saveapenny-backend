@@ -150,6 +150,32 @@ Notes:
 
 See [Firebase Analytics](features/firebase-analytics.md) for feature details.
 
+## Push Notifications (FCM)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PUSH_FCM_ENABLED` | `false` | Enable push delivery via FCM HTTP v1; when off, notifications are created but no push is sent |
+| `PUSH_FCM_PROJECT_ID` | — | Firebase project ID, required when enabled |
+| `PUSH_FCM_CLIENT_EMAIL` | — | Service account client email, required when enabled |
+| `PUSH_FCM_PRIVATE_KEY` | — | Service account PKCS8 RSA private key (PEM), required when enabled |
+
+Additional push properties in `application.yml`:
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `push.fcm.token-uri` | `https://oauth2.googleapis.com/token` | OAuth2 token endpoint for the service-account JWT bearer flow |
+| `push.fcm.fcm-endpoint-template` | `https://fcm.googleapis.com/v1/projects/%s/messages:send` | FCM HTTP v1 send endpoint, `%s` filled with `project-id` |
+| `push.fcm.timeout-millis` | `5000` | HTTP timeout for both the token exchange and the send call |
+
+Notes:
+
+- When disabled (default), a no-op sender is wired in and no HTTP calls are made.
+- One HTTP request per registered device token; a token that FCM reports as unregistered (404) is deleted from `device_tokens` so it isn't retried on future notifications.
+- Every notification created via `NotificationService.create()` (including scheduled-job notifications like `GOAL_OFF_TRACK`/`INSIGHT_GENERATED`) triggers a push attempt to all of that user's registered devices, dispatched off the request thread on `pushTaskExecutor`.
+- The push `data` payload always includes `type` (the notification type) plus any top-level scalar fields from the notification's `metadata`.
+
+See [Notifications](features/notifications.md) for feature details.
+
 ## Insights
 
 | Variable | Default | Description |

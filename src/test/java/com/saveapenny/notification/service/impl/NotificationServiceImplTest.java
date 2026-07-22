@@ -17,8 +17,10 @@ import com.saveapenny.notification.entity.NotificationType;
 import com.saveapenny.notification.exception.NotificationNotFoundException;
 import com.saveapenny.notification.mapper.NotificationMapper;
 import com.saveapenny.notification.repository.NotificationRepository;
+import com.saveapenny.push.service.PushNotificationSender;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,8 @@ class NotificationServiceImplTest {
     private NotificationRepository notificationRepository;
     @Mock
     private NotificationMapper notificationMapper;
+    @Mock
+    private PushNotificationSender pushNotificationSender;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
@@ -79,6 +83,40 @@ class NotificationServiceImplTest {
 
         assertEquals(notificationId, result.getId());
         assertEquals(userId, mapped.getUserId());
+    }
+
+    @Test
+    void create_dispatchesPushWithTypeAndFlattenedMetadata() {
+        var metadata = new com.fasterxml.jackson.databind.ObjectMapper()
+                .createObjectNode()
+                .put("goalId", "g-1");
+        CreateNotificationRequest request = CreateNotificationRequest.builder()
+                .type(NotificationType.GOAL_OFF_TRACK)
+                .title("Goal off track")
+                .message("Behind target")
+                .metadata(metadata)
+                .build();
+        Notification mapped = Notification.builder().type(NotificationType.GOAL_OFF_TRACK).build();
+        Notification saved = Notification.builder()
+                .id(notificationId)
+                .userId(userId)
+                .type(NotificationType.GOAL_OFF_TRACK)
+                .title("Goal off track")
+                .message("Behind target")
+                .build();
+
+        when(notificationMapper.toEntity(request)).thenReturn(mapped);
+        when(notificationRepository.save(mapped)).thenReturn(saved);
+        when(notificationMapper.toResponse(saved)).thenReturn(NotificationResponse.builder().id(notificationId).build());
+
+        notificationService.create(userId, request);
+
+        verify(pushNotificationSender).send(
+                userId,
+                NotificationType.GOAL_OFF_TRACK,
+                "Goal off track",
+                "Behind target",
+                Map.of("type", "GOAL_OFF_TRACK", "goalId", "g-1"));
     }
 
     @Test

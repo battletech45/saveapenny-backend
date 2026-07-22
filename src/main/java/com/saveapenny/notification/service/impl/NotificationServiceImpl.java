@@ -1,14 +1,19 @@
 package com.saveapenny.notification.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.saveapenny.notification.dto.CreateNotificationRequest;
 import com.saveapenny.notification.dto.NotificationResponse;
 import com.saveapenny.notification.dto.UnreadNotificationCountResponse;
 import com.saveapenny.notification.dto.UpdateNotificationRequest;
 import com.saveapenny.notification.entity.Notification;
+import com.saveapenny.notification.entity.NotificationType;
 import com.saveapenny.notification.exception.NotificationNotFoundException;
 import com.saveapenny.notification.mapper.NotificationMapper;
 import com.saveapenny.notification.repository.NotificationRepository;
 import com.saveapenny.notification.service.NotificationService;
+import com.saveapenny.push.service.PushNotificationSender;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,12 +27,15 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final PushNotificationSender pushNotificationSender;
 
     public NotificationServiceImpl(
             NotificationRepository notificationRepository,
-            NotificationMapper notificationMapper) {
+            NotificationMapper notificationMapper,
+            PushNotificationSender pushNotificationSender) {
         this.notificationRepository = notificationRepository;
         this.notificationMapper = notificationMapper;
+        this.pushNotificationSender = pushNotificationSender;
     }
 
     @Override
@@ -35,7 +43,23 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = notificationMapper.toEntity(request);
         notification.setUserId(currentUserId);
         Notification saved = notificationRepository.save(notification);
+        pushNotificationSender.send(
+                currentUserId, saved.getType(), saved.getTitle(), saved.getMessage(), pushData(saved.getType(), request.getMetadata()));
         return notificationMapper.toResponse(saved);
+    }
+
+    private Map<String, String> pushData(NotificationType type, JsonNode metadata) {
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put("type", type.name());
+        if (metadata != null && metadata.isObject()) {
+            metadata.fields().forEachRemaining(entry -> {
+                JsonNode value = entry.getValue();
+                if (value.isValueNode()) {
+                    data.put(entry.getKey(), value.asText());
+                }
+            });
+        }
+        return data;
     }
 
     @Override

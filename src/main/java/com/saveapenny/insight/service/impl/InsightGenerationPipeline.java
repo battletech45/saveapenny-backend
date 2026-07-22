@@ -73,7 +73,7 @@ public class InsightGenerationPipeline {
             savedCount++;
 
             if ("WARNING".equals(candidate.severity()) || "CRITICAL".equals(candidate.severity())) {
-                createNotification(userId, candidate);
+                createNotification(userId, entity.getId(), candidate);
             }
         }
 
@@ -99,6 +99,7 @@ public class InsightGenerationPipeline {
 
     private InsightEntity toEntity(UUID userId, InsightCandidate candidate) {
         return InsightEntity.builder()
+                .id(UUID.randomUUID())
                 .userId(userId)
                 .type(candidate.type())
                 .title(candidate.title())
@@ -112,9 +113,9 @@ public class InsightGenerationPipeline {
                 .build();
     }
 
-    private void createNotification(UUID userId, InsightCandidate candidate) {
+    private void createNotification(UUID userId, UUID insightId, InsightCandidate candidate) {
         try {
-            insightNotificationService.createInsightGeneratedNotification(userId, candidate);
+            insightNotificationService.createInsightGeneratedNotification(userId, insightId, candidate);
         } catch (RuntimeException ex) {
             log.warn("Failed to create notification for insight of user {}", userId, ex);
         }
