@@ -7,7 +7,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 import com.saveapenny.config.TimeService;
-import com.saveapenny.push.config.PushProperties;
+import com.saveapenny.push.config.FirebaseServiceAccount;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.time.Clock;
@@ -34,15 +34,12 @@ class GoogleServiceAccountTokenProviderTest {
                 + "\n-----END PRIVATE KEY-----\n";
     }
 
-    private static PushProperties properties(String privateKey) {
-        return new PushProperties(
-                true,
+    private static FirebaseServiceAccount serviceAccount(String privateKey) {
+        return new FirebaseServiceAccount(
                 "proj-1",
                 "svc@proj-1.iam.gserviceaccount.com",
                 privateKey,
-                "https://oauth2.googleapis.com/token",
-                "https://fcm.googleapis.com/v1/projects/%s/messages:send",
-                5000);
+                "https://oauth2.googleapis.com/token");
     }
 
     /** A {@link Clock} whose {@code instant()} can be advanced mid-test, to exercise the provider's expiry logic without sleeping. */
@@ -80,7 +77,7 @@ class GoogleServiceAccountTokenProviderTest {
         RestClient restClient = builder.build();
         TimeService timeService = new TimeService(Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
         GoogleServiceAccountTokenProvider provider =
-                new GoogleServiceAccountTokenProvider(restClient, properties(generatePrivateKeyPem()), timeService);
+                new GoogleServiceAccountTokenProvider(restClient, serviceAccount(generatePrivateKeyPem()), timeService);
 
         server.expect(requestTo("https://oauth2.googleapis.com/token"))
                 .andExpect(method(HttpMethod.POST))
@@ -104,7 +101,7 @@ class GoogleServiceAccountTokenProviderTest {
         MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
         TimeService timeService = new TimeService(clock);
         GoogleServiceAccountTokenProvider provider =
-                new GoogleServiceAccountTokenProvider(restClient, properties(generatePrivateKeyPem()), timeService);
+                new GoogleServiceAccountTokenProvider(restClient, serviceAccount(generatePrivateKeyPem()), timeService);
 
         server.expect(requestTo("https://oauth2.googleapis.com/token"))
                 .andRespond(withStatus(HttpStatus.OK)
@@ -128,7 +125,7 @@ class GoogleServiceAccountTokenProviderTest {
         RestClient restClient = RestClient.builder().build();
         TimeService timeService = new TimeService(Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
         GoogleServiceAccountTokenProvider provider =
-                new GoogleServiceAccountTokenProvider(restClient, properties("not-a-valid-key"), timeService);
+                new GoogleServiceAccountTokenProvider(restClient, serviceAccount("not-a-valid-key"), timeService);
 
         assertThrows(IllegalStateException.class, provider::getAccessToken);
     }

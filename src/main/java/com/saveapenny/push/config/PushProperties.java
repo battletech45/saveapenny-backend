@@ -5,10 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "push.fcm")
 public record PushProperties(
         boolean enabled,
-        String projectId,
-        String clientEmail,
-        String privateKey,
-        String tokenUri,
+        String credentialsPath,
         String fcmEndpointTemplate,
         long timeoutMillis) {
 }

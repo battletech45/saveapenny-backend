@@ -10,6 +10,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 import com.saveapenny.notification.entity.NotificationType;
+import com.saveapenny.push.config.FirebaseServiceAccount;
 import com.saveapenny.push.config.PushProperties;
 import com.saveapenny.push.entity.DevicePlatform;
 import com.saveapenny.push.entity.DeviceToken;
@@ -42,17 +43,22 @@ class FcmPushNotificationSenderTest {
     private static PushProperties properties() {
         return new PushProperties(
                 true,
-                "proj-1",
-                "svc@proj-1.iam.gserviceaccount.com",
-                "dummy-key",
-                "https://oauth2.googleapis.com/token",
+                "classpath:does-not-matter.json",
                 "https://fcm.googleapis.com/v1/projects/%s/messages:send",
                 5000);
     }
 
+    private static FirebaseServiceAccount serviceAccount() {
+        return new FirebaseServiceAccount(
+                "proj-1",
+                "svc@proj-1.iam.gserviceaccount.com",
+                "dummy-key",
+                "https://oauth2.googleapis.com/token");
+    }
+
     private FcmPushNotificationSender sender(RestClient restClient, MeterRegistry meterRegistry) {
         FcmPushNotificationSender sender = new FcmPushNotificationSender(
-                restClient, tokenProvider, deviceTokenRepository, properties(), meterRegistry);
+                restClient, tokenProvider, deviceTokenRepository, properties(), serviceAccount(), meterRegistry);
         sender.validateCredentials();
         return sender;
     }
@@ -123,8 +129,9 @@ class FcmPushNotificationSenderTest {
                 RestClient.builder().build(),
                 tokenProvider,
                 deviceTokenRepository,
-                new PushProperties(true, "", "svc@proj-1.iam.gserviceaccount.com", "dummy-key",
-                        "https://oauth2.googleapis.com/token", "https://fcm.googleapis.com/v1/projects/%s/messages:send", 5000),
+                properties(),
+                new FirebaseServiceAccount("", "svc@proj-1.iam.gserviceaccount.com", "dummy-key",
+                        "https://oauth2.googleapis.com/token"),
                 new SimpleMeterRegistry());
 
         assertThrows(IllegalStateException.class, sender::validateCredentials);

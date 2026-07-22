@@ -1,3 +1,4 @@
+# ==================== Core ====================
 spring:
   config:
     import: optional:file:.env[.properties]
@@ -52,6 +53,7 @@ security:
     secret: ${JWT_SECRET}
     refresh-token-expiry-days: 7
 
+# ==================== Observability ====================
 management:
   endpoints:
     web:
@@ -72,6 +74,7 @@ logging:
     org.springframework: info
     org.hibernate.SQL: info
 
+# ==================== API docs ====================
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -84,6 +87,7 @@ springdoc:
     try-it-out-enabled: true
     filter: true
 
+# ==================== Feature modules ====================
 assistant:
   enabled: ${ASSISTANT_ENABLED:false}
   max-history: 8
@@ -169,9 +173,6 @@ firebase:
 push:
   fcm:
     enabled: ${PUSH_FCM_ENABLED:false}
-    project-id: ${PUSH_FCM_PROJECT_ID:}
-    client-email: ${PUSH_FCM_CLIENT_EMAIL:}
-    private-key: ${PUSH_FCM_PRIVATE_KEY:}
-    token-uri: ${PUSH_FCM_TOKEN_URI:https://oauth2.googleapis.com/token}
+    credentials-path: ${PUSH_FCM_CREDENTIALS_PATH:classpath:saveapenny-cc80fdf0c218.json}
     fcm-endpoint-template: ${PUSH_FCM_ENDPOINT_TEMPLATE:https://fcm.googleapis.com/v1/projects/%s/messages:send}
     timeout-millis: ${PUSH_FCM_TIMEOUT_MS:5000}
