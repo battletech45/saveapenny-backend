@@ -102,10 +102,12 @@ class RefreshTokenServiceImplTest {
 
     @Test
     void rotate_revokesExistingAndCreatesNewToken() {
+        UUID familyId = UUID.randomUUID();
         RefreshToken existing = RefreshToken.builder()
                 .userId(user.getId())
                 .token("old-token")
                 .revoked(false)
+                .familyId(familyId)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
         when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
@@ -114,7 +116,9 @@ class RefreshTokenServiceImplTest {
         RefreshToken rotated = refreshTokenService.rotate("old-token");
 
         assertTrue(existing.getRevoked());
+        assertEquals(rotated.getId(), existing.getReplacedByTokenId());
         assertEquals(user.getId(), rotated.getUserId());
+        assertEquals(familyId, rotated.getFamilyId());
         assertFalse(rotated.getRevoked());
         assertFalse("old-token".equals(rotated.getToken()));
         verify(refreshTokenRepository).findByTokenForUpdate("old-token");
@@ -122,20 +126,57 @@ class RefreshTokenServiceImplTest {
     }
 
     @Test
-    void rotate_throwsWhenTokenWasAlreadyRotated() {
+    void rotate_reusedWithinGraceWindow_returnsReplacementInsteadOfThrowing() {
+        UUID familyId = UUID.randomUUID();
         RefreshToken existing = RefreshToken.builder()
                 .userId(user.getId())
                 .token("old-token")
                 .revoked(false)
+                .familyId(familyId)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
         when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        refreshTokenService.rotate("old-token");
+        RefreshToken firstRotation = refreshTokenService.rotate("old-token");
+        when(refreshTokenRepository.findById(firstRotation.getId())).thenReturn(Optional.of(firstRotation));
+
+        RefreshToken secondCaller = refreshTokenService.rotate("old-token");
+
+        assertEquals(firstRotation.getId(), secondCaller.getId());
+        assertEquals(firstRotation.getToken(), secondCaller.getToken());
+        verify(refreshTokenRepository, times(2)).findByTokenForUpdate("old-token");
+        verify(refreshTokenRepository, never()).findAllByFamilyIdAndRevokedFalse(any());
+    }
+
+    @Test
+    void rotate_reusedAfterGraceWindow_revokesFamilyAndThrows() {
+        UUID familyId = UUID.randomUUID();
+        UUID replacementId = UUID.randomUUID();
+        RefreshToken replacement = RefreshToken.builder()
+                .id(replacementId)
+                .userId(user.getId())
+                .token("new-token")
+                .revoked(false)
+                .familyId(familyId)
+                .expiryDate(OffsetDateTime.now().plusMinutes(5))
+                .build();
+        RefreshToken existing = RefreshToken.builder()
+                .userId(user.getId())
+                .token("old-token")
+                .revoked(true)
+                .revokedAt(OffsetDateTime.now().minusSeconds(30))
+                .replacedByTokenId(replacementId)
+                .familyId(familyId)
+                .expiryDate(OffsetDateTime.now().plusMinutes(5))
+                .build();
+        when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.findAllByFamilyIdAndRevokedFalse(familyId)).thenReturn(List.of(replacement));
 
         assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenService.rotate("old-token"));
-        verify(refreshTokenRepository, times(2)).findByTokenForUpdate("old-token");
+
+        assertTrue(replacement.getRevoked());
+        verify(refreshTokenRepository).saveAll(List.of(replacement));
     }
 
     @Test
