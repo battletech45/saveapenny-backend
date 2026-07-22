@@ -97,4 +97,4 @@ Poll until status reaches a terminal state:
 | File | Purpose |
 |------|---------|
 | `src/main/java/com/saveapenny/imports/controller/ImportController.java` | REST endpoints |
-| `src/main/java/com/saveapenny/imports/service/impl/CsvImportServiceImpl.java` | CSV parsing and import orchestration |
+| `src/main/java/com/saveapenny/imports/service/impl/ImportServiceImpl.java` | CSV parsing and import orchestration |

@@ -214,6 +214,7 @@ Warnings do not always block a result but indicate lower confidence or important
 | File | Purpose |
 |------|---------|
 | `src/main/java/com/saveapenny/goal/entity/GoalEntity.java` | JPA entity |
-| `src/main/java/com/saveapenny/goal/interfaces/http/GoalController.java` | REST endpoints |
+| `src/main/java/com/saveapenny/goal/controller/GoalController.java` | REST endpoints |
+| `src/main/java/com/saveapenny/goal/controller/GoalSimulationController.java` | Simulation/what-if REST endpoints |
 | `src/main/java/com/saveapenny/goal/service/impl/GoalServiceImpl.java` | Business logic and simulation |
 | `src/main/java/com/saveapenny/goal/simulation/strategy/` | Strategy pattern implementations per goal type |

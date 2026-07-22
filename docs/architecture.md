@@ -41,6 +41,7 @@ com.saveapenny/
 ├── insight/                           # Automated financial insights (includes analytics/, scheduler/, config/ sub-packages)
 ├── goal/                              # Financial goal simulation
 ├── mcp/                               # MCP tool infrastructure
+├── billing/                           # RevenueCat subscriptions, entitlement snapshot, plan enforcement
 ├── analytics/                         # Firebase/GA4 Measurement Protocol event publishing (not to be confused with insight/analytics/ above, which is unrelated anomaly-detection logic)
 ├── admin/                             # Admin-only metrics endpoint
 └── shared/                            # ApiResponse, GlobalExceptionHandler
@@ -257,6 +258,7 @@ MapStruct generates code at compile time with zero runtime overhead and explicit
 | Financial Insights | Disabled | `insight.enabled` |
 | Goal Progress Checks | Disabled | `goal.progress.enabled` |
 | Stock Market Data | Enabled | `STOCK_ENABLED=true` |
+| Billing (RevenueCat) | Disabled | `REVENUECAT_ENABLED=true` |
 
 ## Troubleshooting
 
@@ -286,3 +288,4 @@ MapStruct generates code at compile time with zero runtime overhead and explicit
 - [Rate Limiting](rate-limiting.md) — Token bucket algorithm and client best practices
 - [Deployment & Operations](deployment-operations.md) — Production deployment configuration
 - [Error Codes](error-codes.md) — Complete error catalogue
+- [Billing](features/billing.md) — Subscription entitlement and plan enforcement

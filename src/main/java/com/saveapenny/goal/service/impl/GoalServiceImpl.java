@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.analytics.dto.AnalyticsEvent;
 import com.saveapenny.analytics.service.AnalyticsEventPublisher;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.config.TimeService;
 import com.saveapenny.goal.dto.CreateGoalRequest;
 import com.saveapenny.goal.dto.CreateScenarioRequest;
@@ -51,6 +52,7 @@ public class GoalServiceImpl implements GoalService {
     private final GoalMapper goalMapper;
     private final TimeService timeService;
     private final AnalyticsEventPublisher analyticsEventPublisher;
+    private final BillingAccessService billingAccessService;
 
     public GoalServiceImpl(
             GoalRepository goalRepository,
@@ -59,7 +61,8 @@ public class GoalServiceImpl implements GoalService {
             AccountRepository accountRepository,
             GoalMapper goalMapper,
             TimeService timeService,
-            AnalyticsEventPublisher analyticsEventPublisher) {
+            AnalyticsEventPublisher analyticsEventPublisher,
+            BillingAccessService billingAccessService) {
         this.goalRepository = goalRepository;
         this.scenarioRepository = scenarioRepository;
         this.goalRunRepository = goalRunRepository;
@@ -67,12 +70,14 @@ public class GoalServiceImpl implements GoalService {
         this.goalMapper = goalMapper;
         this.timeService = timeService;
         this.analyticsEventPublisher = analyticsEventPublisher;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
     public GoalResponse create(UUID currentUserId, CreateGoalRequest request) {
         validateFutureDate(request.getTargetDate());
         validateInputsType(request.getType(), request.getInputs());
+        billingAccessService.enforceGoalCreationLimit(currentUserId);
         ensureLinkedAccountOwned(currentUserId, request.getLinkedAccountId());
 
         GoalEntity goal = goalMapper.toEntity(request);

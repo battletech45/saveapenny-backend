@@ -10,6 +10,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.config.OcrProperties;
 import com.saveapenny.ocr.application.analysis.OcrAnalysisService;
 import com.saveapenny.ocr.application.analysis.OcrDocumentAnalysis;
@@ -56,6 +57,8 @@ class OcrJobServiceImplTest {
     private OcrJobAsyncProcessor ocrJobAsyncProcessor;
     @Mock
     private PlatformTransactionManager transactionManager;
+    @Mock
+    private BillingAccessService billingAccessService;
 
     @Captor
     private ArgumentCaptor<OcrJob> jobCaptor;
@@ -73,7 +76,8 @@ class OcrJobServiceImplTest {
                 ocrJobMapper,
                 ocrAnalysisService,
                 ocrJobAsyncProcessor,
-                transactionManager);
+                transactionManager,
+                billingAccessService);
         userId = UUID.randomUUID();
         jobId = UUID.randomUUID();
     }

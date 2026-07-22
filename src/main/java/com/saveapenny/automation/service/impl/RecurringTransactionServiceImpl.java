@@ -1,6 +1,7 @@
 package com.saveapenny.automation.service.impl;
 
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
 import com.saveapenny.automation.dto.RecurringExecutionHistoryResponse;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
@@ -42,6 +43,7 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final TimeService timeService;
+    private final BillingAccessService billingAccessService;
 
     public RecurringTransactionServiceImpl(
             RecurringTransactionRepository recurringTransactionRepository,
@@ -50,7 +52,8 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
             RecurringExecutionHistoryMapper executionHistoryMapper,
             AccountRepository accountRepository,
             CategoryRepository categoryRepository,
-            TimeService timeService) {
+            TimeService timeService,
+            BillingAccessService billingAccessService) {
         this.recurringTransactionRepository = recurringTransactionRepository;
         this.recurringTransactionMapper = recurringTransactionMapper;
         this.executionHistoryRepository = executionHistoryRepository;
@@ -58,10 +61,12 @@ public class RecurringTransactionServiceImpl implements RecurringTransactionServ
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
         this.timeService = timeService;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
     public RecurringTransactionResponse create(UUID currentUserId, CreateRecurringTransactionRequest request) {
+        billingAccessService.requireFeature(currentUserId, "advancedRecurring");
         validateType(request.getType());
         validateNextRunDate(request.getNextRunDate());
         ensureOwnedActiveAccount(currentUserId, request.getAccountId());

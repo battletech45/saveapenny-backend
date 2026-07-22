@@ -58,7 +58,7 @@ If the API key is blank, requests fail with `STOCK_DISABLED` even when the featu
 | `timePeriod` | Positive integer only |
 | `seriesType` | `close`, `open`, `high`, or `low` |
 
-## Error Semantics
+## Error Codes
 
 | Code | HTTP | Meaning |
 |------|------|---------|
@@ -132,6 +132,16 @@ When market data is unavailable (Alpha Vantage rate-limited or return error), P/
 - Symbol changes are not supported on update; delete and recreate to fix symbol errors.
 - Holdings use hard delete (no soft delete); delete when a position is sold.
 - The summary endpoint may exhaust the Alpha Vantage rate limit (25/day) if many holdings exist. In-memory per-symbol deduplication within a single request mitigates this.
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Alpha Vantage over other providers | Free tier sufficient for app-scale usage; simple REST API with no SDK dependency |
+| App-side rate limit tracking | Alpha Vantage's own limits (5/min, 25/day on the free tier) are shared across the whole app, not per-user; tracking locally avoids surprise 429s from the provider |
+| Transport DTOs separate from API DTOs | Preserves the provider's raw response shape for debugging while API DTOs map to stable, typed fields for clients |
+| Holdings use hard delete | A sold position has no ongoing state to preserve; simpler than soft-delete plus filtering everywhere |
+| In-memory per-symbol dedup on portfolio summary | Multiple holdings can share a symbol; deduplicating within a request avoids redundant provider calls against the daily quota |
 
 ## Referenced Files
 

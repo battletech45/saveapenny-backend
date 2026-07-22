@@ -26,4 +26,6 @@ public interface GoalRepository extends JpaRepository<GoalEntity, UUID> {
     Page<GoalEntity> findAllByStatusAndDeletedAtIsNull(GoalStatus status, Pageable pageable);
 
     Optional<GoalEntity> findByIdAndUserIdAndDeletedAtIsNull(UUID id, UUID userId);
+
+    long countByUserIdAndStatusAndDeletedAtIsNull(UUID userId, GoalStatus status);
 }

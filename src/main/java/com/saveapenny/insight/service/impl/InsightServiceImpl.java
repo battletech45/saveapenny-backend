@@ -9,6 +9,7 @@ import com.saveapenny.insight.exception.InsightNotFoundException;
 import com.saveapenny.insight.mapper.InsightMapper;
 import com.saveapenny.insight.repository.InsightRepository;
 import com.saveapenny.insight.service.InsightService;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.shared.api.PagedResponse;
 import com.saveapenny.shared.api.PagedResponses;
 import java.util.UUID;
@@ -24,14 +25,17 @@ public class InsightServiceImpl implements InsightService {
     private final InsightRepository insightRepository;
     private final InsightMapper insightMapper;
     private final InsightGenerationPipeline insightGenerationPipeline;
+    private final BillingAccessService billingAccessService;
 
     public InsightServiceImpl(
             InsightRepository insightRepository,
             InsightMapper insightMapper,
-            InsightGenerationPipeline insightGenerationPipeline) {
+            InsightGenerationPipeline insightGenerationPipeline,
+            BillingAccessService billingAccessService) {
         this.insightRepository = insightRepository;
         this.insightMapper = insightMapper;
         this.insightGenerationPipeline = insightGenerationPipeline;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
@@ -82,6 +86,7 @@ public class InsightServiceImpl implements InsightService {
 
     @Override
     public int generate(UUID currentUserId, GenerateInsightsRequest request) {
+        billingAccessService.requireFeature(currentUserId, "insights");
         try {
             return insightGenerationPipeline.execute(currentUserId);
         } catch (RuntimeException ex) {

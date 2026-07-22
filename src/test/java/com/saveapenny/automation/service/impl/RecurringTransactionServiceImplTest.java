@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.automation.dto.CreateRecurringTransactionRequest;
 import com.saveapenny.automation.dto.UpcomingRunResponse;
 import com.saveapenny.automation.dto.RecurringTransactionResponse;
@@ -61,6 +62,8 @@ class RecurringTransactionServiceImplTest {
     private CategoryRepository categoryRepository;
     @Mock
     private TimeService timeService;
+    @Mock
+    private BillingAccessService billingAccessService;
 
     @InjectMocks
     private RecurringTransactionServiceImpl recurringTransactionService;

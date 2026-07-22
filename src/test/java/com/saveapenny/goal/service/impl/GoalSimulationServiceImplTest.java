@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.goal.dto.GoalDetailResponse;
 import com.saveapenny.goal.dto.ScenarioResponse;
 import com.saveapenny.goal.entity.Feasibility;
@@ -60,6 +61,9 @@ class GoalSimulationServiceImplTest {
 
     @Mock
     private Clock assistantClock;
+
+    @Mock
+    private BillingAccessService billingAccessService;
 
     @InjectMocks
     private GoalSimulationServiceImpl goalSimulationService;

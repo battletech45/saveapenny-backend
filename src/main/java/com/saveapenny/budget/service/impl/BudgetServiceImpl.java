@@ -2,6 +2,7 @@ package com.saveapenny.budget.service.impl;
 
 import com.saveapenny.analytics.dto.AnalyticsEvent;
 import com.saveapenny.analytics.service.AnalyticsEventPublisher;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.budget.dto.BudgetResponse;
 import com.saveapenny.budget.dto.BudgetStatusResponse;
 import com.saveapenny.budget.dto.CreateBudgetRequest;
@@ -46,23 +47,27 @@ public class BudgetServiceImpl implements BudgetService {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final AnalyticsEventPublisher analyticsEventPublisher;
+    private final BillingAccessService billingAccessService;
 
     public BudgetServiceImpl(
             BudgetRepository budgetRepository,
             BudgetMapper budgetMapper,
             CategoryRepository categoryRepository,
             TransactionRepository transactionRepository,
-            AnalyticsEventPublisher analyticsEventPublisher) {
+            AnalyticsEventPublisher analyticsEventPublisher,
+            BillingAccessService billingAccessService) {
         this.budgetRepository = budgetRepository;
         this.budgetMapper = budgetMapper;
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.analyticsEventPublisher = analyticsEventPublisher;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
     public BudgetResponse create(UUID currentUserId, CreateBudgetRequest request) {
         validateDateRange(request.getStartDate(), request.getEndDate());
+        billingAccessService.enforceBudgetCreationLimit(currentUserId);
         ensureCategoryVisible(currentUserId, request.getCategoryId());
 
         boolean exists = budgetRepository.existsByUserIdAndCategoryIdAndPeriodAndStartDateAndEndDate(

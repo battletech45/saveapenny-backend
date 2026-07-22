@@ -15,6 +15,7 @@ import com.saveapenny.assistant.prompt.FinancePromptBuilder;
 import com.saveapenny.assistant.repository.AssistantChatMessageRepository;
 import com.saveapenny.assistant.repository.AssistantChatSessionRepository;
 import com.saveapenny.assistant.tool.AssistantToolContextHolder;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.mcp.adapter.springai.SpringAiMcpToolAdapter;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -129,6 +130,11 @@ class AssistantServiceImplWiringTest {
         @Bean
         AssistantChatMessageRepository assistantChatMessageRepository() {
             return Mockito.mock(AssistantChatMessageRepository.class);
+        }
+
+        @Bean
+        BillingAccessService billingAccessService() {
+            return Mockito.mock(BillingAccessService.class);
         }
     }
 }

@@ -3,6 +3,7 @@ package com.saveapenny.report.service.impl;
 import com.saveapenny.account.entity.AccountType;
 import com.saveapenny.analytics.dto.AnalyticsEvent;
 import com.saveapenny.analytics.service.AnalyticsEventPublisher;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.config.TimeService;
 import com.saveapenny.report.dto.CashFlowPointResponse;
 import java.util.List;
@@ -41,6 +42,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportMapper reportMapper;
     private final TimeService timeService;
     private final AnalyticsEventPublisher analyticsEventPublisher;
+    private final BillingAccessService billingAccessService;
 
     public ReportServiceImpl(
             ReportTransactionRepository reportTransactionRepository,
@@ -48,19 +50,22 @@ public class ReportServiceImpl implements ReportService {
             NetWorthSnapshotRepository netWorthSnapshotRepository,
             ReportMapper reportMapper,
             TimeService timeService,
-            AnalyticsEventPublisher analyticsEventPublisher) {
+            AnalyticsEventPublisher analyticsEventPublisher,
+            BillingAccessService billingAccessService) {
         this.reportTransactionRepository = reportTransactionRepository;
         this.reportAccountRepository = reportAccountRepository;
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
         this.reportMapper = reportMapper;
         this.timeService = timeService;
         this.analyticsEventPublisher = analyticsEventPublisher;
+        this.billingAccessService = billingAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public MonthlySummaryResponse getMonthlySummary(UUID currentUserId, LocalDate from, LocalDate to) {
         validateDateRange(from, to);
+        billingAccessService.enforceReportHistoryWindow(currentUserId, from);
 
         BigDecimal totalIncome = nullSafeAmount(reportTransactionRepository
                 .sumAmountByUserIdAndTypeAndTransactionDateBetween(currentUserId, TransactionType.INCOME, from, to));
@@ -74,6 +79,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] exportMonthlySummaryCsv(UUID currentUserId, LocalDate from, LocalDate to) {
+        billingAccessService.requireFeature(currentUserId, "reportExport");
         MonthlySummaryResponse summary = getMonthlySummary(currentUserId, from, to);
         String csv = String.join(
                 "\n",
@@ -94,6 +100,7 @@ public class ReportServiceImpl implements ReportService {
     @Transactional(readOnly = true)
     public List<CategorySpendingResponse> getCategorySpending(UUID currentUserId, LocalDate from, LocalDate to) {
         validateDateRange(from, to);
+        billingAccessService.enforceReportHistoryWindow(currentUserId, from);
 
         BigDecimal totalExpense = nullSafeAmount(reportTransactionRepository
                 .sumAmountByUserIdAndTypeAndTransactionDateBetween(currentUserId, TransactionType.EXPENSE, from, to));
@@ -109,6 +116,7 @@ public class ReportServiceImpl implements ReportService {
     @Transactional(readOnly = true)
     public List<CashFlowPointResponse> getCashFlow(UUID currentUserId, LocalDate from, LocalDate to) {
         validateDateRange(from, to);
+        billingAccessService.enforceReportHistoryWindow(currentUserId, from);
         return reportTransactionRepository.findCashFlowByUserIdAndTransactionDateBetween(currentUserId, from, to)
                 .stream()
                 .map(reportMapper::toCashFlowPointResponse)

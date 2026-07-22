@@ -120,5 +120,5 @@ When the job completes, the response includes:
 |------|---------|
 | `src/main/java/com/saveapenny/ocr/domain/model/OcrJob.java` | OCR job entity |
 | `src/main/java/com/saveapenny/ocr/interfaces/http/OcrImportController.java` | REST endpoints |
-| `src/main/java/com/saveapenny/ocr/infrastructure/engine/tesseract/TesseractOcrEngine.java` | Tesseract integration |
+| `src/main/java/com/saveapenny/ocr/infrastructure/engine/tesseract/TesseractOcrService.java` | Tesseract integration |
 | `src/main/resources/application.yml` | OCR configuration |

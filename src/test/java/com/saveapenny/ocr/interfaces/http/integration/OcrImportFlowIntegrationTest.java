@@ -13,6 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.auth.service.JwtService;
+import com.saveapenny.billing.entity.BillingEntitlement;
+import com.saveapenny.billing.entity.EntitlementStatus;
+import com.saveapenny.billing.entity.Plan;
+import com.saveapenny.billing.repository.BillingEntitlementRepository;
 import com.saveapenny.ocr.application.port.in.OcrService;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeChecker;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeStatus;
@@ -56,6 +61,12 @@ class OcrImportFlowIntegrationTest {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private BillingEntitlementRepository billingEntitlementRepository;
 
     @MockitoBean
     private OcrService ocrService;
@@ -266,7 +277,16 @@ class OcrImportFlowIntegrationTest {
                 .andReturn();
 
         JsonNode registerJson = objectMapper.readTree(registerResult.getResponse().getContentAsString());
-        return registerJson.path("data").path("accessToken").asText();
+        String token = registerJson.path("data").path("accessToken").asText();
+
+        billingEntitlementRepository.save(BillingEntitlement.builder()
+                .userId(jwtService.extractUserId(token))
+                .plan(Plan.PLUS)
+                .status(EntitlementStatus.ACTIVE)
+                .willRenew(true)
+                .build());
+
+        return token;
     }
 
     private String extractField(MvcResult result, String objectName, String fieldName) throws Exception {

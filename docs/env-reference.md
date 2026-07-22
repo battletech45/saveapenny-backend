@@ -106,6 +106,23 @@ Notes:
 
 See [Stocks](features/stocks.md) for feature details.
 
+## Billing (RevenueCat)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REVENUECAT_ENABLED` | `false` | Enable RevenueCat entitlement sync |
+| `REVENUECAT_SECRET_API_KEY` | — | RevenueCat secret API key, required when enabled |
+| `REVENUECAT_BASE_URL` | `https://api.revenuecat.com/v1` | RevenueCat REST API base URL (override for testing) |
+| `REVENUECAT_ENTITLEMENT_IDENTIFIER` | `Save A Penny Pro` | RevenueCat entitlement **identifier** (not the display name) that maps to the app's `PLUS` plan |
+
+Notes:
+
+- `REVENUECAT_ENABLED=true` alone is not sufficient; a blank `REVENUECAT_SECRET_API_KEY` causes `/billing/sync` to fail with `REVENUECAT_DISABLED`.
+- No webhook receiver exists — RevenueCat webhooks require a paid plan this project isn't on. Entitlement state is pull-only: the backend re-fetches `/subscribers/{appUserId}` whenever `POST /billing/sync` is called, plus a local time-based downgrade (`BillingEntitlement.effectiveStatus`) so a lapsed subscription can't stay "active" forever between syncs. The Flutter client should call `/billing/sync` after purchase/restore and on app launch/resume.
+- The RevenueCat `appUserID` must always be the backend user UUID, never the user's email.
+
+See [Billing](features/billing.md) for feature details.
+
 ## Firebase Analytics
 
 | Variable | Default | Description |

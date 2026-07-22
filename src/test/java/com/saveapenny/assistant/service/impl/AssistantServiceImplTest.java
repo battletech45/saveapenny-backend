@@ -25,6 +25,7 @@ import com.saveapenny.assistant.prompt.FinancePromptBuilder;
 import com.saveapenny.assistant.repository.AssistantChatMessageRepository;
 import com.saveapenny.assistant.repository.AssistantChatSessionRepository;
 import com.saveapenny.assistant.tool.AssistantToolContextHolder;
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.mcp.adapter.springai.SpringAiMcpToolAdapter;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -64,6 +65,9 @@ class AssistantServiceImplTest {
     @Mock
     private AssistantChatMessageRepository assistantChatMessageRepository;
 
+    @Mock
+    private BillingAccessService billingAccessService;
+
     private FinancePromptBuilder financePromptBuilder;
     private AssistantServiceImpl assistantService;
     private AssistantProperties assistantProperties;
@@ -89,7 +93,8 @@ class AssistantServiceImplTest {
                 springAiMcpToolAdapter,
                 assistantToolContextHolder,
                 assistantChatSessionRepository,
-                assistantChatMessageRepository);
+                assistantChatMessageRepository,
+                billingAccessService);
     }
 
     @Test
@@ -101,7 +106,8 @@ class AssistantServiceImplTest {
                 springAiMcpToolAdapter,
                 assistantToolContextHolder,
                 assistantChatSessionRepository,
-                assistantChatMessageRepository);
+                assistantChatMessageRepository,
+                billingAccessService);
 
         AssistantChatRequest request = AssistantChatRequest.builder()
                 .message("How can I save more?")
@@ -379,7 +385,8 @@ class AssistantServiceImplTest {
                 springAiMcpToolAdapter,
                 assistantToolContextHolder,
                 assistantChatSessionRepository,
-                assistantChatMessageRepository);
+                assistantChatMessageRepository,
+                billingAccessService);
         UUID userId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
         AssistantChatSession session = AssistantChatSession.builder()

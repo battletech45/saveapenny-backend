@@ -2,8 +2,14 @@ package com.saveapenny.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.auth.service.JwtService;
+import com.saveapenny.billing.entity.BillingEntitlement;
+import com.saveapenny.billing.entity.EntitlementStatus;
+import com.saveapenny.billing.entity.Plan;
+import com.saveapenny.billing.repository.BillingEntitlementRepository;
 import com.saveapenny.user.entity.Role;
 import com.saveapenny.user.repository.RoleRepository;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,10 +46,35 @@ public abstract class IntegrationTestBase {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private BillingEntitlementRepository billingEntitlementRepository;
+
     @BeforeEach
     void setUpBaseRole() {
         roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_USER").build()));
+    }
+
+    protected UUID extractUserId(String token) {
+        return jwtService.extractUserId(token);
+    }
+
+    /**
+     * Grants an active Plus entitlement for the user identified by the given access token, so
+     * plan-gated endpoints (assistant, insights, stocks, ocr, csvImport, reportExport,
+     * advancedRecurring, goalWhatIf) can be exercised in tests that aren't specifically about billing.
+     */
+    protected void grantPlusEntitlement(String token) {
+        UUID userId = extractUserId(token);
+        billingEntitlementRepository.save(BillingEntitlement.builder()
+                .userId(userId)
+                .plan(Plan.PLUS)
+                .status(EntitlementStatus.ACTIVE)
+                .willRenew(true)
+                .build());
     }
 
     protected String asJson(Object obj) throws Exception {

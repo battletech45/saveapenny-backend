@@ -1,5 +1,7 @@
 package com.saveapenny.stock.controller;
 
+import com.saveapenny.billing.service.BillingAccessService;
+import com.saveapenny.config.security.CurrentUserPrincipal;
 import com.saveapenny.shared.api.ApiResponse;
 import com.saveapenny.stock.dto.StockBalanceSheetResponse;
 import com.saveapenny.stock.dto.StockCashFlowResponse;
@@ -14,7 +16,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,9 +30,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class StockController {
 
     private final StockService stockService;
+    private final BillingAccessService billingAccessService;
 
-    public StockController(StockService stockService) {
+    public StockController(StockService stockService, BillingAccessService billingAccessService) {
         this.stockService = stockService;
+        this.billingAccessService = billingAccessService;
+    }
+
+    /**
+     * StockService has no per-user context (symbol-only queries against Alpha Vantage), so the
+     * plan gate is enforced here instead of the service layer. Runs before every handler below.
+     */
+    @ModelAttribute
+    public void enforceStockPlanAccess(@AuthenticationPrincipal CurrentUserPrincipal principal) {
+        billingAccessService.requireFeature(principal.userId(), "stocks");
     }
 
     @GetMapping("/quote")

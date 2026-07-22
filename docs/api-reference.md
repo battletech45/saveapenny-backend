@@ -442,6 +442,15 @@ See [Insights](features/insights.md) for detection methods and configuration.
 
 See [Goals](features/goals.md) for goal types, feasibility values, and warnings.
 
+## Billing
+
+| Method | Path | Auth | Description |
+|--------|------|------|--------------|
+| GET | `/api/v1/billing/entitlement` | Bearer | Current entitlement snapshot (`plan`, `status`, `isActive`, `willRenew`, `expiresAt`, `trialEndsAt`, `features`, `limits`) |
+| POST | `/api/v1/billing/sync` | Bearer | Fetch latest subscriber state from RevenueCat and persist it; call immediately after purchase/restore, and on app launch/resume |
+
+See [Billing](features/billing.md) for the entitlement response shape and enforcement rules per feature.
+
 ## Example Protected Request
 
 ```bash
@@ -455,10 +464,12 @@ curl -X GET "http://localhost:8080/api/v1/accounts?page=0&size=20&sort=name,asc"
 |------|------|------|
 | 400 | `VALIDATION_FAILED` | Request body or query parameter validation failed |
 | 401 | `ACCESS_DENIED` | Missing, invalid, or expired access token |
+| 403 | `PLUS_REQUIRED` | Feature is enabled but requires an active Plus subscription |
+| 403 | `FREE_PLAN_LIMIT_REACHED` / `REPORT_HISTORY_LIMIT_REACHED` | Free-tier usage cap or report history window exceeded |
 | 404 | `*_NOT_FOUND` | Resource does not exist or is not owned by the caller |
 | 409 | `*_ALREADY_EXISTS` | Duplicate resource or conflicting request |
 | 429 | `RATE_LIMITED` | Too many requests |
-| 503 | `*_DISABLED` | Feature is not enabled (assistant, OCR, stock market) |
+| 503 | `*_DISABLED` | Feature is not enabled (assistant, OCR, stock market, billing) |
 
 See [Error Codes](error-codes.md) for the complete error catalogue.
 

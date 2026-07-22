@@ -3,6 +3,10 @@ package com.saveapenny.goal.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.billing.entity.BillingEntitlement;
+import com.saveapenny.billing.entity.EntitlementStatus;
+import com.saveapenny.billing.entity.Plan;
+import com.saveapenny.billing.repository.BillingEntitlementRepository;
 import com.saveapenny.goal.entity.Feasibility;
 import com.saveapenny.goal.entity.GoalRunEntity;
 import com.saveapenny.goal.entity.GoalRunTrigger;
@@ -50,6 +54,8 @@ class GoalProgressJobIntegrationTest {
     private GoalProgressJob goalProgressJob;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private BillingEntitlementRepository billingEntitlementRepository;
 
     private UUID userId;
 
@@ -64,6 +70,14 @@ class GoalProgressJobIntegrationTest {
                 .active(true)
                 .build());
         userId = user.getId();
+
+        // This test exercises the job across multiple active goals, which exceeds the FREE plan's cap.
+        billingEntitlementRepository.save(BillingEntitlement.builder()
+                .userId(userId)
+                .plan(Plan.PLUS)
+                .status(EntitlementStatus.ACTIVE)
+                .willRenew(true)
+                .build());
     }
 
     @Test

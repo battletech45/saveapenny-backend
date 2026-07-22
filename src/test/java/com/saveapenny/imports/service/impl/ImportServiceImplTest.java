@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.saveapenny.billing.service.BillingAccessService;
 import com.saveapenny.imports.dto.ImportPreviewResponse;
 import com.saveapenny.imports.dto.ImportStatusResponse;
 import com.saveapenny.imports.entity.Import;
@@ -42,6 +43,8 @@ class ImportServiceImplTest {
     private ImportAsyncJobService importAsyncJobService;
     @Mock
     private ImportRowParser importRowParser;
+    @Mock
+    private BillingAccessService billingAccessService;
 
     @InjectMocks
     private ImportServiceImpl importService;

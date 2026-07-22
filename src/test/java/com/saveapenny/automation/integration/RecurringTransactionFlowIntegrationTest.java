@@ -11,9 +11,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.automation.repository.RecurringExecutionHistoryRepository;
 import com.saveapenny.automation.repository.RecurringTransactionRepository;
 import com.saveapenny.automation.service.RecurringTransactionExecutionService;
+import com.saveapenny.billing.entity.BillingEntitlement;
+import com.saveapenny.billing.entity.EntitlementStatus;
+import com.saveapenny.billing.entity.Plan;
+import com.saveapenny.billing.repository.BillingEntitlementRepository;
 import com.saveapenny.transaction.repository.TransactionRepository;
 import com.saveapenny.user.entity.Role;
 import com.saveapenny.user.repository.RoleRepository;
@@ -61,6 +66,12 @@ class RecurringTransactionFlowIntegrationTest {
 
     @Autowired
     private RecurringExecutionHistoryRepository executionHistoryRepository;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private BillingEntitlementRepository billingEntitlementRepository;
 
     private String today;
     private String tomorrow;
@@ -244,7 +255,16 @@ class RecurringTransactionFlowIntegrationTest {
                 .andReturn();
 
         JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
-        return json.path("data").path("accessToken").asText();
+        String token = json.path("data").path("accessToken").asText();
+
+        billingEntitlementRepository.save(BillingEntitlement.builder()
+                .userId(jwtService.extractUserId(token))
+                .plan(Plan.PLUS)
+                .status(EntitlementStatus.ACTIVE)
+                .willRenew(true)
+                .build());
+
+        return token;
     }
 
     private String createAccount(String token, String name, String type, String currency, String balance) throws Exception {
