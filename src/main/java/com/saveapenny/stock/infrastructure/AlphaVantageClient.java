@@ -13,10 +13,14 @@ import com.saveapenny.stock.domain.RsiResponse;
 import com.saveapenny.stock.domain.SmaResponse;
 import com.saveapenny.stock.exception.StockClientException;
 import com.saveapenny.stock.exception.StockDisabledException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 public class AlphaVantageClient {
+
+    private static final Logger log = LoggerFactory.getLogger(AlphaVantageClient.class);
 
     private final RestClient restClient;
     private final StockProperties properties;
@@ -46,6 +50,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(GlobalQuoteResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch quote from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch quote from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -69,6 +74,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(DailyTimeSeriesResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch daily series from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch daily series from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -91,6 +97,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(NewsSentimentResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch news sentiment from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch news sentiment from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -113,6 +120,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(CompanyOverview.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch company overview from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch company overview from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -135,6 +143,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(IncomeStatementResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch income statement from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch income statement from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -157,6 +166,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(BalanceSheetResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch balance sheet from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch balance sheet from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -179,6 +189,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(CashFlowResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch cash flow from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch cash flow from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -204,6 +215,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(SmaResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch SMA from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch SMA from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -229,6 +241,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(EmaResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch EMA from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch EMA from Alpha Vantage: " + e.getMessage(), e);
         }
     }
@@ -254,6 +267,7 @@ public class AlphaVantageClient {
                     .retrieve()
                     .body(RsiResponse.class);
         } catch (Exception e) {
+            log.warn("Failed to fetch RSI from Alpha Vantage for symbol {}", symbol, e);
             throw new StockClientException("Failed to fetch RSI from Alpha Vantage: " + e.getMessage(), e);
         }
     }
