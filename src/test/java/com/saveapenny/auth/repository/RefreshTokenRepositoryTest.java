@@ -87,4 +87,32 @@ class RefreshTokenRepositoryTest {
         List<RefreshToken> tokens = refreshTokenRepository.findAllByUserIdAndRevokedFalse(userId);
         assertEquals(1, tokens.size());
     }
+
+    @Test
+    void findAllByFamilyIdAndRevokedFalse_returnsActiveMembersOfFamily() {
+        UUID familyId = refreshTokenRepository.findByToken("test-refresh-token-value").orElseThrow().getFamilyId();
+        RefreshToken sibling = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .token("rotated-sibling-token")
+                .expiryDate(OffsetDateTime.now().plusDays(7))
+                .revoked(false)
+                .familyId(familyId)
+                .createdAt(OffsetDateTime.now())
+                .build();
+        RefreshToken otherFamily = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .token("unrelated-token")
+                .expiryDate(OffsetDateTime.now().plusDays(7))
+                .revoked(false)
+                .createdAt(OffsetDateTime.now())
+                .build();
+        refreshTokenRepository.save(sibling);
+        refreshTokenRepository.save(otherFamily);
+        entityManager.flush();
+
+        List<RefreshToken> tokens = refreshTokenRepository.findAllByFamilyIdAndRevokedFalse(familyId);
+        assertEquals(2, tokens.size());
+    }
 }

@@ -87,11 +87,15 @@ class AuthFlowIntegrationTest extends IntegrationTestBase {
         assertNotNull(refreshedAccessToken);
         assertNotEquals(loginRefreshToken, rotatedRefreshToken);
 
+        // Re-presenting the just-rotated token immediately (within the reuse grace
+        // window) is treated as a legitimate concurrent caller, not theft — it gets
+        // back the same pair issued above rather than a 401.
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(refreshBody))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.refreshToken").value(rotatedRefreshToken));
 
         String rotatedRefreshBody = asJson(new Object() {
             public final String refreshToken = rotatedRefreshToken;

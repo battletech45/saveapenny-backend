@@ -1,7 +1,7 @@
 package com.saveapenny.push.service;
 
 import com.saveapenny.config.TimeService;
-import com.saveapenny.push.config.PushProperties;
+import com.saveapenny.push.config.FirebaseServiceAccount;
 import io.jsonwebtoken.Jwts;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -32,7 +32,7 @@ public class GoogleServiceAccountTokenProvider {
     private static final Duration EXPIRY_SAFETY_MARGIN = Duration.ofSeconds(60);
 
     private final RestClient pushRestClient;
-    private final PushProperties properties;
+    private final FirebaseServiceAccount serviceAccount;
     private final TimeService timeService;
     private final ReentrantLock lock = new ReentrantLock();
 
@@ -40,9 +40,10 @@ public class GoogleServiceAccountTokenProvider {
     private volatile String cachedAccessToken;
     private volatile Instant cachedExpiry = Instant.EPOCH;
 
-    public GoogleServiceAccountTokenProvider(RestClient pushRestClient, PushProperties properties, TimeService timeService) {
+    public GoogleServiceAccountTokenProvider(
+            RestClient pushRestClient, FirebaseServiceAccount serviceAccount, TimeService timeService) {
         this.pushRestClient = pushRestClient;
-        this.properties = properties;
+        this.serviceAccount = serviceAccount;
         this.timeService = timeService;
     }
 
@@ -65,9 +66,9 @@ public class GoogleServiceAccountTokenProvider {
         Instant now = timeService.now();
         Instant expiry = now.plus(Duration.ofHours(1));
         String assertion = Jwts.builder()
-                .issuer(properties.clientEmail())
-                .subject(properties.clientEmail())
-                .audience().add(properties.tokenUri()).and()
+                .issuer(serviceAccount.clientEmail())
+                .subject(serviceAccount.clientEmail())
+                .audience().add(serviceAccount.tokenUri()).and()
                 .claim("scope", SCOPE)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
@@ -79,7 +80,7 @@ public class GoogleServiceAccountTokenProvider {
         form.add("assertion", assertion);
 
         Map<String, Object> response = pushRestClient.post()
-                .uri(properties.tokenUri())
+                .uri(serviceAccount.tokenUri())
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .headers(headers -> headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON)))
                 .body(form)
@@ -98,7 +99,7 @@ public class GoogleServiceAccountTokenProvider {
             return cachedPrivateKey;
         }
         try {
-            String normalized = properties.privateKey().replace("\\n", "\n");
+            String normalized = serviceAccount.privateKey().replace("\\n", "\n");
             String pem = normalized
                     .replace("-----BEGIN PRIVATE KEY-----", "")
                     .replace("-----END PRIVATE KEY-----", "")
