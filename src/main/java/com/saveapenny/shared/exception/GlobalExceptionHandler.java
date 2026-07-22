@@ -10,6 +10,7 @@ import com.saveapenny.audit.exception.InvalidAuditDateRangeException;
 import com.saveapenny.billing.exception.FreePlanLimitReachedException;
 import com.saveapenny.billing.exception.PlusRequiredException;
 import com.saveapenny.billing.exception.ReportHistoryLimitReachedException;
+import com.saveapenny.billing.exception.RevenueCatAuthenticationException;
 import com.saveapenny.billing.exception.RevenueCatClientException;
 import com.saveapenny.billing.exception.RevenueCatDisabledException;
 import com.saveapenny.assistant.exception.AssistantChatSessionNotFoundException;
@@ -709,6 +710,16 @@ public class GlobalExceptionHandler {
                 .details(List.of())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(RevenueCatAuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRevenueCatAuthentication(RevenueCatAuthenticationException ex) {
+        ApiError error = ApiError.builder()
+                .code("REVENUECAT_AUTH_ERROR")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.failure(error));
     }
 
     @ExceptionHandler(PlusRequiredException.class)
