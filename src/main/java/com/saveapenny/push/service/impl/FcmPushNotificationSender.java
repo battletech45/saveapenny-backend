@@ -107,7 +107,7 @@ public class FcmPushNotificationSender implements PushNotificationSender {
                     .toBodilessEntity();
             meterRegistry.counter("push.notifications.sent", "type", type.name()).increment();
         } catch (HttpClientErrorException ex) {
-            if (ex.getStatusCode() == HttpStatus.NOT_FOUND || ex.getStatusCode() == HttpStatus.BAD_REQUEST) {
+            if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
                 // FCM returns 404 UNREGISTERED for tokens that are no longer valid (uninstall,
                 // token rotation the app never re-registered) — nothing will ever succeed for
                 // this token again, so drop it rather than retry it on every future notification.
@@ -115,8 +115,16 @@ public class FcmPushNotificationSender implements PushNotificationSender {
                 meterRegistry.counter("push.notifications.failed", "type", type.name(), "reason", "unregistered").increment();
                 log.info("push_token_removed userId={} reason=unregistered", deviceToken.getUserId());
             } else {
+                // 400 INVALID_ARGUMENT covers malformed requests (bad token format, bad payload
+                // shape) as well as genuinely invalid tokens — unlike 404 it isn't a reliable
+                // signal that the token is permanently dead, so keep it and surface the FCM
+                // error body for diagnosis instead of silently deleting a possibly-valid token.
                 meterRegistry.counter("push.notifications.failed", "type", type.name(), "reason", "http_error").increment();
-                log.warn("push_notification_send_failed userId={} status={}", deviceToken.getUserId(), ex.getStatusCode());
+                log.warn(
+                        "push_notification_send_failed userId={} status={} body={}",
+                        deviceToken.getUserId(),
+                        ex.getStatusCode(),
+                        ex.getResponseBodyAsString());
             }
         } catch (Exception ex) {
             meterRegistry.counter("push.notifications.failed", "type", type.name(), "reason", "error").increment();
