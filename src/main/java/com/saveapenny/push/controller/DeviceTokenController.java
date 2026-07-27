@@ -1,7 +1,9 @@
 package com.saveapenny.push.controller;
 
 import com.saveapenny.config.security.CurrentUserPrincipal;
+import com.saveapenny.push.dto.DeviceTokenResponse;
 import com.saveapenny.push.dto.RegisterDeviceTokenRequest;
+import com.saveapenny.push.entity.DeviceToken;
 import com.saveapenny.push.service.DeviceTokenService;
 import com.saveapenny.shared.api.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,12 +14,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,6 +44,15 @@ public class DeviceTokenController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(null));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<DeviceTokenResponse>>> getAll(
+            @AuthenticationPrincipal CurrentUserPrincipal principal) {
+        List<DeviceTokenResponse> tokens = deviceTokenService.getAllForUser(getCurrentUserId(principal)).stream()
+                .map(DeviceTokenController::toResponse)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(tokens));
+    }
+
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> unregister(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
@@ -56,5 +69,15 @@ public class DeviceTokenController {
             throw new AccessDeniedException("Missing authenticated user context.");
         }
         return principal.userId();
+    }
+
+    private static DeviceTokenResponse toResponse(DeviceToken deviceToken) {
+        return DeviceTokenResponse.builder()
+                .id(deviceToken.getId())
+                .token(deviceToken.getToken())
+                .platform(deviceToken.getPlatform())
+                .createdAt(deviceToken.getCreatedAt())
+                .lastSeenAt(deviceToken.getLastSeenAt())
+                .build();
     }
 }

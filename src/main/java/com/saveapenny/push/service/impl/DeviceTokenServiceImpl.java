@@ -5,6 +5,7 @@ import com.saveapenny.push.entity.DeviceToken;
 import com.saveapenny.push.repository.DeviceTokenRepository;
 import com.saveapenny.push.service.DeviceTokenService;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,5 +33,11 @@ public class DeviceTokenServiceImpl implements DeviceTokenService {
     @Override
     public void unregister(UUID userId, String token) {
         deviceTokenRepository.deleteByUserIdAndToken(userId, token);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeviceToken> getAllForUser(UUID userId) {
+        return deviceTokenRepository.findAllByUserId(userId);
     }
 }
