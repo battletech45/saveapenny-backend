@@ -70,7 +70,7 @@ public class GoogleServiceAccountTokenProvider {
         String assertion = Jwts.builder()
                 .issuer(serviceAccount.clientEmail())
                 .subject(serviceAccount.clientEmail())
-                .audience().add(serviceAccount.tokenUri()).and()
+                .audience().single(serviceAccount.tokenUri())
                 .claim("scope", SCOPE)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
