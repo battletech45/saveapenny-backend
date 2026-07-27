@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ import org.springframework.web.client.RestClient;
  * enough, no need for the SDK's gRPC/guava dependency tree).
  */
 @Component
+@ConditionalOnProperty(prefix = "push.fcm", name = "enabled", havingValue = "true")
 public class GoogleServiceAccountTokenProvider {
 
     private static final String SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
