@@ -39,6 +39,15 @@ public class RefreshToken {
     @Column(nullable = false)
     private Boolean revoked = false;
 
+    @Column(name = "revoked_at")
+    private OffsetDateTime revokedAt;
+
+    @Column(name = "replaced_by_token_id")
+    private UUID replacedByTokenId;
+
+    @Column(name = "family_id", nullable = false)
+    private UUID familyId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -52,6 +61,9 @@ public class RefreshToken {
         }
         if (revoked == null) {
             revoked = false;
+        }
+        if (familyId == null) {
+            familyId = id;
         }
     }
 }

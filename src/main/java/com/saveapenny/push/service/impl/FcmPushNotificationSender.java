@@ -1,6 +1,7 @@
 package com.saveapenny.push.service.impl;
 
 import com.saveapenny.notification.entity.NotificationType;
+import com.saveapenny.push.config.FirebaseServiceAccount;
 import com.saveapenny.push.config.PushProperties;
 import com.saveapenny.push.entity.DeviceToken;
 import com.saveapenny.push.repository.DeviceTokenRepository;
@@ -37,6 +38,7 @@ public class FcmPushNotificationSender implements PushNotificationSender {
     private final GoogleServiceAccountTokenProvider tokenProvider;
     private final DeviceTokenRepository deviceTokenRepository;
     private final PushProperties properties;
+    private final FirebaseServiceAccount serviceAccount;
     private final MeterRegistry meterRegistry;
 
     public FcmPushNotificationSender(
@@ -44,23 +46,25 @@ public class FcmPushNotificationSender implements PushNotificationSender {
             GoogleServiceAccountTokenProvider tokenProvider,
             DeviceTokenRepository deviceTokenRepository,
             PushProperties properties,
+            FirebaseServiceAccount serviceAccount,
             MeterRegistry meterRegistry) {
         this.pushRestClient = pushRestClient;
         this.tokenProvider = tokenProvider;
         this.deviceTokenRepository = deviceTokenRepository;
         this.properties = properties;
+        this.serviceAccount = serviceAccount;
         this.meterRegistry = meterRegistry;
     }
 
     @PostConstruct
     void validateCredentials() {
-        boolean configured = StringUtils.hasText(properties.projectId())
-                && StringUtils.hasText(properties.clientEmail())
-                && StringUtils.hasText(properties.privateKey());
+        boolean configured = StringUtils.hasText(serviceAccount.projectId())
+                && StringUtils.hasText(serviceAccount.clientEmail())
+                && StringUtils.hasText(serviceAccount.privateKey());
         if (!configured) {
             throw new IllegalStateException(
-                    "push.fcm.enabled=true requires project-id, client-email and private-key "
-                            + "(PUSH_FCM_PROJECT_ID / PUSH_FCM_CLIENT_EMAIL / PUSH_FCM_PRIVATE_KEY) to be set");
+                    "push.fcm.enabled=true requires a service account JSON at push.fcm.credentials-path "
+                            + "with project_id, client_email and private_key set");
         }
     }
 
@@ -72,7 +76,7 @@ public class FcmPushNotificationSender implements PushNotificationSender {
             return;
         }
 
-        String endpoint = properties.fcmEndpointTemplate().formatted(properties.projectId());
+        String endpoint = properties.fcmEndpointTemplate().formatted(serviceAccount.projectId());
         for (DeviceToken deviceToken : tokens) {
             sendToToken(endpoint, deviceToken, type, title, message, data);
         }
