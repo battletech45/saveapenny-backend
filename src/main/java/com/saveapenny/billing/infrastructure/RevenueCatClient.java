@@ -5,16 +5,14 @@ import com.saveapenny.billing.domain.RevenueCatSubscriberResponse;
 import com.saveapenny.billing.exception.RevenueCatAuthenticationException;
 import com.saveapenny.billing.exception.RevenueCatClientException;
 import com.saveapenny.billing.exception.RevenueCatDisabledException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+@Slf4j
 public class RevenueCatClient {
-
-    private static final Logger log = LoggerFactory.getLogger(RevenueCatClient.class);
 
     private final RestClient restClient;
     private final RevenueCatProperties properties;

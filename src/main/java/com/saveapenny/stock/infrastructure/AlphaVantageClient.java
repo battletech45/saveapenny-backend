@@ -13,14 +13,12 @@ import com.saveapenny.stock.domain.RsiResponse;
 import com.saveapenny.stock.domain.SmaResponse;
 import com.saveapenny.stock.exception.StockClientException;
 import com.saveapenny.stock.exception.StockDisabledException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+@Slf4j
 public class AlphaVantageClient {
-
-    private static final Logger log = LoggerFactory.getLogger(AlphaVantageClient.class);
 
     private final RestClient restClient;
     private final StockProperties properties;

@@ -50,10 +50,10 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 public class StockServiceImpl implements StockService {
 
     private static final Pattern SYMBOL_PATTERN = Pattern.compile("^[A-Z0-9.\\-]+$");
@@ -62,7 +62,6 @@ public class StockServiceImpl implements StockService {
     private static final Pattern INTERVAL_PATTERN = Pattern.compile("^(daily|weekly|monthly)$");
     private static final Pattern TIME_PERIOD_PATTERN = Pattern.compile("^[1-9]\\d*$");
     private static final Pattern SERIES_TYPE_PATTERN = Pattern.compile("^(close|open|high|low)$");
-    private static final Logger log = LoggerFactory.getLogger(StockServiceImpl.class);
     private static final String PROVIDER = "alphavantage";
 
     private final AlphaVantageClient alphaVantageClient;

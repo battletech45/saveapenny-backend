@@ -6,8 +6,7 @@ import com.saveapenny.insight.analytics.InsightCandidate;
 import com.saveapenny.insight.config.InsightProperties;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,9 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@Slf4j
 public class AiEnhancementService {
-
-    private static final Logger log = LoggerFactory.getLogger(AiEnhancementService.class);
     private static final TypeReference<List<EnhancedInsightContent>> ENHANCED_CONTENT_LIST = new TypeReference<>() {};
     private static final String SYSTEM_PROMPT = """
             Rewrite machine-generated financial insights into concise, supportive user-facing copy.

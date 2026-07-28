@@ -12,14 +12,12 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class InsightGenerationPipeline {
-
-    private static final Logger log = LoggerFactory.getLogger(InsightGenerationPipeline.class);
 
     private final SpendingPatternAnalyzer spendingPatternAnalyzer;
     private final AnomalyDetector anomalyDetector;

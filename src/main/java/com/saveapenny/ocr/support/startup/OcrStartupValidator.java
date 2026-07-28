@@ -3,16 +3,14 @@ package com.saveapenny.ocr.support.startup;
 import com.saveapenny.config.OcrProperties;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeChecker;
 import com.saveapenny.ocr.support.runtime.OcrRuntimeStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class OcrStartupValidator implements ApplicationRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(OcrStartupValidator.class);
 
     private final OcrProperties ocrProperties;
     private final OcrRuntimeChecker ocrRuntimeChecker;

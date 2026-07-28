@@ -4,17 +4,15 @@ import com.saveapenny.insight.config.InsightProperties;
 import com.saveapenny.insight.service.impl.InsightGenerationPipeline;
 import com.saveapenny.user.repository.UserRepository;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class InsightGenerationJob {
-
-    private static final Logger log = LoggerFactory.getLogger(InsightGenerationJob.class);
 
     private final InsightProperties insightProperties;
     private final InsightGenerationPipeline insightGenerationPipeline;
