@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Default / local: human-readable console output, full MDC map appended. -->
+    <springProfile name="default | local">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%mdc%n</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <!-- Non-local (e.g. prod, staging): structured JSON to stdout for log aggregators. -->
+    <springProfile name="!(default | local)">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <includeMdcKeyName>analyticsClientId</includeMdcKeyName>
+                <includeMdcKeyName>analyticsClientPlatform</includeMdcKeyName>
+                <customFields>{"service":"save-a-penny"}</customFields>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

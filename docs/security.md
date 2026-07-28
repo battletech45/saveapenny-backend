@@ -79,6 +79,10 @@ CORS is configurable via the `cors.allowed-origins` property. When set to an emp
 - JWT secret must be at least 64 characters and kept confidential
 - Refresh tokens are stored as opaque token values in the database
 
+### Logging Rule
+
+Log statements must never include: JWTs or refresh tokens, passwords, full request/response bodies containing PII, or raw financial account numbers. Where an identifier is useful for correlation, log the entity ID (e.g. `userId`, `accountId`), never the payload — this is consistent with the existing `user_id`-scoped data model above and costs nothing to enforce. See [Logging](logging.md) for the broader logging conventions.
+
 ## Transport Security
 
 The application does not handle TLS natively. Deploy behind a reverse proxy (nginx, Caddy, Kubernetes ingress) for TLS termination. See [Deployment & Operations](deployment-operations.md) for production guidance.
