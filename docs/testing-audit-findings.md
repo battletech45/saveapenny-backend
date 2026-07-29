@@ -125,3 +125,30 @@ the CI-time cost that is presumably why real Postgres isn't the default already.
    gitleaks (§4), once the above is stable.
 8. **Mutation testing** (PIT, scheduled/nightly, not per-PR) once coverage numbers are
    healthy, to validate the *quality* of everything added above (§2.4).
+
+## 6. Additional gaps
+
+- **Migration testing** — Flyway migrations (`src/main/resources/db/migration/`, up to
+  V18+) have no test validating them directly. Once real Postgres is the CI default
+  (§2.1), add a test that runs all migrations against a fresh database from empty and
+  asserts success, plus a checksum/ordering check (similar to Epistola's
+  `checkMigrationVersions`) to catch out-of-order or renumbered migration files before
+  they reach CI.
+- **Static analysis / quality gates** — no SpotBugs, PMD, or Checkstyle wired into the
+  build at all. Not JUnit-level tests, but the cheapest way to catch null derefs,
+  resource leaks, and unused returns that unit tests don't reliably catch. Worth a
+  separate decision on whether to adopt one.
+- **Dependency vulnerability scanning** — no OWASP Dependency-Check (or equivalent) in
+  `pom.xml`. For an app handling user financial data, a vulnerable transitive
+  dependency currently wouldn't be caught by anything in CI.
+- **Idempotency tests for async processing** — `ImportAsyncJobServiceTest` and
+  `OcrJobAsyncProcessorTest` exist, but confirm they cover retry-after-partial-crash
+  (process dies mid-import, job is re-triggered), not just the "one bad row in a batch"
+  case already in §3 — a different failure mode.
+- **Timezone/locale edge cases** — the codebase is heavy on `OffsetDateTime` and
+  multi-currency fields. No systematic test pass exists for DST transitions, non-UTC
+  offsets, or zero-decimal currency formatting (e.g. JPY).
+- **Rate limiter behavior under concurrency** — `RateLimiterTest` and
+  `RateLimitingFilterTest` exist but likely test single-threaded token-bucket logic
+  only. Worth confirming a concurrent-access test exists, since rate limiters are
+  exactly the kind of code that looks correct single-threaded and races in production.
