@@ -36,6 +36,7 @@ com.saveapenny/
 ├── stock/                             # Read-through Alpha Vantage market data
 ├── stockholding/                      # User stock holdings CRUD + portfolio summary
 ├── notification/                      # User-facing notifications
+├── feedback/                          # Product feedback submission and history
 ├── audit/                             # Entity change tracking
 ├── assistant/                         # AI chat ("Penny Dog")
 ├── insight/                           # Automated financial insights (includes analytics/, scheduler/, config/ sub-packages)

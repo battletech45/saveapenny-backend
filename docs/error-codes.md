@@ -90,6 +90,7 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | `LINKED_ACCOUNT_NOT_FOUND` | Linked account not found or not owned by the caller |
 | `STOCK_QUOTE_NOT_AVAILABLE` | Stock provider returned no usable data for the requested symbol or indicator |
 | `STOCK_HOLDING_NOT_FOUND` | Stock holding not found or not owned by the caller |
+| `FEEDBACK_NOT_FOUND` | Feedback item not found or not owned by the caller |
 
 ### Conflict (409)
 

@@ -48,6 +48,7 @@ import com.saveapenny.goal.exception.InvalidGoalStatusTransitionException;
 import com.saveapenny.goal.exception.InvalidGoalTypeException;
 import com.saveapenny.goal.exception.LinkedAccountNotFoundException;
 import com.saveapenny.goal.exception.ScenarioNotFoundException;
+import com.saveapenny.feedback.exception.FeedbackNotFoundException;
 import com.saveapenny.insight.exception.InsightGenerationException;
 import com.saveapenny.insight.exception.InsightNotFoundException;
 import com.saveapenny.mcp.error.ToolExecutionException;
@@ -284,6 +285,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleNotificationNotFound(NotificationNotFoundException ex) {
         ApiError error = ApiError.builder()
                 .code("NOTIFICATION_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(FeedbackNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFeedbackNotFound(FeedbackNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("FEEDBACK_NOT_FOUND")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();
