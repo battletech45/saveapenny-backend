@@ -276,7 +276,6 @@ MapStruct generates code at compile time with zero runtime overhead and explicit
 | File | Purpose |
 |------|---------|
 | `src/main/resources/application.yml` | Main configuration (datasource, security, rate limits, features) |
-| `src/main/resources/application-local.yml` | Local dev overrides |
 | `docker-compose.yml` | Local development stack (PostgreSQL + app) |
 | `Dockerfile` | Multi-stage build (Maven → JRE 24) |
 | `pom.xml` | Maven build with Spring Boot 4.1, Java 24 |

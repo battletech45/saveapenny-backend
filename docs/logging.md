@@ -20,7 +20,7 @@ This is a reasonable starting point — SLF4J is the right facade, MDC-based cor
 
 ## Gaps
 
-1. **No `logback-spring.xml`.** Everything is forced through one console pattern, in one format, regardless of environment (local dev vs. production). No file appender, no rotation, no JSON output for shipping to a log aggregator (ELK, CloudWatch, Datadog, etc.).
+1. **No `logback-spring.xml`.** Everything is forced through one console pattern, in one format, from `application.yml`. No file appender, no rotation, no JSON output for shipping to a log aggregator (ELK, CloudWatch, Datadog, etc.).
 2. **Boilerplate logger declarations.** Every class hand-writes `LoggerFactory.getLogger(...)`, even though Lombok (already a dependency) provides `@Slf4j` to generate the same field.
 3. **Dropped MDC context.** `AnalyticsClientIdFilter` populates `analyticsClientId` and `analyticsClientPlatform` in MDC, but the console pattern only renders `requestId` — that data is computed and then silently discarded.
 4. **No log level strategy per package.** Only Spring/Hibernate noise is tuned down; there's no `com.saveapenny: info` (or per-module) baseline, so a `debug` flip would flood output with framework logs at the same volume as application logs.
@@ -29,13 +29,13 @@ This is a reasonable starting point — SLF4J is the right facade, MDC-based cor
 
 ## Proposed Design
 
-### 1. `logback-spring.xml` with Spring profiles
+### 1. `logback-spring.xml` with explicit appenders
 
 Add `src/main/resources/logback-spring.xml`, replacing the pattern currently embedded in `application.yml`:
 
-- **`local` profile** (or default): current human-readable console pattern, unchanged — no disruption to local dev workflow.
-- **`prod` / non-local profiles**: JSON console encoder (e.g. `logstash-logback-encoder`), one line per event, so log lines are directly consumable by whatever aggregator sits behind stdout (container platforms almost universally scrape stdout, so no file appender is needed if deployed via Docker/K8s — matches the existing `Dockerfile`/`docker-compose.yml` deployment model).
-- Both profiles render the full MDC map (not just `requestId`), so `analyticsClientId`, `analyticsClientPlatform`, and any future MDC keys show up automatically without pattern edits.
+- One human-readable console appender can remain the default for local development.
+- One JSON console appender (e.g. `logstash-logback-encoder`) can be enabled explicitly when logs need to feed an aggregator.
+- Both output modes should render the full MDC map (not just `requestId`), so `analyticsClientId`, `analyticsClientPlatform`, and any future MDC keys show up automatically without pattern edits.
 
 ### 2. Standardize on Lombok `@Slf4j`
 
@@ -69,7 +69,7 @@ Document (README or `docs/security.md`) that log statements must never include: 
 
 ## Suggested Rollout Order
 
-1. `logback-spring.xml` + profile split (highest value, zero behavior change to existing call sites).
+1. `logback-spring.xml` + explicit output-mode split (highest value, zero behavior change to existing call sites).
 2. Add `com.saveapenny` level baseline to `application.yml`.
 3. Sweep the 14 existing files to `@Slf4j` (mechanical, low-risk, one PR).
 4. Add the sensitive-data note to `docs/security.md`.

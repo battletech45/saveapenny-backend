@@ -4,6 +4,8 @@
 
 The application loads environment variables from a `.env` file (via `spring.config.import=optional:file:.env[.properties]`) and standard system environment variables. Variables are grouped by concern below.
 
+`src/main/resources/application.yml` is the only application config file in the project.
+
 ## Required
 
 | Variable | Description | Validation |
@@ -17,7 +19,6 @@ The application loads environment variables from a `.env` file (via `spring.conf
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERVER_PORT` | `8080` | HTTP server listen port |
-| `SPRING_PROFILES_ACTIVE` | — | Active Spring profile(s), comma-separated |
 
 ## Database
 

@@ -20,12 +20,21 @@ import org.springframework.stereotype.Service;
 public class JwtServiceImpl implements JwtService {
 
     private static final long ACCESS_TOKEN_EXPIRY_SECONDS = 900L;
+    // HS512 requires a >=512-bit (64-byte) key; also the documented minimum in docs/security.md.
+    private static final int MIN_SECRET_BYTES = 64;
 
     private final SecretKey signingKey;
     private final TimeService timeService;
 
     public JwtServiceImpl(@Value("${security.jwt.secret}") String jwtSecret, TimeService timeService) {
-        this.signingKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        byte[] secretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "security.jwt.secret must be at least " + MIN_SECRET_BYTES
+                            + " characters (HS512 requires a 512-bit key); got " + secretBytes.length
+                            + ". Generate one with: openssl rand -base64 64");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(secretBytes);
         this.timeService = timeService;
     }
 

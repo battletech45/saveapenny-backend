@@ -1,3 +1,5 @@
+# Single application config source. Environment-specific values should come from
+# environment variables or the optional `.env` import below.
 # ==================== Core ====================
 spring:
   config:

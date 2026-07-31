@@ -76,7 +76,7 @@ CORS is configurable via the `cors.allowed-origins` property. When set to an emp
 - All user data is stored in PostgreSQL with `user_id` column for isolation
 - No PII is logged
 - Database credentials are configured via environment variables, never hardcoded
-- JWT secret must be at least 64 characters and kept confidential
+- JWT secret must be at least 64 characters and kept confidential — enforced at startup by `JwtServiceImpl`, which throws `IllegalStateException` (fails fast) if `security.jwt.secret` is shorter than 64 bytes
 - Refresh tokens are stored as opaque token values in the database
 
 ### Logging Rule

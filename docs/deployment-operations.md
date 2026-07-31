@@ -28,7 +28,6 @@ SaveAPenny can be built locally as a Docker image and deployed behind a reverse 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SERVER_PORT` | `8080` | HTTP listen port |
-| `SPRING_PROFILES_ACTIVE` | — | Active Spring profile(s) |
 | `ASSISTANT_ENABLED` | `false` | Enable AI assistant chat |
 | `INSIGHT_ENABLED` | `false` | Enable financial insight generation |
 | `GOAL_PROGRESS_ENABLED` | `false` | Enable scheduled goal progress checks |
@@ -44,6 +43,8 @@ SaveAPenny can be built locally as a Docker image and deployed behind a reverse 
 | `POSTGRES_PASSWORD` | PostgreSQL admin password |
 
 See [Environment Variables Reference](env-reference.md) for the complete list.
+
+All runtime configuration lives in `src/main/resources/application.yml`. Override values with environment variables or the optional `.env` file loaded by Spring.
 
 ## Docker Image
 
