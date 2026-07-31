@@ -13,6 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 @Configuration
@@ -32,6 +33,10 @@ public class PushConfig {
     @ConditionalOnProperty(prefix = "push.fcm", name = "enabled", havingValue = "true")
     public FirebaseServiceAccount firebaseServiceAccount(
             PushProperties properties, ResourceLoader resourceLoader, ObjectMapper objectMapper) throws IOException {
+        if (!StringUtils.hasText(properties.credentialsPath())) {
+            throw new IllegalStateException(
+                    "push.fcm.enabled=true requires PUSH_FCM_CREDENTIALS_PATH to point to a service account JSON file");
+        }
         Resource resource = resourceLoader.getResource(properties.credentialsPath());
         try (InputStream in = resource.getInputStream()) {
             return objectMapper.readValue(in, FirebaseServiceAccount.class);
