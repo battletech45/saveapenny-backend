@@ -155,6 +155,7 @@ See `.env.example` for all available settings.
 | [CSV Import](docs/features/csv-import.md) | Preview-confirm workflow |
 | [Notifications](docs/features/notifications.md) | Read/unread tracking |
 | [Audit Logs](docs/features/audit-logs.md) | Change tracking |
+| [Feedback](docs/features/feedback.md) | Product feedback submission and history |
 | [OCR](docs/features/ocr.md) | Receipt processing (enabled by default, requires Tesseract) |
 | [Assistant](docs/features/assistant.md) | AI chat (disabled by default) |
 | [Insights](docs/features/insights.md) | Financial observations (disabled by default) |
@@ -175,6 +176,7 @@ See `.env.example` for all available settings.
 | Reports & Net Worth | — | [docs/features/reports.md](docs/features/reports.md) |
 | CSV Import | — | [docs/features/csv-import.md](docs/features/csv-import.md) |
 | Notifications | — | [docs/features/notifications.md](docs/features/notifications.md) |
+| Feedback | — | [docs/features/feedback.md](docs/features/feedback.md) |
 | OCR Receipt Processing | Tesseract | [docs/features/ocr.md](docs/features/ocr.md) |
 
 ### Optional / Configurable

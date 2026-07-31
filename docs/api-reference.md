@@ -360,6 +360,41 @@ See [Recurring Transactions](features/recurring-transactions.md) for lifecycle a
 
 See [Notifications](features/notifications.md).
 
+## Feedback
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/feedback` | Submit feedback |
+| GET | `/api/v1/feedback` | List current user's feedback (`PagedResponse<FeedbackResponse>`, filterable by type) |
+| GET | `/api/v1/feedback/{feedbackId}` | Get one feedback item |
+| DELETE | `/api/v1/feedback/{feedbackId}` | Delete one feedback item |
+
+### Feedback Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `type` | String | Optional feedback type filter (`GENERAL`, `FEATURE_REQUEST`, `BUG_REPORT`) |
+| `page` | Integer | Page number (0-based) |
+| `size` | Integer | Page size |
+| `sort` | String | Sort field and direction |
+
+### Create Feedback Request
+
+```json
+{
+  "type": "FEATURE_REQUEST",
+  "rating": 5,
+  "message": "Please add home-screen widgets for account balances.",
+  "metadata": {
+    "platform": "ios",
+    "appVersion": "2.3.1",
+    "screen": "settings"
+  }
+}
+```
+
+See [Feedback](features/feedback.md).
+
 ## Transaction Imports
 
 | Method | Path | Description |
