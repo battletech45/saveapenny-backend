@@ -1,10 +1,8 @@
 # Single application config source. Environment-specific values should come from
-# environment variables or the optional `.env` import below.
+# environment variables injected by the runtime (Docker Compose, shell exports,
+# deployment platform secrets, etc.).
 # ==================== Core ====================
 spring:
-  config:
-    import: optional:file:.env[.properties]
-
   application:
     name: save-a-penny
 
@@ -174,6 +172,6 @@ firebase:
 push:
   fcm:
     enabled: ${PUSH_FCM_ENABLED:false}
-    credentials-path: ${PUSH_FCM_CREDENTIALS_PATH:classpath:saveapenny-cc80fdf0c218.json}
+    credentials-path: ${PUSH_FCM_CREDENTIALS_PATH:}
     fcm-endpoint-template: ${PUSH_FCM_ENDPOINT_TEMPLATE:https://fcm.googleapis.com/v1/projects/%s/messages:send}
     timeout-millis: ${PUSH_FCM_TIMEOUT_MS:5000}

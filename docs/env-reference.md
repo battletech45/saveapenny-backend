@@ -2,7 +2,7 @@
 
 ## Overview
 
-The application loads environment variables from a `.env` file (via `spring.config.import=optional:file:.env[.properties]`) and standard system environment variables. Variables are grouped by concern below.
+The application reads configuration from standard environment variables. For local development, `.env` is still convenient for Docker Compose or shell export workflows, but the application does not auto-import that file at runtime.
 
 `src/main/resources/application.yml` is the only application config file in the project.
 
@@ -268,6 +268,6 @@ INSIGHT_ENABLED=true
 
 | Decision | Rationale |
 |----------|-----------|
-| `.env` file support via `spring.config.import` | Familiar, portable, works with Docker Compose and local dev |
+| `.env` file support via Docker Compose or shell export | Familiar local workflow without auto-loading committed secrets at runtime |
 | Environment variables over config files for secrets | Keeps secrets out of version control, works with container orchestration |
 | Sensible defaults for all optional variables | Application runs without configuration for basic use cases |

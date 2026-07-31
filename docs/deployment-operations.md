@@ -44,7 +44,7 @@ SaveAPenny can be built locally as a Docker image and deployed behind a reverse 
 
 See [Environment Variables Reference](env-reference.md) for the complete list.
 
-All runtime configuration lives in `src/main/resources/application.yml`. Override values with environment variables or the optional `.env` file loaded by Spring.
+All runtime configuration lives in `src/main/resources/application.yml`. Override values with environment variables injected by your container platform, process manager, or shell.
 
 ## Docker Image
 

@@ -13,6 +13,8 @@ docker compose up --build
 
 `docker compose` is the recommended way to run the app because it keeps PostgreSQL and application settings together and waits for the database health check before starting the app.
 
+The `.env` file is consumed by Docker Compose and your shell tooling. The application itself does not auto-import `.env` at runtime.
+
 ### Docker Run
 
 Use this only if you want to start the database and app containers manually.
