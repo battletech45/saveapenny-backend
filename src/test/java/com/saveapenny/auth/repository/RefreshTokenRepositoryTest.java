@@ -5,7 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.saveapenny.auth.entity.RefreshToken;
 import jakarta.persistence.EntityManager;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,7 +41,7 @@ class RefreshTokenRepositoryTest {
         token = RefreshToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .token("test-refresh-token-value")
+                .tokenHash(hash("test-refresh-token-value"))
                 .expiryDate(OffsetDateTime.now().plusDays(7))
                 .revoked(false)
                 .createdAt(OffsetDateTime.now())
@@ -47,22 +51,22 @@ class RefreshTokenRepositoryTest {
     }
 
     @Test
-    void findByToken_returnsToken() {
-        Optional<RefreshToken> found = refreshTokenRepository.findByToken("test-refresh-token-value");
+    void findByTokenHash_returnsToken() {
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHash(hash("test-refresh-token-value"));
         assertTrue(found.isPresent());
         assertEquals(token.getId(), found.get().getId());
     }
 
     @Test
-    void findByTokenForUpdate_returnsToken() {
-        Optional<RefreshToken> found = refreshTokenRepository.findByTokenForUpdate("test-refresh-token-value");
+    void findByTokenHashForUpdate_returnsToken() {
+        Optional<RefreshToken> found = refreshTokenRepository.findByTokenHashForUpdate(hash("test-refresh-token-value"));
         assertTrue(found.isPresent());
         assertEquals(token.getId(), found.get().getId());
     }
 
     @Test
-    void findByToken_returnsEmpty_whenNotFound() {
-        assertTrue(refreshTokenRepository.findByToken("nonexistent").isEmpty());
+    void findByTokenHash_returnsEmpty_whenNotFound() {
+        assertTrue(refreshTokenRepository.findByTokenHash(hash("nonexistent")).isEmpty());
     }
 
     @Test
@@ -76,7 +80,7 @@ class RefreshTokenRepositoryTest {
         RefreshToken revoked = RefreshToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .token("revoked-token")
+                .tokenHash(hash("revoked-token"))
                 .expiryDate(OffsetDateTime.now().plusDays(7))
                 .revoked(true)
                 .createdAt(OffsetDateTime.now())
@@ -90,11 +94,11 @@ class RefreshTokenRepositoryTest {
 
     @Test
     void findAllByFamilyIdAndRevokedFalse_returnsActiveMembersOfFamily() {
-        UUID familyId = refreshTokenRepository.findByToken("test-refresh-token-value").orElseThrow().getFamilyId();
+        UUID familyId = refreshTokenRepository.findByTokenHash(hash("test-refresh-token-value")).orElseThrow().getFamilyId();
         RefreshToken sibling = RefreshToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .token("rotated-sibling-token")
+                .tokenHash(hash("rotated-sibling-token"))
                 .expiryDate(OffsetDateTime.now().plusDays(7))
                 .revoked(false)
                 .familyId(familyId)
@@ -103,7 +107,7 @@ class RefreshTokenRepositoryTest {
         RefreshToken otherFamily = RefreshToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .token("unrelated-token")
+                .tokenHash(hash("unrelated-token"))
                 .expiryDate(OffsetDateTime.now().plusDays(7))
                 .revoked(false)
                 .createdAt(OffsetDateTime.now())
@@ -114,5 +118,14 @@ class RefreshTokenRepositoryTest {
 
         List<RefreshToken> tokens = refreshTokenRepository.findAllByFamilyIdAndRevokedFalse(familyId);
         assertEquals(2, tokens.size());
+    }
+
+    private String hash(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 }

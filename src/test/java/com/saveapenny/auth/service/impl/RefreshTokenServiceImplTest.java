@@ -16,7 +16,11 @@ import com.saveapenny.auth.exception.InvalidRefreshTokenException;
 import com.saveapenny.auth.exception.RefreshTokenExpiredException;
 import com.saveapenny.auth.repository.RefreshTokenRepository;
 import com.saveapenny.user.entity.User;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -52,17 +56,18 @@ class RefreshTokenServiceImplTest {
         assertFalse(created.getRevoked());
         assertTrue(created.getExpiryDate().isAfter(OffsetDateTime.now().plusDays(6)));
         assertTrue(created.getToken().length() > 40);
+        assertEquals(hash(created.getToken()), created.getTokenHash());
     }
 
     @Test
     void validate_returnsTokenWhenActiveAndNotExpired() {
         RefreshToken token = RefreshToken.builder()
                 .userId(user.getId())
-                .token("valid-token")
+                .tokenHash(hash("valid-token"))
                 .revoked(false)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
-        when(refreshTokenRepository.findByToken("valid-token")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHash(hash("valid-token"))).thenReturn(Optional.of(token));
 
         RefreshToken validated = refreshTokenService.validate("valid-token");
 
@@ -70,8 +75,28 @@ class RefreshTokenServiceImplTest {
     }
 
     @Test
+    void validate_upgradesLegacyPlaintextTokenToHashedStorage() {
+        RefreshToken token = RefreshToken.builder()
+                .userId(user.getId())
+                .tokenHash("legacy-raw-token")
+                .revoked(false)
+                .expiryDate(OffsetDateTime.now().plusMinutes(5))
+                .build();
+        when(refreshTokenRepository.findByTokenHash(hash("legacy-raw-token"))).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByLegacyToken("legacy-raw-token")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RefreshToken validated = refreshTokenService.validate("legacy-raw-token");
+
+        assertEquals(hash("legacy-raw-token"), validated.getTokenHash());
+        assertEquals("legacy-raw-token", validated.getToken());
+        verify(refreshTokenRepository).save(token);
+    }
+
+    @Test
     void validate_throwsWhenMissing() {
-        when(refreshTokenRepository.findByToken("missing")).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByTokenHash(hash("missing"))).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByLegacyToken("missing")).thenReturn(Optional.empty());
 
         assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenService.validate("missing"));
     }
@@ -79,11 +104,11 @@ class RefreshTokenServiceImplTest {
     @Test
     void validate_throwsWhenRevoked() {
         RefreshToken token = RefreshToken.builder()
-                .token("revoked-token")
+                .tokenHash(hash("revoked-token"))
                 .revoked(true)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
-        when(refreshTokenRepository.findByToken("revoked-token")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHash(hash("revoked-token"))).thenReturn(Optional.of(token));
 
         assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenService.validate("revoked-token"));
     }
@@ -91,11 +116,11 @@ class RefreshTokenServiceImplTest {
     @Test
     void validate_throwsWhenExpired() {
         RefreshToken token = RefreshToken.builder()
-                .token("expired-token")
+                .tokenHash(hash("expired-token"))
                 .revoked(false)
                 .expiryDate(OffsetDateTime.now().minusSeconds(1))
                 .build();
-        when(refreshTokenRepository.findByToken("expired-token")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHash(hash("expired-token"))).thenReturn(Optional.of(token));
 
         assertThrows(RefreshTokenExpiredException.class, () -> refreshTokenService.validate("expired-token"));
     }
@@ -105,12 +130,12 @@ class RefreshTokenServiceImplTest {
         UUID familyId = UUID.randomUUID();
         RefreshToken existing = RefreshToken.builder()
                 .userId(user.getId())
-                .token("old-token")
+                .tokenHash(hash("old-token"))
                 .revoked(false)
                 .familyId(familyId)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
-        when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.findByTokenHashForUpdate(hash("old-token"))).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RefreshToken rotated = refreshTokenService.rotate("old-token");
@@ -121,8 +146,8 @@ class RefreshTokenServiceImplTest {
         assertEquals(familyId, rotated.getFamilyId());
         assertFalse(rotated.getRevoked());
         assertFalse("old-token".equals(rotated.getToken()));
-        verify(refreshTokenRepository).findByTokenForUpdate("old-token");
-        verify(refreshTokenRepository, never()).findByToken("old-token");
+        verify(refreshTokenRepository).findByTokenHashForUpdate(hash("old-token"));
+        verify(refreshTokenRepository, never()).findByTokenHash(any());
     }
 
     @Test
@@ -130,12 +155,12 @@ class RefreshTokenServiceImplTest {
         UUID familyId = UUID.randomUUID();
         RefreshToken existing = RefreshToken.builder()
                 .userId(user.getId())
-                .token("old-token")
+                .tokenHash(hash("old-token"))
                 .revoked(false)
                 .familyId(familyId)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
-        when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.findByTokenHashForUpdate(hash("old-token"))).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RefreshToken firstRotation = refreshTokenService.rotate("old-token");
@@ -145,7 +170,7 @@ class RefreshTokenServiceImplTest {
 
         assertEquals(firstRotation.getId(), secondCaller.getId());
         assertEquals(firstRotation.getToken(), secondCaller.getToken());
-        verify(refreshTokenRepository, times(2)).findByTokenForUpdate("old-token");
+        verify(refreshTokenRepository, times(2)).findByTokenHashForUpdate(hash("old-token"));
         verify(refreshTokenRepository, never()).findAllByFamilyIdAndRevokedFalse(any());
     }
 
@@ -156,21 +181,21 @@ class RefreshTokenServiceImplTest {
         RefreshToken replacement = RefreshToken.builder()
                 .id(replacementId)
                 .userId(user.getId())
-                .token("new-token")
+                .tokenHash(hash("new-token"))
                 .revoked(false)
                 .familyId(familyId)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
         RefreshToken existing = RefreshToken.builder()
                 .userId(user.getId())
-                .token("old-token")
+                .tokenHash(hash("old-token"))
                 .revoked(true)
                 .revokedAt(OffsetDateTime.now().minusSeconds(30))
                 .replacedByTokenId(replacementId)
                 .familyId(familyId)
                 .expiryDate(OffsetDateTime.now().plusMinutes(5))
                 .build();
-        when(refreshTokenRepository.findByTokenForUpdate("old-token")).thenReturn(Optional.of(existing));
+        when(refreshTokenRepository.findByTokenHashForUpdate(hash("old-token"))).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.findAllByFamilyIdAndRevokedFalse(familyId)).thenReturn(List.of(replacement));
 
         assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenService.rotate("old-token"));
@@ -182,11 +207,11 @@ class RefreshTokenServiceImplTest {
     @Test
     void revoke_marksTokenRevokedWhenFound() {
         RefreshToken token = RefreshToken.builder()
-                .token("token-to-revoke")
+                .tokenHash(hash("token-to-revoke"))
                 .revoked(false)
                 .expiryDate(OffsetDateTime.now().plusMinutes(1))
                 .build();
-        when(refreshTokenRepository.findByToken("token-to-revoke")).thenReturn(Optional.of(token));
+        when(refreshTokenRepository.findByTokenHash(hash("token-to-revoke"))).thenReturn(Optional.of(token));
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         refreshTokenService.revoke("token-to-revoke");
@@ -197,7 +222,8 @@ class RefreshTokenServiceImplTest {
 
     @Test
     void revoke_doesNothingWhenTokenMissing() {
-        when(refreshTokenRepository.findByToken("unknown")).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByTokenHash(hash("unknown"))).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByLegacyToken("unknown")).thenReturn(Optional.empty());
 
         assertDoesNotThrow(() -> refreshTokenService.revoke("unknown"));
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
@@ -214,5 +240,14 @@ class RefreshTokenServiceImplTest {
         assertTrue(first.getRevoked());
         assertTrue(second.getRevoked());
         verify(refreshTokenRepository).saveAll(List.of(first, second));
+    }
+
+    private String hash(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 }

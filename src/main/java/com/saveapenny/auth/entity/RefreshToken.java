@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -29,8 +30,11 @@ public class RefreshToken {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(nullable = false, unique = true, length = 512)
+    @Transient
     private String token;
+
+    @Column(name = "token", nullable = false, unique = true, length = 64)
+    private String tokenHash;
 
     @Column(name = "expiry_date", nullable = false)
     private OffsetDateTime expiryDate;
@@ -44,6 +48,12 @@ public class RefreshToken {
 
     @Column(name = "replaced_by_token_id")
     private UUID replacedByTokenId;
+
+    @Column(name = "replacement_token_ciphertext", length = 512)
+    private String replacementTokenCiphertext;
+
+    @Column(name = "replacement_token_available_until")
+    private OffsetDateTime replacementTokenAvailableUntil;
 
     @Column(name = "family_id", nullable = false)
     private UUID familyId;

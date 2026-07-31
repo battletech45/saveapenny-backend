@@ -12,11 +12,18 @@ import org.springframework.data.repository.query.Param;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
-    Optional<RefreshToken> findByToken(String token);
+    Optional<RefreshToken> findByTokenHash(String tokenHash);
+
+    @Query("select rt from RefreshToken rt where rt.tokenHash = :rawToken")
+    Optional<RefreshToken> findByLegacyToken(@Param("rawToken") String rawToken);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select rt from RefreshToken rt where rt.token = :token")
-    Optional<RefreshToken> findByTokenForUpdate(@Param("token") String token);
+    @Query("select rt from RefreshToken rt where rt.tokenHash = :tokenHash")
+    Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select rt from RefreshToken rt where rt.tokenHash = :rawToken")
+    Optional<RefreshToken> findByLegacyTokenForUpdate(@Param("rawToken") String rawToken);
 
     List<RefreshToken> findAllByUserIdAndRevokedFalse(UUID userId);
 

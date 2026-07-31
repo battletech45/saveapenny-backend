@@ -7,7 +7,7 @@ SaveAPenny uses a dual-token authentication system: short-lived JWTs for statele
 | Token | Format | Expiry | Revocable | Stored Server-Side |
 |-------|--------|--------|-----------|-------------------|
 | **Access token** | JWT (HS512-signed) | 15 minutes | No (stateless) | No |
-| **Refresh token** | Opaque Base64URL string | 7 days | Yes | Stored in database |
+| **Refresh token** | Opaque Base64URL string | 7 days | Yes | Stored hashed in database |
 
 ## Endpoints
 
@@ -26,7 +26,7 @@ SaveAPenny uses a dual-token authentication system: short-lived JWTs for statele
 Register / Login
     │
     ├── accessToken (JWT, 15 min, stateless)
-    └── refreshToken (opaque Base64URL string, 7 days, stored in DB)
+    └── refreshToken (opaque Base64URL string, 7 days, stored hashed in DB)
               │
               ▼
           Refresh (rotate)
@@ -155,7 +155,7 @@ These endpoints do not require authentication:
 | Decision | Rationale |
 |----------|-----------|
 | Access tokens are not revocable | Stateless verification avoids DB lookup on every request; short expiry limits exposure |
-| Refresh tokens are opaque random strings | Enables lookup and rotation without exposing JWT claims in the token itself |
+| Refresh tokens are opaque random strings and are stored hashed at rest | Enables lookup and rotation without exposing JWT claims in the token itself |
 | Rotation on every refresh | Limits the window for token theft; stolen tokens are invalidated after first legitimate use |
 | Proactive refresh before expiry | Avoids race conditions from concurrent 401 handling |
 
