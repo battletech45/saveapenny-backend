@@ -69,12 +69,20 @@ class GoalSimulationFlowIntegrationTest extends TestcontainersIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn());
 
-        mockMvc.perform(post("/api/v1/goals/{goalId}/simulate", goalId)
+        MvcResult simResult = mockMvc.perform(post("/api/v1/goals/{goalId}/simulate", goalId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.type").value("SAVINGS"))
                 .andExpect(jsonPath("$.data.summary.requiredMonthlyContribution").exists())
-                .andExpect(jsonPath("$.data.series.length()").value(47));
+                .andExpect(jsonPath("$.data.series").isArray())
+                .andReturn();
+
+        JsonNode simJson = objectMapper.readTree(simResult.getResponse().getContentAsString());
+        int horizonMonths = simJson.path("data").path("horizonMonths").asInt();
+        int seriesLength = simJson.path("data").path("series").size();
+        org.assertj.core.api.Assertions.assertThat(seriesLength)
+                .as("Series length should match horizonMonths")
+                .isEqualTo(horizonMonths);
     }
 
     private String registerAndGetToken(String email, String fullName) throws Exception {

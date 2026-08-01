@@ -15,6 +15,8 @@ import com.saveapenny.billing.entity.Plan;
 import com.saveapenny.billing.repository.BillingEntitlementRepository;
 import com.saveapenny.user.entity.Role;
 import com.saveapenny.user.repository.RoleRepository;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,7 +142,7 @@ class InsightIntegrationTest {
             }
 
             org.assertj.core.api.Assertions.assertThat(hasSpendingPattern)
-                    .as("Spending pattern should be detected from June-to-July increase in Food")
+                    .as("Spending pattern should be detected from month-over-month food spending change")
                     .isTrue();
             org.assertj.core.api.Assertions.assertThat(hasAnomaly)
                     .as("Anomaly should be detected from the $50000 transaction in Food")
@@ -285,30 +287,48 @@ class InsightIntegrationTest {
         }
 
         private void seedHistoricalFoodTransactions() throws Exception {
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-05-05", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-05-15", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-06-05", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-06-15", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00", "2026-06-25", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-07-01", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-07-05", "Weekly groceries");
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00", "2026-07-07", "Weekly groceries");
+            LocalDate today = LocalDate.now();
+            LocalDate twoMonthsAgo = today.minusMonths(2);
+            LocalDate oneMonthAgo = today.minusMonths(1);
+
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00",
+                    twoMonthsAgo.withDayOfMonth(5).toString(), "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00",
+                    twoMonthsAgo.withDayOfMonth(15).toString(), "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00",
+                    oneMonthAgo.withDayOfMonth(5).toString(), "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00",
+                    oneMonthAgo.withDayOfMonth(15).toString(), "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "150.00",
+                    oneMonthAgo.withDayOfMonth(Math.min(25, oneMonthAgo.lengthOfMonth())).toString(),
+                    "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00",
+                    today.toString(), "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00",
+                    today.toString(), "Weekly groceries");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "100.00",
+                    today.toString(), "Weekly groceries");
         }
 
         private void seedAnomalousTransaction() throws Exception {
-            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "50000.00", "2026-07-01", "Large purchase");
+            createTransaction(token, accountId, foodCategoryId, "EXPENSE", "50000.00",
+                    LocalDate.now().toString(), "Large purchase");
         }
 
         private void seedEntertainmentBudgetAndTransactions() throws Exception {
+            LocalDate today = LocalDate.now();
+            LocalDate firstOfMonth = today.withDayOfMonth(1);
+            LocalDate lastOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+
             String budgetBody = """
                     {
                       "categoryId":"%s",
                       "amount":200.0000,
                       "period":"MONTHLY",
-                      "startDate":"2026-07-01",
-                      "endDate":"2026-07-31"
+                      "startDate":"%s",
+                      "endDate":"%s"
                     }
-                    """.formatted(entertainmentCategoryId);
+                    """.formatted(entertainmentCategoryId, firstOfMonth.toString(), lastOfMonth.toString());
 
             mockMvc.perform(post("/api/v1/budgets")
                             .header("Authorization", "Bearer " + token)
@@ -316,11 +336,12 @@ class InsightIntegrationTest {
                             .content(budgetBody))
                     .andExpect(status().isCreated());
 
-            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-07-03",
-                    "Movie tickets");
-            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-07-06", "Concert");
-            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00", "2026-07-09",
-                    "Streaming service");
+            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00",
+                    today.toString(), "Movie tickets");
+            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00",
+                    today.toString(), "Concert");
+            createTransaction(token, accountId, entertainmentCategoryId, "EXPENSE", "100.00",
+                    today.toString(), "Streaming service");
         }
     }
 
