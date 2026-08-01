@@ -28,7 +28,7 @@
         <testcontainers.version>1.21.4</testcontainers.version>
         <rest-assured.version>6.0.1</rest-assured.version>
         <jacoco.version>0.8.15</jacoco.version>
-        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
+        <logstash-logback-encoder.version>9.0</logstash-logback-encoder.version>
     </properties>
 
     <dependencyManagement>
