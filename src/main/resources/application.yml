@@ -29,7 +29,7 @@ spring:
     open-in-view: false
 
   flyway:
-    enabled: true
+    enabled: ${FLYWAY_ENABLED:true}
     locations: classpath:db/migration
 
   ai:
@@ -44,14 +44,14 @@ server:
 
 rate-limit:
   login:
-    max-per-minute: 5
+    max-per-minute: ${RATE_LIMIT_LOGIN_MAX_PER_MINUTE:5}
   api:
-    max-per-minute: 60
+    max-per-minute: ${RATE_LIMIT_API_MAX_PER_MINUTE:60}
 
 security:
   jwt:
     secret: ${JWT_SECRET}
-    refresh-token-expiry-days: 7
+    refresh-token-expiry-days: ${JWT_REFRESH_TOKEN_EXPIRY_DAYS:7}
 
 # ==================== Observability ====================
 management:
@@ -89,7 +89,7 @@ springdoc:
 # ==================== Feature modules ====================
 assistant:
   enabled: ${ASSISTANT_ENABLED:false}
-  max-history: 8
+  max-history: ${ASSISTANT_MAX_HISTORY:8}
   model: ${ASSISTANT_MODEL:cohere/north-mini-code:free}
   provider: ${ASSISTANT_AI_PROVIDER:openrouter}
   openrouter-api-key: ${OPENROUTER_API_KEY:}
@@ -115,41 +115,41 @@ assistant:
 
 goal:
   progress:
-    enabled: false
-    off-track-ratio: 0.10
-    at-risk-ratio: 0.05
-    off-track-persistence-months: 2
-    cron: "0 0 6 * * *"
+    enabled: ${GOAL_PROGRESS_ENABLED:false}
+    off-track-ratio: ${GOAL_PROGRESS_OFF_TRACK_RATIO:0.10}
+    at-risk-ratio: ${GOAL_PROGRESS_AT_RISK_RATIO:0.05}
+    off-track-persistence-months: ${GOAL_PROGRESS_OFF_TRACK_PERSISTENCE_MONTHS:2}
+    cron: ${GOAL_PROGRESS_CRON:0 0 6 * * *}
 
 insight:
-  enabled: false
-  cron: "0 30 6 * * *"
-  max-insights-per-generation: 10
-  deduplication-window-days: 7
-  stddev-threshold: 3.0
-  max-amount-ratio: 0.5
-  ai-enhanced: false
+  enabled: ${INSIGHT_ENABLED:false}
+  cron: ${INSIGHT_CRON:0 30 6 * * *}
+  max-insights-per-generation: ${INSIGHT_MAX_INSIGHTS_PER_GENERATION:10}
+  deduplication-window-days: ${INSIGHT_DEDUPLICATION_WINDOW_DAYS:7}
+  stddev-threshold: ${INSIGHT_STDDEV_THRESHOLD:3.0}
+  max-amount-ratio: ${INSIGHT_MAX_AMOUNT_RATIO:0.5}
+  ai-enhanced: ${INSIGHT_AI_ENHANCED:false}
   model: ${INSIGHT_MODEL:cohere/north-mini-code:free}
   provider: ${INSIGHT_AI_PROVIDER:openrouter}
   openrouter-api-key: ${OPENROUTER_API_KEY:}
   openrouter-base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api}
 
 ocr:
-  enabled: true
+  enabled: ${OCR_ENABLED:false}
   tessdata-path: ${OCR_TESSDATA_PATH:}
-  language: eng
-  psm: 3
-  max-file-size-bytes: 10485760
-  job-timeout-millis: 30000
-  max-retries: 2
-  debug-logging: false
+  language: ${OCR_LANGUAGE:eng}
+  psm: ${OCR_PSM:3}
+  max-file-size-bytes: ${OCR_MAX_FILE_SIZE_BYTES:10485760}
+  job-timeout-millis: ${OCR_JOB_TIMEOUT_MILLIS:30000}
+  max-retries: ${OCR_MAX_RETRIES:2}
+  debug-logging: ${OCR_DEBUG_LOGGING:false}
 
 stock:
   enabled: ${STOCK_ENABLED:true}
   api-key: ${ALPHA_VANTAGE_API_KEY:}
-  base-url: https://www.alphavantage.co
-  rate-limit-per-minute: 5
-  rate-limit-per-day: 25
+  base-url: ${STOCK_BASE_URL:https://www.alphavantage.co}
+  rate-limit-per-minute: ${STOCK_RATE_LIMIT_PER_MINUTE:5}
+  rate-limit-per-day: ${STOCK_RATE_LIMIT_PER_DAY:25}
 
 revenuecat:
   enabled: ${REVENUECAT_ENABLED:false}
