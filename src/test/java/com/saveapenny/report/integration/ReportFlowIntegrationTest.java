@@ -27,6 +27,7 @@ class ReportFlowIntegrationTest extends TestcontainersIntegrationTest {
     void reportsEndpoints_returnExpectedAggregates_andRespectOwnership() throws Exception {
         String tokenA = registerAndGetToken("report.user.a@example.com", "Report User A");
         String tokenB = registerAndGetToken("report.user.b@example.com", "Report User B");
+        grantPlusEntitlement(tokenA);
 
         String accountA = createAccount(tokenA, "Wallet A", "CASH", "USD", "1000.0000");
         createAccount(tokenA, "Credit A", "CREDIT", "USD", "300.0000");

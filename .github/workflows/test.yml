@@ -23,10 +23,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Java 24 (Temurin)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           java-version: "24"
           distribution: "temurin"
@@ -38,40 +38,15 @@ jobs:
       - name: Print Maven version
         run: mvn -version
 
-      - name: Install OCR runtime dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng
-          # lept4j (tess4j dependency) expects libleptonica.so but Ubuntu provides liblept.so
-          # Create a symlink so JNA can resolve the library at runtime
-          for libpath in /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu /usr/lib64 /usr/lib; do
-            if [ -f "$libpath/liblept.so" ] && [ ! -f "$libpath/libleptonica.so" ]; then
-              sudo ln -sf "$libpath/liblept.so" "$libpath/libleptonica.so"
-              echo "Created libleptonica.so symlink in $libpath"
-            fi
-          done
-
-      - name: Print Tesseract version
-        run: tesseract --version
-
-      - name: Resolve OCR runtime paths
-        run: |
-          for path in /usr/share/tesseract-ocr/5/tessdata /usr/share/tesseract-ocr/4.00/tessdata /usr/share/tessdata /usr/local/share/tessdata; do
-            if [ -d "$path" ]; then
-              echo "OCR_TESSDATA_PATH=$path" >> "$GITHUB_ENV"
-              echo "Resolved OCR_TESSDATA_PATH=$path"
-              exit 0
-            fi
-          done
-          echo "Unable to locate tessdata on runner" >&2
-          exit 1
+      - name: Set up OCR runtime
+        uses: ./.github/actions/setup-ocr
 
       - name: Run tests
         run: mvn -B clean verify -Dsurefire.excludes="**/ocr/infrastructure/engine/tesseract/OcrGoldenImageRegressionTest.java,**/ocr/interfaces/http/integration/OcrImportRealMediaIntegrationTest.java"
 
       - name: Upload surefire reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: surefire-reports
           path: |
@@ -80,7 +55,7 @@ jobs:
 
       - name: Upload failsafe reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: failsafe-reports
           path: |
@@ -89,7 +64,7 @@ jobs:
 
       - name: Upload test timing metrics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-metrics
           path: |
@@ -98,7 +73,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: jacoco-report
           path: |
