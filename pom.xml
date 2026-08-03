@@ -11,7 +11,7 @@
 
     <groupId>com.saveapenny</groupId>
     <artifactId>save-a-penny</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.1.0</version>
     <name>save-a-penny</name>
     <description>SaveAPenny backend service</description>
 
