@@ -2,7 +2,7 @@ name: Release Image
 
 on:
   workflow_run:
-    workflows: [Test]
+    workflows: [CI, Validate, Test]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -21,16 +21,69 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  verify-prerequisites:
+    name: Verify Prerequisites
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check required workflows
+        id: check
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (context.eventName === 'workflow_dispatch') {
+              core.setOutput('ready', 'true');
+              return;
+            }
+
+            if (context.payload.workflow_run.conclusion !== 'success') {
+              core.setOutput('ready', 'false');
+              core.notice(`Skipping release image because triggering workflow concluded with ${context.payload.workflow_run.conclusion}.`);
+              return;
+            }
+
+            if (context.payload.workflow_run.event !== 'push') {
+              core.setOutput('ready', 'false');
+              core.notice(`Skipping release image for ${context.payload.workflow_run.event} workflow runs.`);
+              return;
+            }
+
+            const required = ['CI', 'Validate', 'Test'];
+            const { owner, repo } = context.repo;
+            const headSha = context.payload.workflow_run.head_sha;
+            const event = context.payload.workflow_run.event;
+
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner,
+              repo,
+              event,
+              head_sha: headSha,
+              per_page: 100,
+            });
+
+            const missing = required.filter((name) => {
+              const run = runs.find((candidate) => candidate.name === name);
+              return !run || run.status !== 'completed' || run.conclusion !== 'success';
+            });
+
+            if (missing.length > 0) {
+              core.notice(`Waiting for successful completion of: ${missing.join(', ')}`);
+              core.setOutput('ready', 'false');
+              return;
+            }
+
+            core.setOutput('ready', 'true');
+
   build-image:
     name: Build Image
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    needs: verify-prerequisites
+    if: needs.verify-prerequisites.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
@@ -61,17 +114,17 @@ jobs:
         run: docker version
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@v3
 
       - name: Print Docker Buildx version
         run: docker buildx version
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -80,7 +133,7 @@ jobs:
             type=raw,value=${{ steps.release-context.outputs.version_tag }},enable=${{ steps.release-context.outputs.version_tag != '' }}
 
       - name: Build image without push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -108,13 +161,13 @@ jobs:
 
   publish-image:
     name: Publish Image
-    needs: build-image
+    needs: [verify-prerequisites, build-image]
     if: github.event_name == 'workflow_run' || inputs.publish_image == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
@@ -142,14 +195,14 @@ jobs:
           echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -158,14 +211,14 @@ jobs:
             type=raw,value=${{ steps.release-context.outputs.version_tag }},enable=${{ steps.release-context.outputs.version_tag != '' }}
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64

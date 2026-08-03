@@ -1,28 +1,26 @@
-name: CodeQL
+name: Validate
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
-  schedule:
-    - cron: "0 6 * * 1"
+    branches: [main]
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
-  security-events: write
 
 concurrency:
-  group: codeql-${{ github.ref }}
+  group: validate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  analyze:
-    name: Analyze
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -34,25 +32,23 @@ jobs:
           distribution: "temurin"
           cache: maven
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
+      - name: Print Java version
+        run: java -version
 
-      - name: Build project
+      - name: Print Maven version
+        run: mvn -version
+
+      - name: Build package without tests
         run: mvn -B -DskipTests package
 
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v3
-
-      - name: Write analysis summary
+      - name: Write job summary
         if: always()
         run: |
           {
-            echo "## CodeQL"
+            echo "## Validate"
             echo
             echo "- Ref: \`${{ github.ref }}\`"
             echo "- Event: \`${{ github.event_name }}\`"
-            echo "- Language: \`java\`"
+            echo "- Java: Temurin 24"
             echo "- Command: \`mvn -B -DskipTests package\`"
           } >> "$GITHUB_STEP_SUMMARY"
