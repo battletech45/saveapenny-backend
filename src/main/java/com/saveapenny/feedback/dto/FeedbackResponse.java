@@ -1,6 +1,7 @@
 package com.saveapenny.feedback.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.saveapenny.feedback.entity.FeedbackStatus;
 import com.saveapenny.feedback.entity.FeedbackType;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -23,6 +24,7 @@ public class FeedbackResponse {
     private Integer rating;
     private String message;
     private JsonNode metadata;
+    private FeedbackStatus status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

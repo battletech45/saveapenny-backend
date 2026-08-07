@@ -8,7 +8,12 @@ import com.saveapenny.billing.entity.EntitlementStatus;
 import com.saveapenny.billing.entity.Plan;
 import com.saveapenny.billing.repository.BillingEntitlementRepository;
 import com.saveapenny.user.entity.Role;
+import com.saveapenny.user.entity.User;
+import com.saveapenny.user.entity.UserRole;
+import com.saveapenny.user.entity.UserRoleId;
 import com.saveapenny.user.repository.RoleRepository;
+import com.saveapenny.user.repository.UserRepository;
+import com.saveapenny.user.repository.UserRoleRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -45,6 +51,12 @@ public abstract class IntegrationTestBase {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -77,6 +89,23 @@ public abstract class IntegrationTestBase {
                 .build());
     }
 
+    /**
+     * Grants ROLE_ADMIN to the user identified by the given access token. Note: since roles are
+     * resolved once per request in {@code HeaderUserAuthenticationFilter}, subsequent requests using
+     * this token will carry the ADMIN authority.
+     */
+    protected void grantAdminRole(String token) {
+        UUID userId = extractUserId(token);
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseGet(() -> roleRepository.save(Role.builder().name("ROLE_ADMIN").build()));
+        User user = userRepository.findById(userId).orElseThrow();
+        userRoleRepository.save(UserRole.builder()
+                .id(new UserRoleId(userId, adminRole.getId()))
+                .user(user)
+                .role(adminRole)
+                .build());
+    }
+
     protected String asJson(Object obj) throws Exception {
         return objectMapper.writeValueAsString(obj);
     }
@@ -98,6 +127,13 @@ public abstract class IntegrationTestBase {
 
     protected ResultActions authedPostExpect(String url, String body, String token) throws Exception {
         return mockMvc.perform(post(url)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body));
+    }
+
+    protected ResultActions authedPatchExpect(String url, String body, String token) throws Exception {
+        return mockMvc.perform(patch(url)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body));

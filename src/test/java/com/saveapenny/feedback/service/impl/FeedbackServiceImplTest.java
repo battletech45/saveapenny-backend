@@ -10,9 +10,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.saveapenny.feedback.dto.CreateFeedbackRequest;
 import com.saveapenny.feedback.dto.FeedbackResponse;
 import com.saveapenny.feedback.entity.Feedback;
+import com.saveapenny.feedback.entity.FeedbackStatus;
 import com.saveapenny.feedback.entity.FeedbackType;
 import com.saveapenny.feedback.exception.FeedbackNotFoundException;
 import com.saveapenny.feedback.mapper.FeedbackMapper;
+import com.saveapenny.feedback.notification.FeedbackStatusNotifier;
 import com.saveapenny.feedback.repository.FeedbackRepository;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -36,6 +38,9 @@ class FeedbackServiceImplTest {
     @Mock
     private FeedbackMapper feedbackMapper;
 
+    @Mock
+    private FeedbackStatusNotifier feedbackStatusNotifier;
+
     @InjectMocks
     private FeedbackServiceImpl feedbackService;
 
@@ -54,6 +59,7 @@ class FeedbackServiceImplTest {
                 .rating(2)
                 .message("App freezes on startup")
                 .metadata("{\"screen\":\"home\"}")
+                .status(FeedbackStatus.OPEN)
                 .createdAt(OffsetDateTime.now().minusDays(1))
                 .updatedAt(OffsetDateTime.now())
                 .build();
@@ -121,5 +127,27 @@ class FeedbackServiceImplTest {
         when(feedbackRepository.findByIdAndUserId(feedbackId, userId)).thenReturn(Optional.empty());
 
         assertThrows(FeedbackNotFoundException.class, () -> feedbackService.delete(userId, feedbackId));
+    }
+
+    @Test
+    void updateStatus_updatesAndNotifies_whenStatusChanges() {
+        FeedbackResponse response = FeedbackResponse.builder().id(feedbackId).status(FeedbackStatus.RESOLVED).build();
+
+        when(feedbackRepository.findById(feedbackId)).thenReturn(Optional.of(feedback));
+        when(feedbackRepository.save(feedback)).thenReturn(feedback);
+        when(feedbackMapper.toResponse(feedback)).thenReturn(response);
+
+        FeedbackResponse result = feedbackService.updateStatus(feedbackId, FeedbackStatus.RESOLVED);
+
+        assertEquals(FeedbackStatus.RESOLVED, result.getStatus());
+        assertEquals(FeedbackStatus.RESOLVED, feedback.getStatus());
+        verify(feedbackStatusNotifier).notifyStatusChanged(feedback, FeedbackStatus.OPEN);
+    }
+
+    @Test
+    void updateStatus_throws_whenNotFound() {
+        when(feedbackRepository.findById(feedbackId)).thenReturn(Optional.empty());
+
+        assertThrows(FeedbackNotFoundException.class, () -> feedbackService.updateStatus(feedbackId, FeedbackStatus.RESOLVED));
     }
 }

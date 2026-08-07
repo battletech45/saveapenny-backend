@@ -44,6 +44,10 @@ public class Feedback {
     @Column(columnDefinition = "TEXT")
     private String metadata;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private FeedbackStatus status;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -54,6 +58,9 @@ public class Feedback {
     void prePersist() {
         if (id == null) {
             id = UUID.randomUUID();
+        }
+        if (status == null) {
+            status = FeedbackStatus.OPEN;
         }
         OffsetDateTime now = OffsetDateTime.now();
         if (createdAt == null) {
