@@ -128,9 +128,13 @@ public class ReportServiceImpl implements ReportService {
     public NetWorthSnapshotResponse getNetWorth(UUID currentUserId, LocalDate snapshotDate) {
         validateSnapshotDate(snapshotDate);
 
-        var existing = netWorthSnapshotRepository.findByUserIdAndSnapshotDate(currentUserId, snapshotDate);
-        if (existing.isPresent()) {
-            return reportMapper.toNetWorthSnapshotResponse(existing.get());
+        boolean isToday = snapshotDate.isEqual(timeService.today());
+
+        if (!isToday) {
+            var existing = netWorthSnapshotRepository.findByUserIdAndSnapshotDate(currentUserId, snapshotDate);
+            if (existing.isPresent()) {
+                return reportMapper.toNetWorthSnapshotResponse(existing.get());
+            }
         }
 
         BigDecimal totalAssets = nullSafeAmount(reportAccountRepository.sumAssetsByUserId(currentUserId, LIABILITY_ACCOUNT_TYPES));
@@ -138,14 +142,18 @@ public class ReportServiceImpl implements ReportService {
                 reportAccountRepository.sumLiabilitiesByUserId(currentUserId, LIABILITY_ACCOUNT_TYPES));
         BigDecimal netWorth = totalAssets.subtract(totalLiabilities);
 
-        NetWorthSnapshot snapshot = NetWorthSnapshot.builder()
-                .userId(currentUserId)
-                .snapshotDate(snapshotDate)
-                .totalAssets(totalAssets)
-                .totalLiabilities(totalLiabilities)
-                .netWorth(netWorth)
-                .build();
-        netWorthSnapshotRepository.save(snapshot);
+        if (!isToday) {
+            // Past dates are an immutable historical fact once computed, so cache them.
+            // Today is still "in progress" and must stay live until the day closes.
+            NetWorthSnapshot snapshot = NetWorthSnapshot.builder()
+                    .userId(currentUserId)
+                    .snapshotDate(snapshotDate)
+                    .totalAssets(totalAssets)
+                    .totalLiabilities(totalLiabilities)
+                    .netWorth(netWorth)
+                    .build();
+            netWorthSnapshotRepository.save(snapshot);
+        }
 
         return reportMapper.toNetWorthSnapshotResponse(snapshotDate, totalAssets, totalLiabilities, netWorth);
     }
