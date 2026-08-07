@@ -25,6 +25,7 @@ import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
 import com.saveapenny.budget.service.BudgetService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import jakarta.servlet.FilterChain;
 import java.math.BigDecimal;
@@ -60,6 +61,9 @@ class BudgetControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

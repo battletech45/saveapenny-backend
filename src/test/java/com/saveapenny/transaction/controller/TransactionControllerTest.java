@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.transaction.exception.InvalidTransferException;
 import com.saveapenny.transaction.exception.TransactionNotFoundException;
@@ -60,6 +61,9 @@ class TransactionControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

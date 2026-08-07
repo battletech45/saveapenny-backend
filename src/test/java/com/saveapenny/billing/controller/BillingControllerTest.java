@@ -18,6 +18,7 @@ import com.saveapenny.billing.exception.RevenueCatDisabledException;
 import com.saveapenny.billing.service.BillingEntitlementService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import jakarta.servlet.FilterChain;
 import java.util.UUID;
@@ -44,6 +45,9 @@ class BillingControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

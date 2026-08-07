@@ -25,6 +25,7 @@ import com.saveapenny.automation.exception.RecurringTransactionNotFoundException
 import com.saveapenny.automation.service.RecurringTransactionService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import jakarta.servlet.FilterChain;
 import com.saveapenny.transaction.entity.TransactionType;
@@ -61,6 +62,9 @@ class RecurringTransactionControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

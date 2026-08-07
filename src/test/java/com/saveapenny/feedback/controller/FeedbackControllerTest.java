@@ -22,6 +22,7 @@ import com.saveapenny.feedback.dto.FeedbackResponse;
 import com.saveapenny.feedback.entity.FeedbackType;
 import com.saveapenny.feedback.exception.FeedbackNotFoundException;
 import com.saveapenny.feedback.service.FeedbackService;
+import com.saveapenny.user.repository.UserRoleRepository;
 import jakarta.servlet.FilterChain;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -54,6 +55,9 @@ class FeedbackControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

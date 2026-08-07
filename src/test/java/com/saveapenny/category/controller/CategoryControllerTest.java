@@ -23,6 +23,7 @@ import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.service.CategoryService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import jakarta.servlet.FilterChain;
 import java.time.OffsetDateTime;
@@ -55,6 +56,9 @@ class CategoryControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

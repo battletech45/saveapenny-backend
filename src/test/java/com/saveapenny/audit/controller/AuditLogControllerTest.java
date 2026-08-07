@@ -19,6 +19,7 @@ import com.saveapenny.audit.service.AuditLogService;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import jakarta.servlet.FilterChain;
 import java.time.OffsetDateTime;
@@ -52,6 +53,9 @@ class AuditLogControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUpRateLimitingFilter() throws Exception {

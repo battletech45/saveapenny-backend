@@ -10,10 +10,12 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.auth.service.JwtService;
+import com.saveapenny.user.repository.UserRoleRepository;
 import jakarta.servlet.FilterChain;
 import java.io.ByteArrayOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,9 @@ class HeaderUserAuthenticationFilterTest {
 
     @Mock
     private ObjectMapper objectMapper;
+
+    @Mock
+    private UserRoleRepository userRoleRepository;
 
     @InjectMocks
     private HeaderUserAuthenticationFilter filter;
@@ -74,6 +79,27 @@ class HeaderUserAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
         var auth = SecurityContextHolder.getContext().getAuthentication();
         assertEquals(userId, ((CurrentUserPrincipal) auth.getPrincipal()).userId());
+    }
+
+    @Test
+    void setsAuthoritiesFromRoles_whenUserHasRoles() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "valid-jwt-token";
+
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(userRoleRepository.findRoleNamesByUserId(userId)).thenReturn(List.of("ROLE_ADMIN"));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        var principal = (CurrentUserPrincipal) auth.getPrincipal();
+        assertEquals(java.util.Set.of("ROLE_ADMIN"), principal.roles());
+        assertEquals(
+                List.of("ROLE_ADMIN"),
+                auth.getAuthorities().stream()
+                        .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                        .toList());
     }
 
     @Test
