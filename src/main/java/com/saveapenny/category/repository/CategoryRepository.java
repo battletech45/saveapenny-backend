@@ -17,7 +17,8 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     List<Category> findAllByUserIdAndType(UUID userId, CategoryType type);
 
-    List<Category> findAllByUserIdIsNullOrUserIdAndType(UUID userId, CategoryType type);
+    @Query("SELECT c FROM Category c WHERE (c.userId IS NULL OR c.userId = :userId) AND c.type = :type")
+    List<Category> findAllByUserIdIsNullOrUserIdAndType(@Param("userId") UUID userId, @Param("type") CategoryType type);
 
     Optional<Category> findByIdAndUserId(UUID id, UUID userId);
 
