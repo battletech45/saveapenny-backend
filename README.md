@@ -147,6 +147,7 @@ See `.env.example` for all available settings.
 | [Testing Guide](docs/testing-guide.md) | How to run and write tests |
 | [Deployment & Operations](docs/deployment-operations.md) | Runtime deps, env vars, troubleshooting |
 | [Accounts](docs/features/accounts.md) | Account types, mutation rules |
+| [Credit Cards](docs/features/credit-cards.md) | Credit limit, statements, interest, payments |
 | [Transactions](docs/features/transactions.md) | Income, expense, transfers |
 | [Categories](docs/features/categories.md) | System vs user categories |
 | [Budgets](docs/features/budgets.md) | Monthly/yearly budgets, status |
@@ -170,6 +171,7 @@ See `.env.example` for all available settings.
 | Feature | Native Dependency | Doc |
 |---------|-------------------|-----|
 | Accounts | — | [docs/features/accounts.md](docs/features/accounts.md) |
+| Credit Cards | — | [docs/features/credit-cards.md](docs/features/credit-cards.md) |
 | Transactions & Transfers | — | [docs/features/transactions.md](docs/features/transactions.md) |
 | Budgets | — | [docs/features/budgets.md](docs/features/budgets.md) |
 | Recurring Transactions | — | [docs/features/recurring-transactions.md](docs/features/recurring-transactions.md) |

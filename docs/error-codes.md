@@ -47,14 +47,18 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | `INVALID_TRANSACTION_CURRENCY` | Transaction currency does not match the account currency |
 | `ACCOUNT_MUTATION_NOT_ALLOWED` | Attempt to change account type or currency after the account has been used |
 | `ACCOUNT_INACTIVE` | Account is soft-deleted or inactive |
+| `INITIAL_BALANCE_REQUIRED` | `initialBalance` was omitted for a non-`CREDIT` account |
 | `INVALID_OCR_FILE` | Uploaded file exceeds size limit or has unsupported format |
 | `INVALID_IMPORT_FILE` | CSV file cannot be parsed |
 | `INVALID_BUDGET_DATE_RANGE` | Budget date range parameters are invalid |
 | `INVALID_REPORT_DATE_RANGE` | Report date range parameters are invalid |
 | `INVALID_NET_WORTH_SNAPSHOT_DATE` | Snapshot date is in the future |
 | `INVALID_AUDIT_DATE_RANGE` | Audit date range parameters are invalid |
-| `INVALID_TRANSFER` | Transfer source and destination are the same account or currencies do not match |
-| `INSUFFICIENT_BALANCE` | Account balance is insufficient for the requested transfer |
+| `INVALID_TRANSFER` | Transfer source and destination are the same account or currencies do not match, or either account is a `CREDIT` account |
+| `INSUFFICIENT_BALANCE` | Account balance is insufficient for the requested transfer or credit card payment |
+| `CREDIT_LIMIT_EXCEEDED` | A credit card expense would exceed the account's credit limit |
+| `INVALID_CREDIT_CARD_DETAILS` | Missing/invalid credit limit, APR, or statement day, or initial balance exceeds the limit |
+| `INVALID_CREDIT_CARD_PAYMENT` | Invalid credit card payment amount, account type/currency, or no outstanding balance |
 | `INVALID_PASSWORD` | Password does not meet strength requirements |
 | `PASSWORD_REUSE_NOT_ALLOWED` | Password matches a previously used password |
 | `INVALID_RECURRING_TRANSACTION_NEXT_RUN_DATE` | Next run date is in the past |
@@ -75,6 +79,7 @@ All API errors return an HTTP 4xx or 5xx status code with a consistent JSON enve
 | `USER_NOT_FOUND` | User resource not found |
 | `TRANSACTION_NOT_FOUND` | Transaction not found or not owned by the caller |
 | `ACCOUNT_NOT_FOUND` | Account not found or not owned by the caller |
+| `CREDIT_CARD_DETAILS_NOT_FOUND` | Credit card details missing for the account |
 | `CATEGORY_NOT_FOUND` | Category not found or not owned by the caller |
 | `BUDGET_NOT_FOUND` | Budget not found or not owned by the caller |
 | `RECURRING_TRANSACTION_NOT_FOUND` | Recurring transaction not found or not owned by the caller |

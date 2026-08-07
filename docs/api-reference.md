@@ -182,6 +182,16 @@ Notes:
 
 See [Accounts](features/accounts.md) for mutation rules and currency constraints.
 
+## Credit Cards
+
+| Method | Path | Description |
+|--------|------|-------------|
+| PATCH | `/api/v1/accounts/{accountId}/credit` | Update credit limit, APR, statement day |
+| GET | `/api/v1/accounts/{accountId}/credit/statements` | List statement history (`PagedResponse<CreditCardStatementResponse>`) |
+| POST | `/api/v1/accounts/{accountId}/credit/payments` | Pay minimum due, full balance, or a custom amount |
+
+See [Credit Cards](features/credit-cards.md) for the billing cycle, interest, and minimum-payment rules.
+
 ## Categories
 
 | Method | Path | Description |

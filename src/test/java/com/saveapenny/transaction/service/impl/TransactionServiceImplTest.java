@@ -15,6 +15,7 @@ import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.category.entity.Category;
 import com.saveapenny.category.entity.CategoryType;
 import com.saveapenny.category.repository.CategoryRepository;
+import com.saveapenny.creditcard.repository.CreditCardDetailsRepository;
 import com.saveapenny.transaction.dto.CreateTransactionRequest;
 import com.saveapenny.transaction.dto.CreateTransferRequest;
 import com.saveapenny.transaction.dto.TransactionResponse;
@@ -60,6 +61,8 @@ class TransactionServiceImplTest {
     private CategoryRepository categoryRepository;
     @Mock
     private TransactionMapper transactionMapper;
+    @Mock
+    private CreditCardDetailsRepository creditCardDetailsRepository;
 
     @InjectMocks
     private TransactionServiceImpl transactionService;
@@ -513,5 +516,104 @@ class TransactionServiceImplTest {
         when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
 
         assertThrows(InvalidTransactionCurrencyException.class, () -> transactionService.update(userId, txId, request));
+    }
+
+    @Test
+    void createExpense_onCreditAccount_increasesBalanceAsDebt() {
+        Account creditAccount = Account.builder()
+                .id(accountId)
+                .userId(userId)
+                .type(com.saveapenny.account.entity.AccountType.CREDIT)
+                .currency("USD")
+                .balance(new BigDecimal("100.0000"))
+                .active(true)
+                .build();
+        CreateTransactionRequest request = CreateTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("50.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
+        Transaction mapped = Transaction.builder().amount(request.getAmount()).type(TransactionType.EXPENSE).build();
+        Transaction saved = Transaction.builder().id(UUID.randomUUID()).userId(userId).build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId))
+                .thenReturn(Optional.of(creditAccount));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
+        when(creditCardDetailsRepository.findByAccountId(accountId)).thenReturn(Optional.of(
+                com.saveapenny.creditcard.entity.CreditCardDetails.builder()
+                        .accountId(accountId)
+                        .creditLimit(new BigDecimal("500"))
+                        .build()));
+        when(transactionMapper.toEntity(request)).thenReturn(mapped);
+        when(accountRepository.save(creditAccount)).thenReturn(creditAccount);
+        when(transactionRepository.save(mapped)).thenReturn(saved);
+        when(transactionMapper.toResponse(saved)).thenReturn(TransactionResponse.builder().id(saved.getId()).build());
+
+        transactionService.create(userId, request);
+
+        assertEquals(new BigDecimal("150.0000"), creditAccount.getBalance());
+    }
+
+    @Test
+    void createExpense_onCreditAccount_exceedingLimit_throws() {
+        Account creditAccount = Account.builder()
+                .id(accountId)
+                .userId(userId)
+                .type(com.saveapenny.account.entity.AccountType.CREDIT)
+                .currency("USD")
+                .balance(new BigDecimal("480.0000"))
+                .active(true)
+                .build();
+        CreateTransactionRequest request = CreateTransactionRequest.builder()
+                .accountId(accountId)
+                .categoryId(categoryId)
+                .type(TransactionType.EXPENSE)
+                .amount(new BigDecimal("50.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+        Category category = Category.builder().id(categoryId).userId(userId).type(CategoryType.EXPENSE).build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId))
+                .thenReturn(Optional.of(creditAccount));
+        when(categoryRepository.findByIdForUpdate(categoryId)).thenReturn(Optional.of(category));
+        when(creditCardDetailsRepository.findByAccountId(accountId)).thenReturn(Optional.of(
+                com.saveapenny.creditcard.entity.CreditCardDetails.builder()
+                        .accountId(accountId)
+                        .creditLimit(new BigDecimal("500"))
+                        .build()));
+
+        assertThrows(com.saveapenny.creditcard.exception.CreditLimitExceededException.class,
+                () -> transactionService.create(userId, request));
+    }
+
+    @Test
+    void createTransfer_involvingCreditAccount_isRejected() {
+        UUID toId = UUID.randomUUID();
+        Account creditAccount = Account.builder()
+                .id(toId)
+                .userId(userId)
+                .type(com.saveapenny.account.entity.AccountType.CREDIT)
+                .currency("USD")
+                .balance(BigDecimal.ZERO)
+                .active(true)
+                .build();
+        CreateTransferRequest request = CreateTransferRequest.builder()
+                .fromAccountId(accountId)
+                .toAccountId(toId)
+                .categoryId(categoryId)
+                .amount(new BigDecimal("50.0000"))
+                .currency("USD")
+                .transactionDate(LocalDate.now())
+                .build();
+
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(accountId, userId)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdAndUserIdAndActiveTrueWithLock(toId, userId)).thenReturn(Optional.of(creditAccount));
+
+        assertThrows(InvalidTransferException.class, () -> transactionService.createTransfer(userId, request));
     }
 }

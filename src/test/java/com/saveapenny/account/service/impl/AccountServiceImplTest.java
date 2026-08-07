@@ -18,6 +18,7 @@ import com.saveapenny.account.exception.AccountMutationNotAllowedException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.mapper.AccountMapper;
 import com.saveapenny.account.repository.AccountRepository;
+import com.saveapenny.creditcard.service.CreditCardService;
 import com.saveapenny.transaction.repository.TransactionRepository;
 import com.saveapenny.transaction.repository.TransferRepository;
 import java.math.BigDecimal;
@@ -48,6 +49,9 @@ class AccountServiceImplTest {
 
     @Mock
     private TransferRepository transferRepository;
+
+    @Mock
+    private CreditCardService creditCardService;
 
     @InjectMocks
     private AccountServiceImpl accountService;
@@ -103,6 +107,68 @@ class AccountServiceImplTest {
         assertEquals(userId, mapped.getUserId());
         assertEquals("Wallet", mapped.getName());
         assertEquals("USD", mapped.getCurrency());
+    }
+
+    @Test
+    void create_throws_whenInitialBalanceMissingForNonCreditType() {
+        CreateAccountRequest request = CreateAccountRequest.builder()
+                .name("Wallet")
+                .type(AccountType.CASH)
+                .currency("USD")
+                .initialBalance(null)
+                .build();
+
+        assertThrows(com.saveapenny.account.exception.InitialBalanceRequiredException.class,
+                () -> accountService.create(userId, request));
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void create_succeeds_whenInitialBalanceMissingForCreditType() {
+        CreateAccountRequest request = CreateAccountRequest.builder()
+                .name("Visa")
+                .type(AccountType.CREDIT)
+                .currency("USD")
+                .initialBalance(null)
+                .creditLimit(new BigDecimal("1000"))
+                .apr(new BigDecimal("19.99"))
+                .statementDay(15)
+                .build();
+        Account mapped = Account.builder()
+                .name("Visa")
+                .type(AccountType.CREDIT)
+                .currency("USD")
+                .balance(BigDecimal.ZERO)
+                .initialBalance(BigDecimal.ZERO)
+                .active(true)
+                .build();
+        Account saved = Account.builder()
+                .id(accountId)
+                .userId(userId)
+                .name("Visa")
+                .type(AccountType.CREDIT)
+                .currency("USD")
+                .balance(BigDecimal.ZERO)
+                .initialBalance(BigDecimal.ZERO)
+                .active(true)
+                .build();
+        AccountResponse response = AccountResponse.builder().id(accountId).name("Visa").build();
+
+        when(accountRepository.existsByUserIdAndNameIgnoreCase(userId, "Visa")).thenReturn(false);
+        when(accountMapper.toEntity(request)).thenReturn(mapped);
+        when(accountRepository.save(mapped)).thenReturn(saved);
+        when(accountMapper.toResponse(saved)).thenReturn(response);
+        when(creditCardService.getSummary(saved)).thenReturn(
+                com.saveapenny.creditcard.dto.CreditCardSummaryResponse.builder().build());
+
+        AccountResponse result = accountService.create(userId, request);
+
+        assertEquals(accountId, result.getId());
+        var captor = org.mockito.ArgumentCaptor.forClass(com.saveapenny.creditcard.dto.CreditCardDetailsRequest.class);
+        verify(creditCardService).createDetails(org.mockito.ArgumentMatchers.eq(saved), captor.capture());
+        assertEquals(new BigDecimal("1000"), captor.getValue().getCreditLimit());
+        assertEquals(new BigDecimal("19.99"), captor.getValue().getApr());
+        assertEquals(15, captor.getValue().getStatementDay());
     }
 
     @Test

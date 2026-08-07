@@ -4,6 +4,7 @@ import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
 import com.saveapenny.account.exception.AccountMutationNotAllowedException;
 import com.saveapenny.account.exception.AccountNotFoundException;
 import com.saveapenny.account.exception.AccountInactiveException;
+import com.saveapenny.account.exception.InitialBalanceRequiredException;
 import com.saveapenny.audit.exception.AuditLogAccessDeniedException;
 import com.saveapenny.audit.exception.AuditLogNotFoundException;
 import com.saveapenny.audit.exception.InvalidAuditDateRangeException;
@@ -25,6 +26,10 @@ import com.saveapenny.notification.exception.NotificationNotFoundException;
 import com.saveapenny.category.exception.CategoryNameAlreadyExistsException;
 import com.saveapenny.category.exception.CategoryNotFoundException;
 import com.saveapenny.category.exception.SystemCategoryModificationNotAllowedException;
+import com.saveapenny.creditcard.exception.CreditCardDetailsNotFoundException;
+import com.saveapenny.creditcard.exception.CreditLimitExceededException;
+import com.saveapenny.creditcard.exception.InvalidCreditCardDetailsException;
+import com.saveapenny.creditcard.exception.InvalidCreditCardPaymentException;
 import com.saveapenny.budget.exception.BudgetAlreadyExistsException;
 import com.saveapenny.budget.exception.BudgetNotFoundException;
 import com.saveapenny.budget.exception.InvalidBudgetDateRangeException;
@@ -331,10 +336,60 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
     }
 
+    @ExceptionHandler(InitialBalanceRequiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInitialBalanceRequired(InitialBalanceRequiredException ex) {
+        ApiError error = ApiError.builder()
+                .code("INITIAL_BALANCE_REQUIRED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
     @ExceptionHandler(AccountMutationNotAllowedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccountMutationNotAllowed(AccountMutationNotAllowedException ex) {
         ApiError error = ApiError.builder()
                 .code("ACCOUNT_MUTATION_NOT_ALLOWED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(CreditLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCreditLimitExceeded(CreditLimitExceededException ex) {
+        ApiError error = ApiError.builder()
+                .code("CREDIT_LIMIT_EXCEEDED")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(CreditCardDetailsNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCreditCardDetailsNotFound(CreditCardDetailsNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .code("CREDIT_CARD_DETAILS_NOT_FOUND")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidCreditCardDetailsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidCreditCardDetails(InvalidCreditCardDetailsException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_CREDIT_CARD_DETAILS")
+                .message(ex.getMessage())
+                .details(List.of())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.failure(error));
+    }
+
+    @ExceptionHandler(InvalidCreditCardPaymentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidCreditCardPayment(InvalidCreditCardPaymentException ex) {
+        ApiError error = ApiError.builder()
+                .code("INVALID_CREDIT_CARD_PAYMENT")
                 .message(ex.getMessage())
                 .details(List.of())
                 .build();

@@ -38,6 +38,7 @@ class OpenApiPaginationContractAuditIntegrationTest {
 
     private static final List<String> EXPECTED_PAGINATED_PATHS = List.of(
             "/paths/~1api~1v1~1accounts/get",
+            "/paths/~1api~1v1~1accounts~1{accountId}~1credit~1statements/get",
             "/paths/~1api~1v1~1transactions/get",
             "/paths/~1api~1v1~1budgets/get",
             "/paths/~1api~1v1~1notifications/get",

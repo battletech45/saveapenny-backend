@@ -1,6 +1,7 @@
 package com.saveapenny.account.dto;
 
 import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.creditcard.dto.CreditCardSummaryResponse;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -26,4 +27,7 @@ public class AccountResponse {
     private Boolean active;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+
+    /** Populated only when {@code type == CREDIT}. */
+    private CreditCardSummaryResponse creditCard;
 }

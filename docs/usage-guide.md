@@ -35,6 +35,8 @@ Accounts represent where money is held. Common account types:
 
 See [Accounts](features/accounts.md) for mutation rules and deletion behavior.
 
+`CREDIT` accounts simulate a real credit card: a spending limit, monthly statements, minimum-payment/full-payment options, and interest on any balance carried past the due date. See [Credit Cards](features/credit-cards.md).
+
 ## Categories
 
 Categories organize transactions into income and expense groups. The system provides default categories; users can create their own.
