@@ -2,6 +2,7 @@ package com.saveapenny.feedback.service;
 
 import com.saveapenny.feedback.dto.CreateFeedbackRequest;
 import com.saveapenny.feedback.dto.FeedbackResponse;
+import com.saveapenny.feedback.entity.FeedbackStatus;
 import com.saveapenny.feedback.entity.FeedbackType;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -16,4 +17,6 @@ public interface FeedbackService {
     FeedbackResponse getById(UUID currentUserId, UUID feedbackId);
 
     void delete(UUID currentUserId, UUID feedbackId);
+
+    FeedbackResponse updateStatus(UUID feedbackId, FeedbackStatus status);
 }

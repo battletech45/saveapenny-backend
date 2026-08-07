@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.config.security.HeaderUserAuthenticationFilter;
 import com.saveapenny.config.security.RateLimitingFilter;
+import com.saveapenny.user.repository.UserRoleRepository;
 import com.saveapenny.config.security.SecurityConfig;
 import com.saveapenny.ocr.application.port.in.OcrJobService;
 import com.saveapenny.ocr.domain.model.OcrJobStatus;
@@ -43,6 +44,9 @@ class OcrImportControllerTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     private final UUID userId = UUID.randomUUID();
     private final UUID jobId = UUID.randomUUID();

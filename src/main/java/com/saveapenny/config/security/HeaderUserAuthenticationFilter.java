@@ -4,16 +4,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saveapenny.auth.service.JwtService;
 import com.saveapenny.shared.api.ApiError;
 import com.saveapenny.shared.api.ApiResponse;
+import com.saveapenny.user.repository.UserRoleRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,10 +29,13 @@ public class HeaderUserAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
+    private final UserRoleRepository userRoleRepository;
 
-    public HeaderUserAuthenticationFilter(JwtService jwtService, ObjectMapper objectMapper) {
+    public HeaderUserAuthenticationFilter(
+            JwtService jwtService, ObjectMapper objectMapper, UserRoleRepository userRoleRepository) {
         this.jwtService = jwtService;
         this.objectMapper = objectMapper;
+        this.userRoleRepository = userRoleRepository;
     }
 
     @Override
@@ -46,9 +53,14 @@ public class HeaderUserAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
-                CurrentUserPrincipal principal = new CurrentUserPrincipal(userId);
+                Set<String> roleNames = Set.copyOf(userRoleRepository.findRoleNamesByUserId(userId));
+                List<GrantedAuthority> authorities = roleNames.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
+                CurrentUserPrincipal principal = new CurrentUserPrincipal(userId, roleNames);
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList());
+                        new UsernamePasswordAuthenticationToken(principal, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (RuntimeException ex) {
                 writeUnauthorizedResponse(response);

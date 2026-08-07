@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.saveapenny.auth.service.JwtService;
+import com.saveapenny.user.repository.UserRoleRepository;
 import jakarta.servlet.FilterChain;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private RateLimitingFilter rateLimitingFilter;
+
+    @MockitoBean
+    private UserRoleRepository userRoleRepository;
 
     @BeforeEach
     void setUp() throws Exception {

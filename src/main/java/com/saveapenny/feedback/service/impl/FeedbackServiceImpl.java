@@ -3,9 +3,11 @@ package com.saveapenny.feedback.service.impl;
 import com.saveapenny.feedback.dto.CreateFeedbackRequest;
 import com.saveapenny.feedback.dto.FeedbackResponse;
 import com.saveapenny.feedback.entity.Feedback;
+import com.saveapenny.feedback.entity.FeedbackStatus;
 import com.saveapenny.feedback.entity.FeedbackType;
 import com.saveapenny.feedback.exception.FeedbackNotFoundException;
 import com.saveapenny.feedback.mapper.FeedbackMapper;
+import com.saveapenny.feedback.notification.FeedbackStatusNotifier;
 import com.saveapenny.feedback.repository.FeedbackRepository;
 import com.saveapenny.feedback.service.FeedbackService;
 import java.util.UUID;
@@ -20,10 +22,15 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
     private final FeedbackMapper feedbackMapper;
+    private final FeedbackStatusNotifier feedbackStatusNotifier;
 
-    public FeedbackServiceImpl(FeedbackRepository feedbackRepository, FeedbackMapper feedbackMapper) {
+    public FeedbackServiceImpl(
+            FeedbackRepository feedbackRepository,
+            FeedbackMapper feedbackMapper,
+            FeedbackStatusNotifier feedbackStatusNotifier) {
         this.feedbackRepository = feedbackRepository;
         this.feedbackMapper = feedbackMapper;
+        this.feedbackStatusNotifier = feedbackStatusNotifier;
     }
 
     @Override
@@ -54,6 +61,17 @@ public class FeedbackServiceImpl implements FeedbackService {
     public void delete(UUID currentUserId, UUID feedbackId) {
         Feedback feedback = findOwnedFeedback(currentUserId, feedbackId);
         feedbackRepository.delete(feedback);
+    }
+
+    @Override
+    public FeedbackResponse updateStatus(UUID feedbackId, FeedbackStatus status) {
+        Feedback feedback = feedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
+        FeedbackStatus previousStatus = feedback.getStatus();
+        feedback.setStatus(status);
+        Feedback saved = feedbackRepository.save(feedback);
+        feedbackStatusNotifier.notifyStatusChanged(saved, previousStatus);
+        return feedbackMapper.toResponse(saved);
     }
 
     private Feedback findOwnedFeedback(UUID currentUserId, UUID feedbackId) {

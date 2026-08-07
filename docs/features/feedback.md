@@ -20,6 +20,7 @@ The feedback module lets authenticated users submit product feedback directly fr
 | `rating` | No | Integer from `1` to `5` |
 | `message` | Yes | Main feedback text, max 5000 chars |
 | `metadata` | No | Free-form JSON for client context such as app version, platform, screen, or device |
+| `status` | Read-only | `OPEN`, `IN_REVIEW`, `RESOLVED`, or `REJECTED`. Set to `OPEN` on creation; updated only by admins. |
 
 ## Endpoints
 
@@ -29,6 +30,14 @@ The feedback module lets authenticated users submit product feedback directly fr
 | GET | `/api/v1/feedback` | List current user's feedback (shared paginated response) |
 | GET | `/api/v1/feedback/{id}` | Get one feedback item owned by the current user |
 | DELETE | `/api/v1/feedback/{id}` | Delete one feedback item owned by the current user |
+| PATCH | `/api/v1/admin/feedback/{id}/status` | Admin-only. Updates a feedback item's status. |
+
+## Status Tracking
+
+- New feedback always starts as `OPEN`.
+- Only a user holding the `ROLE_ADMIN` role can call `PATCH /api/v1/admin/feedback/{id}/status`; other callers receive `403`.
+- When status changes, the feedback's owner receives an in-app and push notification (`FEEDBACK_STATUS_UPDATED`).
+- Setting status to the same value it already has is a no-op and does not trigger a notification.
 
 ## List Response Shape
 
@@ -50,7 +59,7 @@ The feedback module lets authenticated users submit product feedback directly fr
 - Feedback is always tied to the authenticated user
 - Users can list, read, and delete only their own feedback
 - Looking up another user's feedback returns `404 FEEDBACK_NOT_FOUND`
-- The module does not include an admin review workflow in this version
+- Only admins (`ROLE_ADMIN`) can update a feedback item's status, via the admin-only endpoint above; the request is not scoped to the feedback owner
 
 ## Example Request
 
@@ -87,6 +96,10 @@ The feedback module lets authenticated users submit product feedback directly fr
 | File | Purpose |
 |------|---------|
 | `src/main/java/com/saveapenny/feedback/entity/Feedback.java` | JPA entity |
-| `src/main/java/com/saveapenny/feedback/controller/FeedbackController.java` | REST endpoints |
+| `src/main/java/com/saveapenny/feedback/controller/FeedbackController.java` | User-facing REST endpoints |
+| `src/main/java/com/saveapenny/feedback/controller/AdminFeedbackController.java` | Admin-only status update endpoint |
 | `src/main/java/com/saveapenny/feedback/service/impl/FeedbackServiceImpl.java` | Business logic |
+| `src/main/java/com/saveapenny/feedback/notification/FeedbackStatusNotifier.java` | Notifies the owner on status change |
 | `src/main/resources/db/migration/V25__add_feedback.sql` | Database schema |
+| `src/main/resources/db/migration/V26__add_feedback_status.sql` | Adds the `status` column |
+| `src/main/resources/db/migration/V27__add_feedback_status_updated_notification_type.sql` | Registers the `FEEDBACK_STATUS_UPDATED` notification type |

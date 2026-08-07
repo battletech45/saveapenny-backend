@@ -43,6 +43,9 @@ public class FeedbackController {
     }
 
     @PostMapping
+    @Operation(
+            summary = "Submit feedback",
+            description = "Creates a new feedback entry for the current user. Status starts as OPEN and is updated by an admin.")
     public ResponseEntity<ApiResponse<FeedbackResponse>> create(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Valid @RequestBody CreateFeedbackRequest request) {
@@ -53,7 +56,7 @@ public class FeedbackController {
     @GetMapping
     @Operation(
             summary = "List feedback",
-            description = "Returns paginated feedback submitted by the current user. Optionally filter by type. Pagination query params: page, size, sort.")
+            description = "Returns paginated feedback submitted by the current user, including its current status (OPEN, IN_REVIEW, RESOLVED, REJECTED). Optionally filter by type. Pagination query params: page, size, sort.")
     public ResponseEntity<ApiResponse<PagedResponse<FeedbackResponse>>> getAll(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @Parameter(description = "Optional type filter.", example = "FEATURE_REQUEST")
@@ -64,6 +67,9 @@ public class FeedbackController {
     }
 
     @GetMapping("/{feedbackId}")
+    @Operation(
+            summary = "Get feedback by id",
+            description = "Returns a single feedback item owned by the current user, including its current status.")
     public ResponseEntity<ApiResponse<FeedbackResponse>> getById(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID feedbackId) {
@@ -72,6 +78,9 @@ public class FeedbackController {
     }
 
     @DeleteMapping("/{feedbackId}")
+    @Operation(
+            summary = "Delete feedback",
+            description = "Deletes a feedback item owned by the current user.")
     public ResponseEntity<ApiResponse<Void>> delete(
             @AuthenticationPrincipal CurrentUserPrincipal principal,
             @PathVariable UUID feedbackId) {
