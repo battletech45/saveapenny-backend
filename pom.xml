@@ -21,7 +21,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <jjwt.version>0.13.0</jjwt.version>
         <spring-ai.version>2.0.0</spring-ai.version>
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>3.1.0</springdoc.version>
         <tess4j.version>5.20.0</tess4j.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <rest-assured.version>6.0.1</rest-assured.version>
