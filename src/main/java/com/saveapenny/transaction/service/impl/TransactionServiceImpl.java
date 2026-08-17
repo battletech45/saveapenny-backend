@@ -1,9 +1,13 @@
 package com.saveapenny.transaction.service.impl;
 
 import com.saveapenny.account.entity.Account;
+import com.saveapenny.account.entity.AccountType;
 import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.category.entity.Category;
 import com.saveapenny.category.repository.CategoryRepository;
+import com.saveapenny.creditcard.entity.CreditCardDetails;
+import com.saveapenny.creditcard.exception.CreditLimitExceededException;
+import com.saveapenny.creditcard.repository.CreditCardDetailsRepository;
 import com.saveapenny.transaction.dto.CreateTransactionRequest;
 import com.saveapenny.transaction.dto.CreateTransferRequest;
 import com.saveapenny.transaction.dto.TransactionResponse;
@@ -42,18 +46,21 @@ public class TransactionServiceImpl implements TransactionService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionMapper transactionMapper;
+    private final CreditCardDetailsRepository creditCardDetailsRepository;
 
     public TransactionServiceImpl(
             TransactionRepository transactionRepository,
             TransferRepository transferRepository,
             AccountRepository accountRepository,
             CategoryRepository categoryRepository,
-            TransactionMapper transactionMapper) {
+            TransactionMapper transactionMapper,
+            CreditCardDetailsRepository creditCardDetailsRepository) {
         this.transactionRepository = transactionRepository;
         this.transferRepository = transferRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
         this.transactionMapper = transactionMapper;
+        this.creditCardDetailsRepository = creditCardDetailsRepository;
     }
 
     @Override
@@ -88,6 +95,8 @@ public class TransactionServiceImpl implements TransactionService {
 
         Account fromAccount = findOwnedActiveAccount(currentUserId, request.getFromAccountId());
         Account toAccount = findOwnedActiveAccount(currentUserId, request.getToAccountId());
+        ensureNotCreditAccount(fromAccount);
+        ensureNotCreditAccount(toAccount);
         ensureCategoryVisible(currentUserId, request.getCategoryId());
 
         String normalizedCurrency = normalizeCurrency(request.getCurrency());
@@ -297,6 +306,11 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private void applyTransactionImpact(Account account, TransactionType type, BigDecimal amount, boolean apply) {
+        if (account.getType() == AccountType.CREDIT) {
+            applyCreditTransactionImpact(account, type, amount, apply);
+            return;
+        }
+
         BigDecimal factor = apply ? BigDecimal.ONE : BigDecimal.ONE.negate();
         if (type == TransactionType.INCOME) {
             account.setBalance(account.getBalance().add(amount.multiply(factor)));
@@ -307,6 +321,35 @@ public class TransactionServiceImpl implements TransactionService {
                 throw new InsufficientBalanceException(account.getId());
             }
             account.setBalance(newBalance);
+        }
+    }
+
+    /**
+     * For CREDIT accounts, {@code balance} represents debt owed rather than funds available:
+     * an EXPENSE increases the debt (checked against the credit limit) and an INCOME
+     * (e.g. a merchant refund) decreases it.
+     */
+    private void applyCreditTransactionImpact(Account account, TransactionType type, BigDecimal amount, boolean apply) {
+        BigDecimal factor = apply ? BigDecimal.ONE : BigDecimal.ONE.negate();
+        if (type == TransactionType.EXPENSE) {
+            BigDecimal newBalance = account.getBalance().add(amount.multiply(factor));
+            if (apply) {
+                CreditCardDetails details = creditCardDetailsRepository.findByAccountId(account.getId())
+                        .orElseThrow(() -> new CreditLimitExceededException(account.getId()));
+                if (newBalance.compareTo(details.getCreditLimit()) > 0) {
+                    throw new CreditLimitExceededException(account.getId());
+                }
+            }
+            account.setBalance(newBalance);
+        } else if (type == TransactionType.INCOME) {
+            account.setBalance(account.getBalance().subtract(amount.multiply(factor)));
+        }
+    }
+
+    private void ensureNotCreditAccount(Account account) {
+        if (account.getType() == AccountType.CREDIT) {
+            throw new InvalidTransferException(
+                    "Transfers are not supported for credit card accounts; use the credit card payment endpoint instead.");
         }
     }
 }

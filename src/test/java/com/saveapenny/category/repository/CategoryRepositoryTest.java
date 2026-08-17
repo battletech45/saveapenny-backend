@@ -28,6 +28,7 @@ class CategoryRepositoryTest {
     private UUID userId;
     private Category userCategory;
     private Category systemCategory;
+    private Category systemCategoryExpense;
 
     @BeforeEach
     void setUp() {
@@ -44,6 +45,18 @@ class CategoryRepositoryTest {
                 .updatedAt(OffsetDateTime.now())
                 .build();
         categoryRepository.save(systemCategory);
+
+        systemCategoryExpense = Category.builder()
+                .id(UUID.randomUUID())
+                .userId(null)
+                .name("Interest & Fees")
+                .type(CategoryType.EXPENSE)
+                .color("#EF4444")
+                .icon("percent")
+                .createdAt(OffsetDateTime.now())
+                .updatedAt(OffsetDateTime.now())
+                .build();
+        categoryRepository.save(systemCategoryExpense);
 
         userCategory = Category.builder()
                 .id(UUID.randomUUID())
@@ -75,7 +88,13 @@ class CategoryRepositoryTest {
     @Test
     void findAllByUserIdIsNullOrUserIdAndType_returnsBoth() {
         var results = categoryRepository.findAllByUserIdIsNullOrUserIdAndType(userId, CategoryType.INCOME);
-        assertTrue(results.size() >= 1);
+
+        assertEquals(1, results.size());
+        assertEquals(systemCategory.getId(), results.getFirst().getId());
+        assertTrue(results.stream().allMatch(c -> c.getType() == CategoryType.INCOME),
+                "Result must not leak system categories of a different type");
+        assertTrue(results.stream().noneMatch(c -> c.getId().equals(systemCategoryExpense.getId())),
+                "EXPENSE-type system category must not appear when querying INCOME");
     }
 
     @Test

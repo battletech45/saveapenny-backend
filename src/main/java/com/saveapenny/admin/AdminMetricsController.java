@@ -8,12 +8,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/admin/metrics")
+@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin", description = "Administrative observability and metrics endpoints.")
 public class AdminMetricsController {
 

@@ -7,10 +7,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.saveapenny.category.entity.Category;
+import com.saveapenny.category.entity.CategoryType;
+import com.saveapenny.category.repository.CategoryRepository;
 import com.saveapenny.user.entity.Role;
 import com.saveapenny.user.repository.RoleRepository;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +50,9 @@ class CategoryFlowIntegrationTest {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @BeforeEach
     void setUpRole() {
@@ -118,5 +130,61 @@ class CategoryFlowIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("CATEGORY_NOT_FOUND"));
+    }
+
+    @Test
+    void getCategories_filteredByType_doesNotLeakSystemCategoriesOfOtherType() throws Exception {
+        String registerBody = """
+                {
+                  "email": "category.type.filter@example.com",
+                  "password": "Strong@123",
+                  "fullName": "Category Type Filter"
+                }
+                """;
+
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode registerJson = objectMapper.readTree(registerResult.getResponse().getContentAsString());
+        String accessToken = registerJson.path("data").path("accessToken").asText();
+
+        Category systemIncome = categoryRepository.save(Category.builder()
+                .id(UUID.randomUUID())
+                .userId(null)
+                .name("Salary")
+                .type(CategoryType.INCOME)
+                .createdAt(OffsetDateTime.now())
+                .updatedAt(OffsetDateTime.now())
+                .build());
+        Category systemExpense = categoryRepository.save(Category.builder()
+                .id(UUID.randomUUID())
+                .userId(null)
+                .name("Interest & Fees")
+                .type(CategoryType.EXPENSE)
+                .createdAt(OffsetDateTime.now())
+                .updatedAt(OffsetDateTime.now())
+                .build());
+
+        MvcResult result = mockMvc.perform(get("/api/v1/categories")
+                        .param("type", "INCOME")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode data = objectMapper.readTree(result.getResponse().getContentAsString()).path("data");
+        boolean containsIncomeSystemCategory = false;
+        for (JsonNode item : data) {
+            String id = item.path("id").asText();
+            assertEquals("INCOME", item.path("type").asText(), "Every returned category must be of the requested type");
+            assertFalse(id.equals(systemExpense.getId().toString()),
+                    "EXPENSE-type system category must not leak into an INCOME-filtered response");
+            if (id.equals(systemIncome.getId().toString())) {
+                containsIncomeSystemCategory = true;
+            }
+        }
+        assertTrue(containsIncomeSystemCategory, "INCOME-type system category should be present");
     }
 }

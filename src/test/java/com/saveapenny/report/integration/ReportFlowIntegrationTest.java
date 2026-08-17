@@ -110,14 +110,17 @@ class ReportFlowIntegrationTest extends TestcontainersIntegrationTest {
     }
 
     private String createAccount(String token, String name, String type, String currency, String initialBalance) throws Exception {
+        String creditFields = "CREDIT".equals(type)
+                ? ", \"creditLimit\": 2000.0000, \"apr\": 19.99, \"statementDay\": 15"
+                : "";
         String body = """
                 {
                   "name": "%s",
                   "type": "%s",
                   "currency": "%s",
-                  "initialBalance": %s
+                  "initialBalance": %s%s
                 }
-                """.formatted(name, type, currency, initialBalance);
+                """.formatted(name, type, currency, initialBalance, creditFields);
 
         MvcResult result = mockMvc.perform(post("/api/v1/accounts")
                         .header("Authorization", "Bearer " + token)

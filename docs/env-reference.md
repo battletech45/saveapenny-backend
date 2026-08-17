@@ -223,6 +223,14 @@ See [Goals](features/goals.md) for feature details.
 
 See [Recurring Transactions](features/recurring-transactions.md) for feature details.
 
+## Credit Cards
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `credit-card.statement.cron` | `0 0 3 * * *` | Schedule for the daily credit card statement close / due-date evaluation job |
+
+See [Credit Cards](features/credit-cards.md) for feature details.
+
 ## Docker Compose
 
 | Variable | Default | Description |

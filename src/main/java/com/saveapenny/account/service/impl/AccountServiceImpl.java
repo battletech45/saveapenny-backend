@@ -7,9 +7,13 @@ import com.saveapenny.account.entity.Account;
 import com.saveapenny.account.exception.AccountMutationNotAllowedException;
 import com.saveapenny.account.exception.AccountNameAlreadyExistsException;
 import com.saveapenny.account.exception.AccountNotFoundException;
+import com.saveapenny.account.exception.InitialBalanceRequiredException;
 import com.saveapenny.account.mapper.AccountMapper;
 import com.saveapenny.account.repository.AccountRepository;
 import com.saveapenny.account.service.AccountService;
+import com.saveapenny.account.entity.AccountType;
+import com.saveapenny.creditcard.dto.CreditCardDetailsRequest;
+import com.saveapenny.creditcard.service.CreditCardService;
 import com.saveapenny.transaction.repository.TransactionRepository;
 import com.saveapenny.transaction.repository.TransferRepository;
 import java.math.BigDecimal;
@@ -28,20 +32,27 @@ public class AccountServiceImpl implements AccountService {
     private final AccountMapper accountMapper;
     private final TransactionRepository transactionRepository;
     private final TransferRepository transferRepository;
+    private final CreditCardService creditCardService;
 
     public AccountServiceImpl(
             AccountRepository accountRepository,
             AccountMapper accountMapper,
             TransactionRepository transactionRepository,
-            TransferRepository transferRepository) {
+            TransferRepository transferRepository,
+            CreditCardService creditCardService) {
         this.accountRepository = accountRepository;
         this.accountMapper = accountMapper;
         this.transactionRepository = transactionRepository;
         this.transferRepository = transferRepository;
+        this.creditCardService = creditCardService;
     }
 
     @Override
     public AccountResponse create(UUID currentUserId, CreateAccountRequest request) {
+        if (request.getType() != AccountType.CREDIT && request.getInitialBalance() == null) {
+            throw new InitialBalanceRequiredException();
+        }
+
         String normalizedName = normalizeName(request.getName());
         if (accountRepository.existsByUserIdAndNameIgnoreCase(currentUserId, normalizedName)) {
             throw new AccountNameAlreadyExistsException(normalizedName);
@@ -53,21 +64,30 @@ public class AccountServiceImpl implements AccountService {
         account.setCurrency(normalizeCurrency(request.getCurrency()));
 
         Account saved = accountRepository.save(account);
-        return accountMapper.toResponse(saved);
+
+        if (saved.getType() == AccountType.CREDIT) {
+            creditCardService.createDetails(saved, CreditCardDetailsRequest.builder()
+                    .creditLimit(request.getCreditLimit())
+                    .apr(request.getApr())
+                    .statementDay(request.getStatementDay())
+                    .build());
+        }
+
+        return enrich(accountMapper.toResponse(saved), saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AccountResponse> getAll(UUID currentUserId, Pageable pageable) {
         return accountRepository.findAllByUserIdAndActiveTrue(currentUserId, pageable)
-                .map(accountMapper::toResponse);
+                .map(account -> enrich(accountMapper.toResponse(account), account));
     }
 
     @Override
     @Transactional(readOnly = true)
     public AccountResponse getById(UUID currentUserId, UUID accountId) {
         Account account = findOwnedActiveAccount(currentUserId, accountId);
-        return accountMapper.toResponse(account);
+        return enrich(accountMapper.toResponse(account), account);
     }
 
     @Override
@@ -77,6 +97,11 @@ public class AccountServiceImpl implements AccountService {
         String normalizedName = normalizeName(request.getName());
         if (accountRepository.existsByUserIdAndNameIgnoreCaseAndIdNot(currentUserId, normalizedName, accountId)) {
             throw new AccountNameAlreadyExistsException(normalizedName);
+        }
+
+        if ((account.getType() == AccountType.CREDIT || request.getType() == AccountType.CREDIT)
+                && account.getType() != request.getType()) {
+            throw new AccountMutationNotAllowedException(accountId, "type");
         }
 
         String normalizedCurrency = normalizeCurrency(request.getCurrency());
@@ -95,7 +120,7 @@ public class AccountServiceImpl implements AccountService {
         account.setCurrency(normalizedCurrency);
 
         Account saved = accountRepository.save(account);
-        return accountMapper.toResponse(saved);
+        return enrich(accountMapper.toResponse(saved), saved);
     }
 
     @Override
@@ -103,6 +128,13 @@ public class AccountServiceImpl implements AccountService {
         Account account = findOwnedActiveAccountForMutation(currentUserId, accountId);
         account.setActive(false);
         accountRepository.save(account);
+    }
+
+    private AccountResponse enrich(AccountResponse response, Account account) {
+        if (account.getType() == AccountType.CREDIT) {
+            response.setCreditCard(creditCardService.getSummary(account));
+        }
+        return response;
     }
 
     private Account findOwnedActiveAccount(UUID currentUserId, UUID accountId) {

@@ -24,6 +24,10 @@ import com.saveapenny.goal.repository.GoalRepository;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,14 @@ public class BillingEntitlementServiceImpl implements BillingEntitlementService 
     private final GoalRepository goalRepository;
     private final TimeService timeService;
     private final AnalyticsEventPublisher analyticsEventPublisher;
+    private final BillingEntitlementServiceImpl self;
+
+    // Coalesces concurrent /sync calls for the same user into a single RevenueCat
+    // request - RevenueCat rejects overlapping GETs for one app_user_id with a 429
+    // (code 7638, "another request in flight"), which otherwise surfaces as an error
+    // to whichever caller loses the race (e.g. duplicate foreground/purchase syncs).
+    private final ConcurrentHashMap<UUID, CompletableFuture<EntitlementResponse>> inFlightSyncs =
+            new ConcurrentHashMap<>();
 
     public BillingEntitlementServiceImpl(
             BillingCustomerRepository billingCustomerRepository,
@@ -47,7 +59,8 @@ public class BillingEntitlementServiceImpl implements BillingEntitlementService 
             BudgetRepository budgetRepository,
             GoalRepository goalRepository,
             TimeService timeService,
-            AnalyticsEventPublisher analyticsEventPublisher) {
+            AnalyticsEventPublisher analyticsEventPublisher,
+            @Lazy BillingEntitlementServiceImpl self) {
         this.billingCustomerRepository = billingCustomerRepository;
         this.billingEntitlementRepository = billingEntitlementRepository;
         this.revenueCatClient = revenueCatClient;
@@ -56,6 +69,7 @@ public class BillingEntitlementServiceImpl implements BillingEntitlementService 
         this.goalRepository = goalRepository;
         this.timeService = timeService;
         this.analyticsEventPublisher = analyticsEventPublisher;
+        this.self = self;
     }
 
     @Override
@@ -66,8 +80,37 @@ public class BillingEntitlementServiceImpl implements BillingEntitlementService 
     }
 
     @Override
-    @Transactional
     public EntitlementResponse sync(UUID userId) {
+        CompletableFuture<EntitlementResponse> future = new CompletableFuture<>();
+        CompletableFuture<EntitlementResponse> existing = inFlightSyncs.putIfAbsent(userId, future);
+        if (existing != null) {
+            return join(existing);
+        }
+        try {
+            EntitlementResponse response = self.doSync(userId);
+            future.complete(response);
+            return response;
+        } catch (RuntimeException | Error e) {
+            future.completeExceptionally(e);
+            throw e;
+        } finally {
+            inFlightSyncs.remove(userId, future);
+        }
+    }
+
+    private static EntitlementResponse join(CompletableFuture<EntitlementResponse> future) {
+        try {
+            return future.join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RuntimeException re) {
+                throw re;
+            }
+            throw e;
+        }
+    }
+
+    @Transactional
+    public EntitlementResponse doSync(UUID userId) {
         BillingEntitlement previous = billingEntitlementRepository.findById(userId).orElse(null);
         BillingEntitlement updated = refreshFromRevenueCat(userId);
         emitPurchaseSignal(previous, updated);

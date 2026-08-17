@@ -10,7 +10,7 @@ Accounts represent where money is held. Every transaction and transfer is linked
 |------|----------|----------------------|
 | `CASH` | Physical cash / wallet | Positive = money on hand |
 | `BANK` | Checking or current account | Positive = deposit |
-| `CREDIT` | Credit card / credit line | Positive = debt owed |
+| `CREDIT` | Credit card / credit line | Positive = debt owed (spending increases it, up to `creditLimit`) |
 | `SAVINGS` | Savings account | Positive = savings |
 | `INVESTMENT` | Investment or brokerage account | Positive = portfolio value |
 
@@ -21,7 +21,12 @@ Accounts represent where money is held. Every transaction and transfer is linked
 | `name` | Yes | Must be unique per user (including soft-deleted accounts) |
 | `type` | Yes | One of: `CASH`, `BANK`, `CREDIT`, `SAVINGS`, `INVESTMENT` |
 | `currency` | Yes | ISO-4217 code (e.g., `USD`, `EUR`, `TRY`) |
-| `initialBalance` | Yes | Starting balance |
+| `initialBalance` | Only if `type != CREDIT` | Starting balance. Required (send `0` explicitly if there's none) for every type except `CREDIT`, where it's optional and defaults to `0` — it represents starting debt there and must not exceed `creditLimit` |
+| `creditLimit` | Only if `type == CREDIT` | Maximum debt the account can carry |
+| `apr` | Only if `type == CREDIT` | Annual percentage rate applied to any balance carried past the due date |
+| `statementDay` | Only if `type == CREDIT` | Day of month (1–28) the billing cycle closes on |
+
+`CREDIT` accounts behave like a real credit card rather than a funds-on-hand account — see [Credit Cards](credit-cards.md) for the full billing cycle, interest, and payment model.
 
 ## Currency Rules
 
@@ -34,7 +39,7 @@ Accounts represent where money is held. Every transaction and transfer is linked
 | Field | Can Change? | Constraint |
 |-------|------------|------------|
 | Name | Yes | Must remain unique per user |
-| Type | No | Blocked after account has been used |
+| Type | No | Blocked after account has been used; changing to/from `CREDIT` is always blocked (use a dedicated account instead) |
 | Currency | No | Blocked after account has been used |
 | Balance | No | Updated automatically by transactions |
 
@@ -61,6 +66,8 @@ An account is considered **used** if any of these are true:
 | PUT | `/api/v1/accounts/{id}` | Update account name |
 | DELETE | `/api/v1/accounts/{id}` | Soft-delete an account |
 
+`CREDIT` accounts additionally expose `/api/v1/accounts/{id}/credit/**` for limit/APR updates, statement history, and payments — see [Credit Cards](credit-cards.md).
+
 ## List Response Shape
 
 `GET /api/v1/accounts` returns the shared pagination contract described in [API Reference](../api-reference.md): `items`, `page`, `size`, `totalItems`, `totalPages`, `hasNext`, and `hasPrevious`.
@@ -80,6 +87,7 @@ An account is considered **used** if any of these are true:
 | `ACCOUNT_NAME_ALREADY_EXISTS` | 409 | Name conflicts with an existing or soft-deleted account |
 | `ACCOUNT_MUTATION_NOT_ALLOWED` | 400 | Attempt to change type or currency after account has been used |
 | `ACCOUNT_INACTIVE` | 400 | Account is soft-deleted or inactive |
+| `INITIAL_BALANCE_REQUIRED` | 400 | `initialBalance` omitted for a non-`CREDIT` account |
 
 ## Key Design Decisions
 

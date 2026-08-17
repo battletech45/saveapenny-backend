@@ -3,7 +3,10 @@ package com.saveapenny.report.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.saveapenny.account.entity.AccountType;
@@ -239,6 +242,31 @@ class ReportServiceImplTest {
     void getMonthlySummary_throws_whenDateRangeInvalid() {
         assertThrows(InvalidReportDateRangeException.class,
                 () -> reportService.getMonthlySummary(userId, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 5, 1)));
+    }
+
+    @Test
+    void getNetWorth_forToday_alwaysComputesLive_andNeverCaches() {
+        when(reportAccountRepository.sumAssetsByUserId(userId, List.of(AccountType.CREDIT))).thenReturn(new BigDecimal("5000.0000"));
+        when(reportAccountRepository.sumLiabilitiesByUserId(userId, List.of(AccountType.CREDIT))).thenReturn(new BigDecimal("1200.0000"));
+
+        NetWorthSnapshotResponse mapped = NetWorthSnapshotResponse.builder()
+                .snapshotDate(TODAY)
+                .totalAssets(new BigDecimal("5000.0000"))
+                .totalLiabilities(new BigDecimal("1200.0000"))
+                .netWorth(new BigDecimal("3800.0000"))
+                .build();
+        when(reportMapper.toNetWorthSnapshotResponse(
+                        TODAY,
+                        new BigDecimal("5000.0000"),
+                        new BigDecimal("1200.0000"),
+                        new BigDecimal("3800.0000")))
+                .thenReturn(mapped);
+
+        NetWorthSnapshotResponse result = reportService.getNetWorth(userId, TODAY);
+
+        assertEquals(new BigDecimal("3800.0000"), result.getNetWorth());
+        verify(netWorthSnapshotRepository, never()).findByUserIdAndSnapshotDate(any(), any());
+        verify(netWorthSnapshotRepository, never()).save(any());
     }
 
     @Test
