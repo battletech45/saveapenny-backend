@@ -139,6 +139,7 @@ See `.env.example` for all available settings.
 | [Usage Guide](docs/usage-guide.md) | Common workflows and endpoints |
 | [API Reference](docs/api-reference.md) | Endpoint list, conventions |
 | [Architecture](docs/architecture.md) | Module structure, request lifecycle |
+| [Technology Stack](docs/technology-stack.md) | Technologies used, purpose, official docs |
 | [Auth Flow](docs/auth-flow.md) | Token lifecycle, mobile client guide |
 | [Error Codes](docs/error-codes.md) | Complete error code reference |
 | [Environment Variables](docs/env-reference.md) | All configurable properties |
