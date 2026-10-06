@@ -26,6 +26,7 @@ class FullFlowIntegrationTest extends TestcontainersIntegrationTest {
     void fullFlow_userRegistrationToGoalSimulation_worksEndToEnd() throws Exception {
         // 1. Register
         String token = register("full.flow@example.com", "Full Flow");
+        grantPlusEntitlement(token);
 
         // 2. Create account
         String accountId = createAccount(token);
